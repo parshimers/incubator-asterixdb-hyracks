@@ -15,6 +15,7 @@
 package edu.uci.ics.hyracks.storage.common.file;
 
 import edu.uci.ics.hyracks.api.exceptions.HyracksDataException;
+import edu.uci.ics.hyracks.api.io.IFilePath;
 import edu.uci.ics.hyracks.api.io.FileReference;
 
 /**
@@ -42,4 +43,10 @@ public interface IFileMapManager extends IFileMapProvider {
      *             - If the fileid is not mapped currently in this manager.
      */
     public void unregisterFile(int fileId) throws HyracksDataException;
+    
+    public void registerDFSFile(IFilePath p);
+    
+    public void unregisterDFSFile(IFilePath p);
+
+    public int registerMemoryFile();
 }

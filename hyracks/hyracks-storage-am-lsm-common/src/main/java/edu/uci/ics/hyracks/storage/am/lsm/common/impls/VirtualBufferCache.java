@@ -22,6 +22,7 @@ import java.util.concurrent.locks.ReentrantLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import edu.uci.ics.hyracks.api.exceptions.HyracksDataException;
+import edu.uci.ics.hyracks.api.io.IFilePath;
 import edu.uci.ics.hyracks.api.io.FileReference;
 import edu.uci.ics.hyracks.storage.am.lsm.common.api.IVirtualBufferCache;
 import edu.uci.ics.hyracks.storage.common.buffercache.ICacheMemoryAllocator;
@@ -340,5 +341,17 @@ public class VirtualBufferCache implements IVirtualBufferCache {
             latch.writeLock().unlock();
         }
 
+    }
+
+    @Override
+    public ICachedPage pinVirtual(int vid) throws HyracksDataException {
+        // TODO Auto-generated method stub
+        return null;
+    }
+
+    @Override
+    public ICachedPage mapVirtual(int vid, long dpid) throws HyracksDataException {
+        // TODO Auto-generated method stub
+        return null;
     }
 }

@@ -165,4 +165,17 @@ public class DebugBufferCache implements IBufferCache {
     public void force(int fileId, boolean metadata) throws HyracksDataException {
         bufferCache.force(fileId, metadata);
     }
+
+    @Override
+    public ICachedPage pinVirtual(int vid) throws HyracksDataException {
+        // TODO Auto-generated method stub
+        return null;
+    }
+
+    @Override
+    public ICachedPage mapVirtual(int vid, long dpid) throws HyracksDataException {
+        // TODO Auto-generated method stub
+        return null;
+        
+    }
 }

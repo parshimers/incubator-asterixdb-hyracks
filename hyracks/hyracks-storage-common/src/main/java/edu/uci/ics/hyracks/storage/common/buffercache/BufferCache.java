@@ -29,6 +29,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import edu.uci.ics.hyracks.api.exceptions.HyracksDataException;
+import edu.uci.ics.hyracks.api.io.IFilePath;
 import edu.uci.ics.hyracks.api.io.FileReference;
 import edu.uci.ics.hyracks.api.io.IFileHandle;
 import edu.uci.ics.hyracks.api.io.IIOManager;
@@ -36,7 +37,7 @@ import edu.uci.ics.hyracks.api.lifecycle.ILifeCycleComponent;
 import edu.uci.ics.hyracks.storage.common.file.BufferedFileHandle;
 import edu.uci.ics.hyracks.storage.common.file.IFileMapManager;
 
-public class BufferCache implements IBufferCacheInternal, ILifeCycleComponent {
+public class BufferCache implements IBufferCacheInternal, ILifeCycleComponent, IDFSBufferCache{
     private static final Logger LOGGER = Logger.getLogger(BufferCache.class.getName());
     private static final int MAP_FACTOR = 2;
 
@@ -52,6 +53,7 @@ public class BufferCache implements IBufferCacheInternal, ILifeCycleComponent {
     private final IFileMapManager fileMapManager;
     private final CleanerThread cleanerThread;
     private final Map<Integer, BufferedFileHandle> fileInfoMap;
+    private final int memFileId;
 
     private List<ICachedPageInternal> cachedPages = new ArrayList<ICachedPageInternal>();
 
@@ -71,12 +73,17 @@ public class BufferCache implements IBufferCacheInternal, ILifeCycleComponent {
         this.pageReplacementStrategy = pageReplacementStrategy;
         this.pageCleanerPolicy = pageCleanerPolicy;
         this.fileMapManager = fileMapManager;
+        //register memory file ID
+        memFileId = fileMapManager.registerMemoryFile();
+
         Executor executor = Executors.newCachedThreadPool(threadFactory);
         fileInfoMap = new HashMap<Integer, BufferedFileHandle>();
         cleanerThread = new CleanerThread();
         executor.execute(cleanerThread);
         closed = false;
     }
+
+    //TODO: insert DFS constructor
 
     @Override
     public int getPageSize() {
@@ -96,6 +103,7 @@ public class BufferCache implements IBufferCacheInternal, ILifeCycleComponent {
         // check whether file has been created and opened
         int fileId = BufferedFileHandle.getFileId(dpid);
         BufferedFileHandle fInfo = null;
+        if(fileId == memFileId) return;
         synchronized (fileInfoMap) {
             fInfo = fileInfoMap.get(fileId);
         }
@@ -109,7 +117,7 @@ public class BufferCache implements IBufferCacheInternal, ILifeCycleComponent {
     @Override
     public ICachedPage tryPin(long dpid) throws HyracksDataException {
         // Calling the pinSanityCheck should be used only for debugging, since the synchronized block over the fileInfoMap is a hot spot.
-        //pinSanityCheck(dpid);
+        pinSanityCheck(dpid);
         CachedPage cPage = null;
         int hash = hash(dpid);
         CacheBucket bucket = pageMap[hash];
@@ -133,8 +141,8 @@ public class BufferCache implements IBufferCacheInternal, ILifeCycleComponent {
     @Override
     public ICachedPage pin(long dpid, boolean newPage) throws HyracksDataException {
         // Calling the pinSanityCheck should be used only for debugging, since the synchronized block over the fileInfoMap is a hot spot.
-        //pinSanityCheck(dpid);
-        CachedPage cPage = findPage(dpid, newPage);
+        pinSanityCheck(dpid);
+        CachedPage cPage = findPage(dpid, false);
         if (!newPage) {
             // Resolve race of multiple threads trying to read the page from
             // disk.
@@ -151,7 +159,30 @@ public class BufferCache implements IBufferCacheInternal, ILifeCycleComponent {
         return cPage;
     }
 
-    private CachedPage findPage(long dpid, boolean newPage) throws HyracksDataException {
+    @Override
+    public ICachedPage pinVirtual(int vid) throws HyracksDataException {
+        long dpid = (((long) memFileId) << 32) + vid;
+        pinSanityCheck(dpid);
+        CachedPage cPage = findPage(dpid, true);
+        cPage.virtual = true;
+        return cPage;
+    }
+
+    @Override
+    public ICachedPage mapVirtual(int vid, long dpid) throws HyracksDataException {
+        long virt_dpid = (((long) memFileId) << 32) + vid;
+        CachedPage virtPage = findPage(virt_dpid, true);
+        pinSanityCheck(dpid);
+        ICachedPage realPage = pin(dpid, true);
+        virtPage.acquireReadLatch();
+        realPage.acquireWriteLatch();
+        System.arraycopy(virtPage.buffer.array(), 0, realPage.getBuffer().array(), 0, virtPage.buffer.capacity());
+        realPage.releaseWriteLatch(true);
+        virtPage.reset(-1); //now cause the virtual page to die
+        return realPage;
+    }
+
+    private CachedPage findPage(long dpid, boolean virtual) throws HyracksDataException {
         while (true) {
             int startCleanedCount = cleanerThread.cleanedCount;
 
@@ -186,7 +217,7 @@ public class BufferCache implements IBufferCacheInternal, ILifeCycleComponent {
                  * on the CachedPage may or may not be valid. 2. We have a pin
                  * on the CachedPage. We have to deal with three cases here.
                  * Case 1: The dpid on the CachedPage is invalid (-1). This
-                 * indicates that this buffer has never been used. So we are the
+                 * indicates that this buffer has never been used or is a virtual page. So we are the
                  * only ones holding it. Get a lock on the required dpid's hash
                  * bucket, check if someone inserted the page we want into the
                  * table. If so, decrement the pincount on the victim and return
@@ -428,7 +459,7 @@ public class BufferCache implements IBufferCacheInternal, ILifeCycleComponent {
         }
 
         public void cleanPage(CachedPage cPage, boolean force) {
-            if (cPage.dirty.get()) {
+            if (cPage.dirty.get() && !cPage.virtual) {
                 boolean proceed = false;
                 if (force) {
                     cPage.latch.writeLock().lock();
@@ -531,7 +562,7 @@ public class BufferCache implements IBufferCacheInternal, ILifeCycleComponent {
             LOGGER.info("Creating file: " + fileRef + " in cache: " + this);
         }
         synchronized (fileInfoMap) {
-            fileMapManager.registerFile(fileRef);
+            fileMapManager.registerFile((FileReference) fileRef);
         }
     }
 
@@ -726,5 +757,11 @@ public class BufferCache implements IBufferCacheInternal, ILifeCycleComponent {
 
     public void dumpState(OutputStream os) throws IOException {
         os.write(dumpState().getBytes());
+    }
+
+    @Override
+    public void createFile(IFilePath fileRef) throws HyracksDataException {
+        // TODO Auto-generated method stub
+        
     }
 }

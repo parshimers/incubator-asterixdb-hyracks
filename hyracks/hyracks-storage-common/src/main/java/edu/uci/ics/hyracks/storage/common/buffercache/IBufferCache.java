@@ -15,6 +15,8 @@
 package edu.uci.ics.hyracks.storage.common.buffercache;
 
 import edu.uci.ics.hyracks.api.exceptions.HyracksDataException;
+import edu.uci.ics.hyracks.api.io.IFileHandle;
+import edu.uci.ics.hyracks.api.io.IFilePath;
 import edu.uci.ics.hyracks.api.io.FileReference;
 
 public interface IBufferCache {
@@ -29,6 +31,10 @@ public interface IBufferCache {
     public ICachedPage tryPin(long dpid) throws HyracksDataException;
 
     public ICachedPage pin(long dpid, boolean newPage) throws HyracksDataException;
+    
+    public ICachedPage pinVirtual(int vid) throws HyracksDataException;
+    
+    public ICachedPage mapVirtual(int vid, long dpid) throws HyracksDataException;
 
     public void unpin(ICachedPage page) throws HyracksDataException;
 

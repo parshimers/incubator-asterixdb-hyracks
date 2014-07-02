@@ -15,6 +15,7 @@
 package edu.uci.ics.hyracks.storage.am.lsm.common.impls;
 
 import edu.uci.ics.hyracks.api.exceptions.HyracksDataException;
+import edu.uci.ics.hyracks.api.io.IFilePath;
 import edu.uci.ics.hyracks.api.io.FileReference;
 import edu.uci.ics.hyracks.storage.am.lsm.common.api.IVirtualBufferCache;
 import edu.uci.ics.hyracks.storage.common.buffercache.ICachedPage;
@@ -30,7 +31,6 @@ public class MultitenantVirtualBufferCache implements IVirtualBufferCache {
         openCount = 0;
     }
 
-    @Override
     public void createFile(FileReference fileRef) throws HyracksDataException {
         vbc.createFile(fileRef);
     }
@@ -114,5 +114,17 @@ public class MultitenantVirtualBufferCache implements IVirtualBufferCache {
     @Override
     public IFileMapManager getFileMapProvider() {
         return vbc.getFileMapProvider();
+    }
+
+    @Override
+    public ICachedPage pinVirtual(int vid) throws HyracksDataException {
+        // TODO Auto-generated method stub
+        return null;
+    }
+
+    @Override
+    public ICachedPage mapVirtual(int vid, long dpid) throws HyracksDataException {
+        // TODO Auto-generated method stub
+       return null;
     }
 }
