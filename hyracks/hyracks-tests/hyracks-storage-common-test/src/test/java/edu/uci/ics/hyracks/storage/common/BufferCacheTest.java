@@ -325,18 +325,19 @@ public class BufferCacheTest {
         Map<Integer, ArrayList<Integer>> pageContents = new HashMap<Integer, ArrayList<Integer>>();
         ArrayList<Integer> memVals;
         int num = 10;
-        int testPageId=0;
-        int lastRealPage=0;
+        int testPageId = 0;
+        int lastRealPage = 0;
         String fileName = getFileName();
         FileReference file = new FileReference(new File(fileName));
         bufferCache.createFile(file);
+        int memFileId = bufferCache.createMemFile();
         int fileId = fmp.lookupFileId(file);
         bufferCache.openFile(fileId);
         fileIds.add(fileId);
 
         // try and write a few somethings into an on-disk paged file
         ICachedPage page = null;
-        for (; lastRealPage<10; lastRealPage++) {
+        for (; lastRealPage < 10; lastRealPage++) {
             page = bufferCache.pin(BufferedFileHandle.getDiskPageId(fileId, lastRealPage), true);
             page.acquireWriteLatch();
             try {
@@ -353,7 +354,7 @@ public class BufferCacheTest {
             }
         }
         //now try the same thing, but for a virtual page
-        page = bufferCache.pinVirtual(testPageId);
+        page = bufferCache.pinVirtual(BufferedFileHandle.getDiskPageId(memFileId, testPageId));
         page.acquireWriteLatch();
         try {
             ArrayList<Integer> values = new ArrayList<Integer>();
@@ -368,7 +369,7 @@ public class BufferCacheTest {
             //no unpin here.
         }
         //write some more stuff...
-        for (; lastRealPage<20; lastRealPage++) {
+        for (; lastRealPage < 20; lastRealPage++) {
             page = bufferCache.pin(BufferedFileHandle.getDiskPageId(fileId, lastRealPage), true);
             page.acquireWriteLatch();
             try {
@@ -385,7 +386,8 @@ public class BufferCacheTest {
             }
         }
         //now try putting the virtual page after the other pages
-        ICachedPage realPage = bufferCache.mapVirtual(testPageId, BufferedFileHandle.getDiskPageId(fileId, lastRealPage));
+        ICachedPage realPage = bufferCache.unpinVirtual(BufferedFileHandle.getDiskPageId(memFileId, testPageId),
+                BufferedFileHandle.getDiskPageId(fileId, lastRealPage));
         bufferCache.unpin(realPage);
         pageContents.put(lastRealPage, memVals);
 

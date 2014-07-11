@@ -7,17 +7,21 @@ public interface IDFSBufferCache {
 
     public void createFile(IFilePath fileRef) throws HyracksDataException;
 
+    public int createMemFile() throws HyracksDataException;
+
     public void openFile(int fileId) throws HyracksDataException;
 
     public void closeFile(int fileId) throws HyracksDataException;
 
     public void deleteFile(int fileId, boolean flushDirtyPages) throws HyracksDataException;
 
+    public void deleteMemFile(int fileId) throws HyracksDataException;
+
     public ICachedPage tryPin(long dpid) throws HyracksDataException;
 
-    public ICachedPage pinVirtual(int vid) throws HyracksDataException;
+    public ICachedPage pinVirtual(long vpid) throws HyracksDataException;
     
-    public ICachedPage mapVirtual(int vid, long dpid) throws HyracksDataException;
+    public ICachedPage unpinVirtual(long vpid, long dpid) throws HyracksDataException;
 
     public void unpin(ICachedPage page) throws HyracksDataException;
 
