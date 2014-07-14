@@ -167,15 +167,25 @@ public class DebugBufferCache implements IBufferCache {
     }
 
     @Override
-    public ICachedPage pinVirtual(int vid) throws HyracksDataException {
-        // TODO Auto-generated method stub
-        return null;
+    public int createMemFile() throws HyracksDataException {
+        return bufferCache.createMemFile();
     }
 
     @Override
-    public ICachedPage mapVirtual(int vid, long dpid) throws HyracksDataException {
-        // TODO Auto-generated method stub
-        return null;
-        
+    public void deleteMemFile(int fileId) throws HyracksDataException {
+        bufferCache.deleteMemFile(fileId); 
     }
+
+    @Override
+    public ICachedPage pinVirtual(long vpid) throws HyracksDataException {
+        pinCount.addAndGet(1);
+        return bufferCache.pinVirtual(vpid);
+    }
+
+    @Override
+    public ICachedPage unpinVirtual(long vpid, long dpid) throws HyracksDataException {
+        unpinCount.addAndGet(1);
+        return bufferCache.unpinVirtual(vpid, dpid);
+    }
+
 }

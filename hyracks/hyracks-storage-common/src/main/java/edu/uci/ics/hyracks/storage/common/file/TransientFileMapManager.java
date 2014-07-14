@@ -19,7 +19,6 @@ import java.util.Map;
 
 import edu.uci.ics.hyracks.api.exceptions.HyracksDataException;
 import edu.uci.ics.hyracks.api.io.FileReference;
-import edu.uci.ics.hyracks.api.io.IFilePath;
 
 public class TransientFileMapManager implements IFileMapManager {
     private static final long serialVersionUID = 1L;
@@ -70,39 +69,9 @@ public class TransientFileMapManager implements IFileMapManager {
     }
 
     @Override
-    public boolean isMapped(IFilePath p) {
-        // TODO Auto-generated method stub
-        return false;
-    }
-
-    @Override
-    public int lookupFileId(IFilePath p) throws HyracksDataException {
-        // TODO Auto-generated method stub
-        return 0;
-    }
-
-    @Override
-    public IFilePath lookupFilePath(int fileId) throws HyracksDataException {
-        // TODO Auto-generated method stub
-        return null;
-    }
-
-    @Override
-    public void registerDFSFile(IFilePath p) {
-        // TODO Auto-generated method stub
-        
-    }
-
-    @Override
-    public void unregisterDFSFile(IFilePath p) {
-        // TODO Auto-generated method stub
-        
-    }
-
-    @Override
     public int registerMemoryFile() {
         Integer fileId = idCounter++;
-        id2nameMap.put(fileId,null);
+        id2nameMap.put(fileId, null);
         return fileId;
     }
 }

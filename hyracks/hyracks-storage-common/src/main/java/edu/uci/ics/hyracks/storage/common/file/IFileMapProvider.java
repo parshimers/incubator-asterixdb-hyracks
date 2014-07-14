@@ -17,7 +17,6 @@ package edu.uci.ics.hyracks.storage.common.file;
 import java.io.Serializable;
 
 import edu.uci.ics.hyracks.api.exceptions.HyracksDataException;
-import edu.uci.ics.hyracks.api.io.IFilePath;
 import edu.uci.ics.hyracks.api.io.FileReference;
 
 public interface IFileMapProvider extends Serializable {
@@ -58,11 +57,5 @@ public interface IFileMapProvider extends Serializable {
      *             - If the file id is not mapped currently in this manager.
      */
     public FileReference lookupFileName(int fileId) throws HyracksDataException;
-    
-    public boolean isMapped(IFilePath p);
-    
-    public int lookupFileId(IFilePath p) throws HyracksDataException;
-    
-    public IFilePath lookupFilePath(int fileId) throws HyracksDataException;
     
 }

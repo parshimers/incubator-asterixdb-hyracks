@@ -31,7 +31,6 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import edu.uci.ics.hyracks.api.exceptions.HyracksDataException;
-import edu.uci.ics.hyracks.api.io.IFilePath;
 import edu.uci.ics.hyracks.api.io.FileReference;
 import edu.uci.ics.hyracks.api.io.IFileHandle;
 import edu.uci.ics.hyracks.api.io.IIOManager;
@@ -39,7 +38,7 @@ import edu.uci.ics.hyracks.api.lifecycle.ILifeCycleComponent;
 import edu.uci.ics.hyracks.storage.common.file.BufferedFileHandle;
 import edu.uci.ics.hyracks.storage.common.file.IFileMapManager;
 
-public class BufferCache implements IBufferCacheInternal, ILifeCycleComponent, IDFSBufferCache {
+public class BufferCache implements IBufferCacheInternal, ILifeCycleComponent {
     private static final Logger LOGGER = Logger.getLogger(BufferCache.class.getName());
     private static final int MAP_FACTOR = 2;
 
@@ -795,12 +794,6 @@ public class BufferCache implements IBufferCacheInternal, ILifeCycleComponent, I
 
     public void dumpState(OutputStream os) throws IOException {
         os.write(dumpState().getBytes());
-    }
-
-    @Override
-    public void createFile(IFilePath fileRef) throws HyracksDataException {
-        // TODO Auto-generated method stub
-
     }
 
 }

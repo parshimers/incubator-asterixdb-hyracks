@@ -15,7 +15,6 @@
 package edu.uci.ics.hyracks.storage.am.lsm.common.impls;
 
 import edu.uci.ics.hyracks.api.exceptions.HyracksDataException;
-import edu.uci.ics.hyracks.api.io.IFilePath;
 import edu.uci.ics.hyracks.api.io.FileReference;
 import edu.uci.ics.hyracks.storage.am.lsm.common.api.IVirtualBufferCache;
 import edu.uci.ics.hyracks.storage.common.buffercache.ICachedPage;
@@ -115,16 +114,28 @@ public class MultitenantVirtualBufferCache implements IVirtualBufferCache {
     public IFileMapManager getFileMapProvider() {
         return vbc.getFileMapProvider();
     }
+    //These 4 methods are not applicable here
+    @Override
+    public int createMemFile() throws HyracksDataException {
+        // TODO Auto-generated method stub
+        return 0;
+    }
+    @Override
+    public void deleteMemFile(int fileId) throws HyracksDataException {
+        // TODO Auto-generated method stub
+        
+    }
 
     @Override
-    public ICachedPage pinVirtual(int vid) throws HyracksDataException {
+    public ICachedPage pinVirtual(long vpid) throws HyracksDataException {
         // TODO Auto-generated method stub
         return null;
     }
 
     @Override
-    public ICachedPage mapVirtual(int vid, long dpid) throws HyracksDataException {
+    public ICachedPage unpinVirtual(long vpid, long dpid) throws HyracksDataException {
         // TODO Auto-generated method stub
-       return null;
+        return null;
     }
+
 }
