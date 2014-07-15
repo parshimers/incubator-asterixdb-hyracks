@@ -74,4 +74,9 @@ public class TransientFileMapManager implements IFileMapManager {
         id2nameMap.put(fileId, null);
         return fileId;
     }
+
+    @Override
+    public void unregisterMemFile(int fileId) throws HyracksDataException {
+        id2nameMap.remove(fileId);
+    }
 }

@@ -83,8 +83,6 @@ public class BufferCache implements IBufferCacheInternal, ILifeCycleComponent {
         closed = false;
     }
 
-    //TODO: insert DFS constructor
-
     @Override
     public int getPageSize() {
         return pageSize;
@@ -571,7 +569,7 @@ public class BufferCache implements IBufferCacheInternal, ILifeCycleComponent {
             LOGGER.info("Creating file: " + fileRef + " in cache: " + this);
         }
         synchronized (fileInfoMap) {
-            fileMapManager.registerFile((FileReference) fileRef);
+            fileMapManager.registerFile(fileRef);
         }
     }
 
@@ -771,7 +769,9 @@ public class BufferCache implements IBufferCacheInternal, ILifeCycleComponent {
         synchronized (virtualFiles) {
             virtualFiles.remove(fileId);
         }
-        fileMapManager.unregisterFile(fileId);
+        synchronized(fileInfoMap){
+            fileMapManager.unregisterMemFile(fileId);
+        }
     }
 
     @Override
