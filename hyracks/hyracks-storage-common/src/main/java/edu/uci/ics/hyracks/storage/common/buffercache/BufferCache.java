@@ -114,7 +114,7 @@ public class BufferCache implements IBufferCacheInternal, ILifeCycleComponent {
     @Override
     public ICachedPage tryPin(long dpid) throws HyracksDataException {
         // Calling the pinSanityCheck should be used only for debugging, since the synchronized block over the fileInfoMap is a hot spot.
-        pinSanityCheck(dpid);
+        //pinSanityCheck(dpid);
         CachedPage cPage = null;
         int hash = hash(dpid);
         CacheBucket bucket = pageMap[hash];
@@ -138,7 +138,7 @@ public class BufferCache implements IBufferCacheInternal, ILifeCycleComponent {
     @Override
     public ICachedPage pin(long dpid, boolean newPage) throws HyracksDataException {
         // Calling the pinSanityCheck should be used only for debugging, since the synchronized block over the fileInfoMap is a hot spot.
-        pinSanityCheck(dpid);
+        //pinSanityCheck(dpid);
         CachedPage cPage = findPage(dpid, false);
         if (!newPage) {
             // Resolve race of multiple threads trying to read the page from
@@ -161,7 +161,7 @@ public class BufferCache implements IBufferCacheInternal, ILifeCycleComponent {
      * Allocate and pin a virtual page. This is just like a normal page, except that it will never be flushed.
      */
     public ICachedPage pinVirtual(long vpid) throws HyracksDataException {
-        pinSanityCheck(vpid);
+        //pinSanityCheck(vpid);
         CachedPage cPage = findPage(vpid, true);
         cPage.virtual = true;
         return cPage;
@@ -175,7 +175,7 @@ public class BufferCache implements IBufferCacheInternal, ILifeCycleComponent {
     //safer/easier for now. 
     public ICachedPage unpinVirtual(long vpid, long dpid) throws HyracksDataException {
         CachedPage virtPage = findPage(vpid, true); //should definitely succeed. 
-        pinSanityCheck(dpid); //debug
+        //pinSanityCheck(dpid); //debug
         ICachedPage realPage = pin(dpid, false);
         virtPage.acquireReadLatch();
         realPage.acquireWriteLatch();
