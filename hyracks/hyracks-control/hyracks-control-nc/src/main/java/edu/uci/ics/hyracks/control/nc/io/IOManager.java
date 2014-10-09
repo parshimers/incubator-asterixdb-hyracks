@@ -95,6 +95,14 @@ public class IOManager implements IIOManager {
                 offset += len;
                 n += len;
             }
+            //*************************DEBUG - REMOVE ME*****************************************
+            //disable it right now
+            if (false) {
+                if (offset > ((FileHandle) fHandle).DEBUG_highOffset)
+                    System.out.println("Wrote offset " + offset + " before " + ((FileHandle) fHandle).DEBUG_highOffset);
+                ((FileHandle) fHandle).DEBUG_highOffset = offset;
+            }
+            //*************************DEBUG - REMOVE ME*****************************************
             return n;
         } catch (HyracksDataException e) {
             throw e;
