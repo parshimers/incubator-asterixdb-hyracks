@@ -18,6 +18,7 @@ package edu.uci.ics.hyracks.storage.am.rtree.util;
 import edu.uci.ics.hyracks.api.dataflow.value.IBinaryComparator;
 import edu.uci.ics.hyracks.api.dataflow.value.IBinaryComparatorFactory;
 import edu.uci.ics.hyracks.api.dataflow.value.ITypeTraits;
+import edu.uci.ics.hyracks.api.exceptions.HyracksDataException;
 import edu.uci.ics.hyracks.api.io.FileReference;
 import edu.uci.ics.hyracks.data.std.api.IPointableFactory;
 import edu.uci.ics.hyracks.dataflow.common.data.accessors.ITupleReference;
@@ -40,7 +41,7 @@ import edu.uci.ics.hyracks.storage.common.file.IFileMapProvider;
 public class RTreeUtils {
     public static RTree createRTree(IBufferCache bufferCache, IFileMapProvider fileMapProvider,
             ITypeTraits[] typeTraits, IPrimitiveValueProviderFactory[] valueProviderFactories,
-            IBinaryComparatorFactory[] cmpFactories, RTreePolicyType rtreePolicyType, FileReference file) {
+            IBinaryComparatorFactory[] cmpFactories, RTreePolicyType rtreePolicyType, FileReference file) throws HyracksDataException {
 
         RTreeTypeAwareTupleWriterFactory tupleWriterFactory = new RTreeTypeAwareTupleWriterFactory(typeTraits);
         ITreeIndexFrameFactory interiorFrameFactory = new RTreeNSMInteriorFrameFactory(tupleWriterFactory,
@@ -49,7 +50,7 @@ public class RTreeUtils {
                 valueProviderFactories, rtreePolicyType);
         ITreeIndexMetaDataFrameFactory metaFrameFactory = new LIFOMetaDataFrameFactory();
 
-        IFreePageManager freePageManager = new LinkedListFreePageManager(bufferCache, 0, metaFrameFactory);
+        IFreePageManager freePageManager = new LinkedListFreePageManager(bufferCache, metaFrameFactory);
         RTree rtree = new RTree(bufferCache, fileMapProvider, freePageManager, interiorFrameFactory, leafFrameFactory,
                 cmpFactories, typeTraits.length, file);
         return rtree;

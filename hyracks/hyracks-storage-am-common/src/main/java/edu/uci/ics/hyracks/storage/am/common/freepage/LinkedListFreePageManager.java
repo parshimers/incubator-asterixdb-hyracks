@@ -27,15 +27,14 @@ public class LinkedListFreePageManager implements IFreePageManager {
 	private static final byte META_PAGE_LEVEL_INDICATOR = -1;
 	private static final byte FREE_PAGE_LEVEL_INDICATOR = -2;
 	private final IBufferCache bufferCache;
-	private final int headPage;	
+	private int headPage = -1;	
 	private int fileId = -1;
 	private final ITreeIndexMetaDataFrameFactory metaDataFrameFactory;
 
 	public LinkedListFreePageManager(IBufferCache bufferCache,
-			int headPage, ITreeIndexMetaDataFrameFactory metaDataFrameFactory) {
+			ITreeIndexMetaDataFrameFactory metaDataFrameFactory) throws HyracksDataException {
 		this.bufferCache = bufferCache;
-		this.headPage = headPage;
-		this.metaDataFrameFactory = metaDataFrameFactory;
+        this.metaDataFrameFactory = metaDataFrameFactory;
 	}
 
 	@Override
@@ -43,7 +42,7 @@ public class LinkedListFreePageManager implements IFreePageManager {
 			throws HyracksDataException {
 
 		ICachedPage metaNode = bufferCache.pin(
-				BufferedFileHandle.getDiskPageId(fileId, headPage), false);
+				BufferedFileHandle.getDiskPageId(fileId, getHeadPage()), false);
 		metaNode.acquireWriteLatch();
 
 		try {
@@ -93,7 +92,7 @@ public class LinkedListFreePageManager implements IFreePageManager {
 	public int getFreePage(ITreeIndexMetaDataFrame metaFrame)
 			throws HyracksDataException {
 		ICachedPage metaNode = bufferCache.pin(
-				BufferedFileHandle.getDiskPageId(fileId, headPage), false);
+				BufferedFileHandle.getDiskPageId(fileId, getHeadPage()), false);
 
 		metaNode.acquireWriteLatch();
 
@@ -157,7 +156,7 @@ public class LinkedListFreePageManager implements IFreePageManager {
 	public int getMaxPage(ITreeIndexMetaDataFrame metaFrame)
 			throws HyracksDataException {
 		ICachedPage metaNode = bufferCache.pin(
-				BufferedFileHandle.getDiskPageId(fileId, headPage), false);
+				BufferedFileHandle.getDiskPageId(fileId, getHeadPage()), false);
 		metaNode.acquireWriteLatch();
 		int maxPage = -1;
 		try {
@@ -175,7 +174,7 @@ public class LinkedListFreePageManager implements IFreePageManager {
 			throws HyracksDataException {
 		// initialize meta data page
 		ICachedPage metaNode = bufferCache.pin(
-				BufferedFileHandle.getDiskPageId(fileId, headPage), true);
+				BufferedFileHandle.getDiskPageId(fileId, getHeadPage()), true);
 
 		metaNode.acquireWriteLatch();
 		try {
@@ -227,4 +226,37 @@ public class LinkedListFreePageManager implements IFreePageManager {
 	public void close() {
 		fileId = -1;
 	}
+
+	/**
+	 * For storage on append-only media (such as HDFS), the meta data page has to be written last.
+	 * However, some implementations still write the meta data to the front. To deal with this as well
+	 * as to provide downward compatibility, this method tries to find the meta data page first in the
+	 * last and then in the first page of the file.
+	 * @return The Id of the page holding the meta data
+	 * @throws HyracksDataException
+	 */
+    protected int getHeadPage() throws HyracksDataException {
+        if(headPage != -1) return headPage;
+            
+        ITreeIndexMetaDataFrame metaFrame = metaDataFrameFactory.createFrame();
+        
+        int pages = bufferCache.getNumPagesOfFile(fileId);
+        for(int page = pages - 1; page >= 0; page -= pages - 1) {
+            ICachedPage metaNode = bufferCache.pin(
+                    BufferedFileHandle.getDiskPageId(fileId, page), false);
+            try {
+                metaNode.acquireReadLatch();
+                metaFrame.setPage(metaNode);
+        
+                if(isMetaPage(metaFrame)) {
+                    headPage = page;
+                    return headPage;
+                }
+            } finally {
+                metaNode.releaseReadLatch();
+                bufferCache.unpin(metaNode);
+            }
+        }
+        return 0;//throw new HyracksDataException("Cannot find meta page");
+    }
 }

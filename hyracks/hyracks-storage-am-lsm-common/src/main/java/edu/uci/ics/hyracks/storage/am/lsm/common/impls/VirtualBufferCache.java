@@ -365,4 +365,9 @@ public class VirtualBufferCache implements IVirtualBufferCache {
         // TODO Auto-generated method stub
         return null;
     }
+
+    @Override
+    public int getNumPagesOfFile(int fileId) throws HyracksDataException {
+        throw new UnsupportedOperationException();
+    }
 }

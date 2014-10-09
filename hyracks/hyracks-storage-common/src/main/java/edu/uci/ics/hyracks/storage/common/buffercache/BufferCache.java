@@ -824,4 +824,16 @@ public class BufferCache implements IBufferCacheInternal, ILifeCycleComponent {
         os.write(dumpState().getBytes());
     }
 
+    @Override
+    public int getNumPagesOfFile(int fileId) throws HyracksDataException {
+        synchronized (fileInfoMap) {
+            BufferedFileHandle fInfo = fileInfoMap.get(fileId);
+            if (fInfo == null) {
+                throw new HyracksDataException("No such file mapped");
+            }
+            assert ioManager.getSize(fInfo.getFileHandle()) % getPageSize() == 0;
+            return (int) (ioManager.getSize(fInfo.getFileHandle()) / getPageSize());
+        }
+    }
+
 }

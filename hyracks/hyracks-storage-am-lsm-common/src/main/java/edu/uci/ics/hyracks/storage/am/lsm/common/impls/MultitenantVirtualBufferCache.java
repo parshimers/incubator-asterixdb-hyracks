@@ -141,4 +141,8 @@ public class MultitenantVirtualBufferCache implements IVirtualBufferCache {
         return null;
     }
 
+    @Override
+    public int getNumPagesOfFile(int fileId) throws HyracksDataException {
+        throw new UnsupportedOperationException();
+    }
 }

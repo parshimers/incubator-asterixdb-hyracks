@@ -31,7 +31,7 @@ class CachedPage implements ICachedPageInternal {
     final ReadWriteLock latch;
     private final Object replacementStrategyObject;
     private final IPageReplacementStrategy pageReplacementStrategy;
-    volatile long dpid;
+    volatile long dpid; // disk page id (composed of file id and page id)
     CachedPage next;
     volatile boolean valid;
     volatile boolean virtual;

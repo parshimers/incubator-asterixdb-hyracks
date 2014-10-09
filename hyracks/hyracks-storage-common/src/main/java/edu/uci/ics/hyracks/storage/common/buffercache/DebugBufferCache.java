@@ -188,4 +188,9 @@ public class DebugBufferCache implements IBufferCache {
         return bufferCache.unpinVirtual(vpid, dpid);
     }
 
+    @Override
+    public int getNumPagesOfFile(int fileId) throws HyracksDataException {
+        return bufferCache.getNumPagesOfFile(fileId);
+    }
+
 }

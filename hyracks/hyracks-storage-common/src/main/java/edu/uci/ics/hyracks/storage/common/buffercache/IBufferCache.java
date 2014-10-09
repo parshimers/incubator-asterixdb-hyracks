@@ -48,6 +48,8 @@ public interface IBufferCache {
     public int getPageSize();
 
     public int getNumPages();
+    
+    public int getNumPagesOfFile(int fileId) throws HyracksDataException;
 
     public void close() throws HyracksDataException;
 }

@@ -16,6 +16,7 @@
 package edu.uci.ics.hyracks.storage.am.lsm.rtree.impls;
 
 import edu.uci.ics.hyracks.api.dataflow.value.IBinaryComparatorFactory;
+import edu.uci.ics.hyracks.api.exceptions.HyracksDataException;
 import edu.uci.ics.hyracks.api.io.FileReference;
 import edu.uci.ics.hyracks.storage.am.common.api.IFreePageManagerFactory;
 import edu.uci.ics.hyracks.storage.am.common.api.ITreeIndexFrameFactory;
@@ -36,8 +37,12 @@ public class RTreeFactory extends TreeIndexFactory<RTree> {
 
     @Override
     public RTree createIndexInstance(FileReference file) throws IndexException {
-        return new RTree(bufferCache, fileMapProvider, freePageManagerFactory.createFreePageManager(),
-                interiorFrameFactory, leafFrameFactory, cmpFactories, fieldCount, file);
+        try {
+            return new RTree(bufferCache, fileMapProvider, freePageManagerFactory.createFreePageManager(),
+                    interiorFrameFactory, leafFrameFactory, cmpFactories, fieldCount, file);
+        } catch (HyracksDataException e) {
+            throw new IndexException(e);
+        }
     }
 
 }
