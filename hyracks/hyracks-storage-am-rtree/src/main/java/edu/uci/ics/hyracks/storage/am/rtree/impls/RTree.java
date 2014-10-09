@@ -153,8 +153,8 @@ public class RTree extends AbstractTreeIndex {
     private void insert(ITupleReference tuple, IIndexOperationContext ictx) throws HyracksDataException,
             TreeIndexException {
         RTreeOpContext ctx = (RTreeOpContext) ictx;
-        int tupleSize = Math.max(ctx.leafFrame.getBytesRequriedToWriteTuple(tuple),
-                ctx.interiorFrame.getBytesRequriedToWriteTuple(tuple));
+        int tupleSize = Math.max(ctx.leafFrame.getBytesRequiredToWriteTuple(tuple),
+                ctx.interiorFrame.getBytesRequiredToWriteTuple(tuple));
         if (tupleSize > maxTupleSize) {
             throw new TreeIndexException("Record size (" + tupleSize + ") larger than maximum acceptable record size ("
                     + maxTupleSize + ")");
@@ -884,8 +884,8 @@ public class RTree extends AbstractTreeIndex {
         @Override
         public void add(ITupleReference tuple) throws IndexException, HyracksDataException {
             try {
-                int tupleSize = Math.max(leafFrame.getBytesRequriedToWriteTuple(tuple),
-                        interiorFrame.getBytesRequriedToWriteTuple(tuple));
+                int tupleSize = Math.max(leafFrame.getBytesRequiredToWriteTuple(tuple),
+                        interiorFrame.getBytesRequiredToWriteTuple(tuple));
                 if (tupleSize > maxTupleSize) {
                     throw new TreeIndexException("Space required for record (" + tupleSize
                             + ") larger than maximum acceptable size (" + maxTupleSize + ")");

@@ -311,8 +311,8 @@ public class BTree extends AbstractTreeIndex {
     }
 
     private void insert(ITupleReference tuple, BTreeOpContext ctx) throws HyracksDataException, TreeIndexException {
-        int tupleSize = Math.max(ctx.leafFrame.getBytesRequriedToWriteTuple(tuple),
-                ctx.interiorFrame.getBytesRequriedToWriteTuple(tuple));
+        int tupleSize = Math.max(ctx.leafFrame.getBytesRequiredToWriteTuple(tuple),
+                ctx.interiorFrame.getBytesRequiredToWriteTuple(tuple));
         if (tupleSize > maxTupleSize) {
             throw new TreeIndexException("Space required for record (" + tupleSize
                     + ") larger than maximum acceptable size (" + maxTupleSize + ")");
@@ -322,8 +322,8 @@ public class BTree extends AbstractTreeIndex {
     }
 
     private void upsert(ITupleReference tuple, BTreeOpContext ctx) throws HyracksDataException, TreeIndexException {
-        int tupleSize = Math.max(ctx.leafFrame.getBytesRequriedToWriteTuple(tuple),
-                ctx.interiorFrame.getBytesRequriedToWriteTuple(tuple));
+        int tupleSize = Math.max(ctx.leafFrame.getBytesRequiredToWriteTuple(tuple),
+                ctx.interiorFrame.getBytesRequiredToWriteTuple(tuple));
         if (tupleSize > maxTupleSize) {
             throw new TreeIndexException("Space required for record (" + tupleSize
                     + ") larger than maximum acceptable size (" + maxTupleSize + ")");
@@ -339,8 +339,8 @@ public class BTree extends AbstractTreeIndex {
         if (fieldCount == ctx.cmp.getKeyFieldCount()) {
             throw new BTreeNotUpdateableException("Cannot perform updates when the entire tuple forms the key.");
         }
-        int tupleSize = Math.max(ctx.leafFrame.getBytesRequriedToWriteTuple(tuple),
-                ctx.interiorFrame.getBytesRequriedToWriteTuple(tuple));
+        int tupleSize = Math.max(ctx.leafFrame.getBytesRequiredToWriteTuple(tuple),
+                ctx.interiorFrame.getBytesRequiredToWriteTuple(tuple));
         if (tupleSize > maxTupleSize) {
             throw new TreeIndexException("Space required for record (" + tupleSize
                     + ") larger than maximum acceptable size (" + maxTupleSize + ")");
@@ -958,8 +958,8 @@ public class BTree extends AbstractTreeIndex {
         @Override
         public void add(ITupleReference tuple) throws IndexException, HyracksDataException {
             try {
-                int tupleSize = Math.max(leafFrame.getBytesRequriedToWriteTuple(tuple),
-                        interiorFrame.getBytesRequriedToWriteTuple(tuple));
+                int tupleSize = Math.max(leafFrame.getBytesRequiredToWriteTuple(tuple),
+                        interiorFrame.getBytesRequiredToWriteTuple(tuple));
                 if (tupleSize > maxTupleSize) {
                     throw new TreeIndexException("Space required for record (" + tupleSize
                             + ") larger than maximum acceptable size (" + maxTupleSize + ")");

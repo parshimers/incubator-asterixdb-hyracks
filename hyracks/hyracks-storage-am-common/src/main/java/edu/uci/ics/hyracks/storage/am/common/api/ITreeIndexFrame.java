@@ -61,7 +61,7 @@ public interface ITreeIndexFrame {
 
     public int getMaxTupleSize(int pageSize);
 
-    public int getBytesRequriedToWriteTuple(ITupleReference tuple);
+    public int getBytesRequiredToWriteTuple(ITupleReference tuple);
 
     // for debugging
     public String printHeader();

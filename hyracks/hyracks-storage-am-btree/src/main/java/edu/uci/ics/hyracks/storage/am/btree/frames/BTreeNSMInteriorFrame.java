@@ -54,7 +54,7 @@ public class BTreeNSMInteriorFrame extends TreeIndexNSMFrame implements IBTreeIn
     }
 
     @Override
-    public int getBytesRequriedToWriteTuple(ITupleReference tuple) {
+    public int getBytesRequiredToWriteTuple(ITupleReference tuple) {
         return tupleWriter.bytesRequired(tuple) + childPtrSize + slotManager.getSlotSize();
     }
 
