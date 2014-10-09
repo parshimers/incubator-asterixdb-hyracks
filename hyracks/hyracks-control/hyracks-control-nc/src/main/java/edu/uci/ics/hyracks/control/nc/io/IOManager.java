@@ -243,4 +243,9 @@ public class IOManager implements IIOManager {
             throw new HyracksDataException(e);
         }
     }
+
+    @Override
+    public long getSize(IFileHandle fileHandle) {
+        return ((FileHandle) fileHandle).getFileReference().getFile().length();
+    }
 }
