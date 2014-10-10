@@ -836,4 +836,9 @@ public class BufferCache implements IBufferCacheInternal, ILifeCycleComponent {
         }
     }
 
+    @Override
+    public void adviseWontNeed(ICachedPage page) {
+        pageReplacementStrategy.adviseWontNeed((ICachedPageInternal) page);
+    }
+
 }

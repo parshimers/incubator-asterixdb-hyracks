@@ -139,4 +139,12 @@ public class ClockPageReplacementStrategy implements IPageReplacementStrategy {
     public int getMaxAllowedNumPages() {
         return maxAllowedNumPages;
     }
+
+    @Override
+    public void adviseWontNeed(ICachedPageInternal cPage) {
+        getPerPageObject(cPage).set(false);
+        lock.lock();
+        clockPtr = cPage.getCachedPageId();
+        lock.unlock();
+    }
 }

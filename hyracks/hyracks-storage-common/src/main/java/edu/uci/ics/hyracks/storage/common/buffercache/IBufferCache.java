@@ -43,6 +43,8 @@ public interface IBufferCache {
 
     public void flushDirtyPage(ICachedPage page) throws HyracksDataException;
 
+    public void adviseWontNeed(ICachedPage page);
+
     public void force(int fileId, boolean metadata) throws HyracksDataException;
 
     public int getPageSize();

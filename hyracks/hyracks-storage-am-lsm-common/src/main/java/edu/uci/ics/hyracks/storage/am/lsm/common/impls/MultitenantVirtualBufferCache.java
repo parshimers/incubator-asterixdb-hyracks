@@ -14,6 +14,9 @@
  */
 package edu.uci.ics.hyracks.storage.am.lsm.common.impls;
 
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
 import edu.uci.ics.hyracks.api.exceptions.HyracksDataException;
 import edu.uci.ics.hyracks.api.io.FileReference;
 import edu.uci.ics.hyracks.storage.am.lsm.common.api.IVirtualBufferCache;
@@ -21,6 +24,7 @@ import edu.uci.ics.hyracks.storage.common.buffercache.ICachedPage;
 import edu.uci.ics.hyracks.storage.common.file.IFileMapManager;
 
 public class MultitenantVirtualBufferCache implements IVirtualBufferCache {
+    private static final Logger LOGGER = Logger.getLogger(ExternalIndexHarness.class.getName());
 
     private final IVirtualBufferCache vbc;
     private int openCount;
@@ -144,5 +148,13 @@ public class MultitenantVirtualBufferCache implements IVirtualBufferCache {
     @Override
     public int getNumPagesOfFile(int fileId) throws HyracksDataException {
         throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public void adviseWontNeed(ICachedPage page) {
+        if (LOGGER.isLoggable(Level.INFO)) {
+            LOGGER.log(Level.INFO, "Calling adviseWontNeed on " + this.getClass().getName()
+                    + " makes no sense as this BufferCache cannot evict pages");
+        }
     }
 }
