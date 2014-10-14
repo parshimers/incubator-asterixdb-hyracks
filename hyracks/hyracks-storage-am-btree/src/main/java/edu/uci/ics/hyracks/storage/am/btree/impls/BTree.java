@@ -975,7 +975,7 @@ public class BTree extends AbstractTreeIndex {
                     leafFrame.compress();
                     spaceUsed = leafFrame.getBuffer().capacity() - leafFrame.getTotalFreeSpace();
                 }
-
+                //full, allocate new page
                 if (spaceUsed + spaceNeeded > leafMaxBytes) {
                     leafFrontier.lastTuple.resetByTupleIndex(leafFrame, leafFrame.getTupleCount() - 1);
                     if (verifyInput) {
@@ -994,7 +994,7 @@ public class BTree extends AbstractTreeIndex {
                     bufferCache.unpin(leafFrontier.page);
 
                     splitKey.setRightPage(leafFrontier.pageId);
-                    propagateBulk(1);
+                    propagateBulk(1, false);
 
                     leafFrontier.page = bufferCache.pin(BufferedFileHandle.getDiskPageId(fileId, leafFrontier.pageId),
                             true);
@@ -1011,13 +1011,13 @@ public class BTree extends AbstractTreeIndex {
                 leafFrame.setPage(leafFrontier.page);
                 ((IBTreeLeafFrame) leafFrame).insertSorted(tuple);
             } catch (IndexException e) {
-                handleException();
+                //    handleException();
                 throw e;
             } catch (HyracksDataException e) {
-                handleException();
+                //    handleException();
                 throw e;
             } catch (RuntimeException e) {
-                handleException();
+                //    handleException();
                 throw e;
             }
         }
@@ -1034,7 +1034,11 @@ public class BTree extends AbstractTreeIndex {
             }
         }
 
-        protected void propagateBulk(int level) throws HyracksDataException {
+        protected void rewriteSplitKey(int left, int right) {
+
+        }
+
+        protected void propagateBulk(int level, boolean finalize) throws HyracksDataException {
             if (splitKey.getBuffer() == null)
                 return;
 
@@ -1058,25 +1062,77 @@ public class BTree extends AbstractTreeIndex {
                 tupleWriter.writeTupleFields(frontier.lastTuple, 0, cmp.getKeyFieldCount(), splitKey.getBuffer()
                         .array(), 0);
                 splitKey.getTuple().resetByTupleOffset(splitKey.getBuffer(), 0);
-                splitKey.setLeftPage(frontier.pageId);
+                if (finalizedNodeFrontiers.get(level) != null) {
+                    splitKey.setLeftPage(finalizedNodeFrontiers.get(level));
+                }
 
                 ((IBTreeInteriorFrame) interiorFrame).deleteGreatest();
 
                 frontier.page.releaseWriteLatch(true);
-                bufferCache.unpin(frontier.page);
-                frontier.pageId = freePageManager.getFreePage(metaFrame);
-
-                splitKey.setRightPage(frontier.pageId);
-                propagateBulk(level + 1);
-
-                frontier.page = bufferCache.pin(BufferedFileHandle.getDiskPageId(fileId, frontier.pageId), true);
+                int finalPageId = freePageManager.getFreePage(metaFrame);
+                ICachedPage realPage = bufferCache.unpinVirtual(frontier.page,
+                        BufferedFileHandle.getDiskPageId(fileId, finalPageId));
+                bufferCache.unpin(realPage);
+                frontier.pageId = ++virtualPageIncrement;
+                splitKey.setRightPage(finalPageId);
+                frontier.page = bufferCache.pin(BufferedFileHandle.getDiskPageId(virtualFileId, frontier.pageId), true);
                 frontier.page.acquireWriteLatch();
                 interiorFrame.setPage(frontier.page);
                 interiorFrame.initBuffer((byte) level);
+                if (!finalizedNodeFrontiers.containsKey(level)) {
+                    finalizedNodeFrontiers.put(level, finalPageId);
+                } else if (finalize && finalizedNodeFrontiers.containsKey(level)) {
+                    propagateBulk(level, finalize);
+                } else {
+                    propagateBulk(level + 1, finalize);
+                    finalizedNodeFrontiers.put(level, finalPageId);
+                }
+
             }
             ((IBTreeInteriorFrame) interiorFrame).insertSorted(tuple);
         }
 
+        @Override
+        public void end() throws HyracksDataException {
+            //first advance the bulk propagation
+            propagateBulk(1, true);
+            ICachedPage newRoot = bufferCache.pin(BufferedFileHandle.getDiskPageId(fileId, rootPage), true);
+            newRoot.acquireWriteLatch();
+            NodeFrontier lastNodeFrontier = nodeFrontiers.get(nodeFrontiers.size() - 1);
+            try {
+                System.arraycopy(lastNodeFrontier.page.getBuffer().array(), 0, newRoot.getBuffer().array(), 0,
+                        lastNodeFrontier.page.getBuffer().capacity());
+            } finally {
+                newRoot.releaseWriteLatch(true);
+                bufferCache.unpin(newRoot);
+
+                // register old root as a free page
+                freePageManager.addFreePage(metaFrame, lastNodeFrontier.pageId);
+
+                if (!releasedLatches) {
+                    for (int i = 0; i < nodeFrontiers.size(); i++) {
+                        try {
+                            nodeFrontiers.get(i).page.releaseWriteLatch(true);
+                        } catch (Exception e) {
+                            //ignore illegal monitor state exception
+                        }
+                        if (i > 0) { //do not attempt to remap non-virtual leaves
+                            ICachedPage front = nodeFrontiers.get(i).page;
+                            if (!bufferCache.isVirtual(front)) {
+                                continue;
+                            }
+                            int finalPageId = freePageManager.getFreePage(metaFrame);
+                            ICachedPage realPage = bufferCache.unpinVirtual(nodeFrontiers.get(i).page,
+                                    BufferedFileHandle.getDiskPageId(fileId, finalPageId));
+                            bufferCache.unpin(realPage);
+                            if (i < nodeFrontiers.size() - 1 && finalizedNodeFrontiers.size() != 0) {
+                                finalizedNodeFrontiers.put(i, finalPageId); //this is only useful for interiors at level-1 or lower
+                            }
+                        }
+                    }
+                }
+            }
+        }
     }
 
     @SuppressWarnings("rawtypes")

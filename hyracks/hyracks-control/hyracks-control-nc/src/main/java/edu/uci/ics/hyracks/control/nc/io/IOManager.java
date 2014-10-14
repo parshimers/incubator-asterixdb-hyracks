@@ -97,7 +97,7 @@ public class IOManager implements IIOManager {
             }
             //*************************DEBUG - REMOVE ME*****************************************
             //disable it right now
-            if (false) {
+            if (true) {
                 if (offset > ((FileHandle) fHandle).DEBUG_highOffset)
                     System.out.println("Wrote offset " + offset + " before " + ((FileHandle) fHandle).DEBUG_highOffset);
                 ((FileHandle) fHandle).DEBUG_highOffset = offset;

@@ -16,6 +16,8 @@
 package edu.uci.ics.hyracks.storage.am.common.impls;
 
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
 
 import edu.uci.ics.hyracks.api.dataflow.value.IBinaryComparatorFactory;
 import edu.uci.ics.hyracks.api.exceptions.HyracksDataException;
@@ -248,11 +250,15 @@ public abstract class AbstractTreeIndex implements ITreeIndex {
         protected final int leafMaxBytes;
         protected final int interiorMaxBytes;
         protected final ArrayList<NodeFrontier> nodeFrontiers = new ArrayList<NodeFrontier>();
+        //n-1 interior nodes for sequential bulkload
+        protected final Map<Integer, Integer> finalizedNodeFrontiers = new HashMap<Integer, Integer>();
         protected final ITreeIndexMetaDataFrame metaFrame;
         protected final ITreeIndexTupleWriter tupleWriter;
         protected ITreeIndexFrame leafFrame;
         protected ITreeIndexFrame interiorFrame;
-        private boolean releasedLatches;
+        protected boolean releasedLatches;
+        protected int virtualFileId = bufferCache.createMemFile();
+        protected int virtualPageIncrement = 0;
 
         public AbstractTreeIndexBulkLoader(float fillFactor) throws TreeIndexException, HyracksDataException {
             leafFrame = leafFrameFactory.createFrame();
@@ -272,6 +278,7 @@ public abstract class AbstractTreeIndex implements ITreeIndex {
 
             NodeFrontier leafFrontier = new NodeFrontier(leafFrame.createTupleReference());
             leafFrontier.pageId = freePageManager.getFreePage(metaFrame);
+            //leafFrontier.pageId = ++virtualPageIncrement;
             leafFrontier.page = bufferCache.pin(BufferedFileHandle.getDiskPageId(fileId, leafFrontier.pageId), true);
             leafFrontier.page.acquireWriteLatch();
 
@@ -293,7 +300,11 @@ public abstract class AbstractTreeIndex implements ITreeIndex {
             // Unlatch and unpin pages.
             for (NodeFrontier nodeFrontier : nodeFrontiers) {
                 nodeFrontier.page.releaseWriteLatch(true);
-                bufferCache.unpin(nodeFrontier.page);
+                int finalPageId = freePageManager.getFreePage(metaFrame);
+                ICachedPage realPage = bufferCache.unpinVirtual(nodeFrontier.page,
+                        BufferedFileHandle.getDiskPageId(fileId, finalPageId));
+                bufferCache.unpin(realPage);
+                finalizedNodeFrontiers.put(nodeFrontiers.indexOf(nodeFrontier), finalPageId);
             }
             releasedLatches = true;
         }
@@ -301,6 +312,7 @@ public abstract class AbstractTreeIndex implements ITreeIndex {
         @Override
         public void end() throws HyracksDataException {
             // copy the root generated from the bulk-load to *the* root page location
+            //TODO: we have to determine if we want to do this (non-LSM tree) or not (LSM disk component)
             ICachedPage newRoot = bufferCache.pin(BufferedFileHandle.getDiskPageId(fileId, rootPage), true);
             newRoot.acquireWriteLatch();
             NodeFrontier lastNodeFrontier = nodeFrontiers.get(nodeFrontiers.size() - 1);
@@ -321,7 +333,15 @@ public abstract class AbstractTreeIndex implements ITreeIndex {
                         } catch (Exception e) {
                             //ignore illegal monitor state exception
                         }
-                        bufferCache.unpin(nodeFrontiers.get(i).page);
+                        if (i > 0) { //do not attempt to remap non-virtual leaves
+                            int finalPageId = freePageManager.getFreePage(metaFrame);
+                            ICachedPage realPage = bufferCache.unpinVirtual(nodeFrontiers.get(i).page,
+                                    BufferedFileHandle.getDiskPageId(fileId, finalPageId));
+                            bufferCache.unpin(realPage);
+                            if (i < nodeFrontiers.size() - 1 && finalizedNodeFrontiers.size() != 0) {
+                                finalizedNodeFrontiers.put(i, finalPageId); //this is only useful for interiors at level-1 or lower
+                            }
+                        }
                     }
                 }
             }
@@ -329,8 +349,9 @@ public abstract class AbstractTreeIndex implements ITreeIndex {
 
         protected void addLevel() throws HyracksDataException {
             NodeFrontier frontier = new NodeFrontier(tupleWriter.createTupleReference());
-            frontier.pageId = freePageManager.getFreePage(metaFrame);
-            frontier.page = bufferCache.pin(BufferedFileHandle.getDiskPageId(fileId, frontier.pageId), true);
+            //frontier.pageId = freePageManager.getFreePage(metaFrame);
+            frontier.pageId = ++virtualPageIncrement;
+            frontier.page = bufferCache.pinVirtual(BufferedFileHandle.getDiskPageId(virtualFileId, frontier.pageId));
             frontier.page.acquireWriteLatch();
             frontier.lastTuple.setFieldCount(cmp.getKeyFieldCount());
             interiorFrame.setPage(frontier.page);
@@ -379,7 +400,7 @@ public abstract class AbstractTreeIndex implements ITreeIndex {
     public IBinaryComparatorFactory[] getCmpFactories() {
         return cmpFactories;
     }
-    
+
     @Override
     public boolean hasMemoryComponents() {
         return true;

@@ -53,6 +53,7 @@ class CachedPage implements ICachedPageInternal {
         this.dpid = dpid;
         dirty.set(false);
         valid = false;
+        pinCount.set(0);
         pageReplacementStrategy.notifyCachePageReset(this);
     }
 

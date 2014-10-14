@@ -18,10 +18,10 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.HashSet;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
@@ -55,7 +55,7 @@ public class BufferCache implements IBufferCacheInternal, ILifeCycleComponent {
     private final CleanerThread cleanerThread;
     private final Map<Integer, BufferedFileHandle> fileInfoMap;
     private final Set<Integer> virtualFiles;
-    
+
     private final Set<Long> DEBUG_writtenPages;
 
     private List<ICachedPageInternal> cachedPages = new ArrayList<ICachedPageInternal>();
@@ -83,7 +83,7 @@ public class BufferCache implements IBufferCacheInternal, ILifeCycleComponent {
         cleanerThread = new CleanerThread();
         executor.execute(cleanerThread);
         closed = false;
-        
+
         DEBUG_writtenPages = new HashSet<Long>();
     }
 
@@ -118,7 +118,7 @@ public class BufferCache implements IBufferCacheInternal, ILifeCycleComponent {
     @Override
     public ICachedPage tryPin(long dpid) throws HyracksDataException {
         // Calling the pinSanityCheck should be used only for debugging, since the synchronized block over the fileInfoMap is a hot spot.
-        //pinSanityCheck(dpid);
+        pinSanityCheck(dpid);
         CachedPage cPage = null;
         int hash = hash(dpid);
         CacheBucket bucket = pageMap[hash];
@@ -142,7 +142,8 @@ public class BufferCache implements IBufferCacheInternal, ILifeCycleComponent {
     @Override
     public ICachedPage pin(long dpid, boolean newPage) throws HyracksDataException {
         // Calling the pinSanityCheck should be used only for debugging, since the synchronized block over the fileInfoMap is a hot spot.
-        //pinSanityCheck(dpid);
+
+        pinSanityCheck(dpid);
         CachedPage cPage = findPage(dpid, false);
         if (!newPage) {
             // Resolve race of multiple threads trying to read the page from
@@ -165,7 +166,7 @@ public class BufferCache implements IBufferCacheInternal, ILifeCycleComponent {
      * Allocate and pin a virtual page. This is just like a normal page, except that it will never be flushed.
      */
     public ICachedPage pinVirtual(long vpid) throws HyracksDataException {
-        //pinSanityCheck(vpid);
+        pinSanityCheck(vpid);
         CachedPage cPage = findPage(vpid, true);
         cPage.virtual = true;
         return cPage;
@@ -179,18 +180,38 @@ public class BufferCache implements IBufferCacheInternal, ILifeCycleComponent {
     //safer/easier for now. 
     public ICachedPage unpinVirtual(long vpid, long dpid) throws HyracksDataException {
         CachedPage virtPage = findPage(vpid, true); //should definitely succeed. 
-        //pinSanityCheck(dpid); //debug
-        ICachedPage realPage = pin(dpid, false);
-        virtPage.acquireReadLatch();
-        realPage.acquireWriteLatch();
+        if (!virtPage.virtual) {
+            //TODO: this should be a runtime exception, because it is not possible to incur outside of programmer error
+            throw new HyracksDataException("First argument must be a virtual page");
+        }
+        pinSanityCheck(dpid); //debug
+        ICachedPage realPage = pin(dpid, true);
         try {
+            virtPage.acquireReadLatch();
+            realPage.acquireWriteLatch();
             System.arraycopy(virtPage.buffer.array(), 0, realPage.getBuffer().array(), 0, virtPage.buffer.capacity());
         } finally {
             realPage.releaseWriteLatch(true);
             virtPage.releaseReadLatch();
+            unpin(realPage);
+            System.out.println(((CachedPage) realPage).pinCount.get());
         }
         virtPage.reset(-1); //now cause the virtual page to die
         return realPage;
+    }
+
+    public boolean isVirtual(long vpid) throws HyracksDataException {
+        CachedPage virtPage = findPage(vpid, true);
+        return virtPage.virtual;
+    }
+
+    public boolean isVirtual(ICachedPage vp) throws HyracksDataException {
+        return isVirtual(((CachedPage) vp).dpid);
+    }
+
+    public ICachedPage unpinVirtual(ICachedPage vp, long dpid) throws HyracksDataException {
+        long vpid = ((CachedPage) vp).dpid;
+        return unpinVirtual(vpid, dpid);
     }
 
     private CachedPage findPage(long dpid, boolean virtual) throws HyracksDataException {
@@ -416,7 +437,7 @@ public class BufferCache implements IBufferCacheInternal, ILifeCycleComponent {
         }
     }
 
-   private void write(CachedPage cPage) throws HyracksDataException {
+    private void write(CachedPage cPage) throws HyracksDataException {
         BufferedFileHandle fInfo = getFileInfo(cPage);
         if (fInfo.fileHasBeenDeleted()) {
             return;
@@ -429,28 +450,30 @@ public class BufferCache implements IBufferCacheInternal, ILifeCycleComponent {
 
     @Override
     public void unpin(ICachedPage page) throws HyracksDataException {
-        if(((CachedPage)page).dirty.get() && !DEBUG_writtenPages.add(getFileInfo(((CachedPage)page)).getFileId() * 10000 + ((CachedPage)page).dpid)) {
+        if (((CachedPage) page).dirty.get()
+                && !DEBUG_writtenPages.add(getFileInfo(((CachedPage) page)).getFileId() * 10000
+                        + ((CachedPage) page).dpid)) {
             boolean ignore = false;
-            switch(((CachedPage)page).cpid) {
+            switch (((CachedPage) page).cpid) {
                 case 0: // metadata page
                 case 1: // root page of tree
                     ignore = true;
             }
             StackTraceElement[] stackTraceElements = Thread.currentThread().getStackTrace();
-            for(StackTraceElement e : stackTraceElements) {
-                if(
-                    e.getMethodName().contains("markAsValid") || 
-                    e.getClassName().contains("BloomFilter") || // pin the whole thing?
-                    e.getMethodName().contains("getFreePage" /*metadata*/) || 
-                    e.getMethodName().contains("FilterInfo") ||
-                    e.getMethodName().contains("isEmptyTree" /* working on root page */) ||
-                    (e.getClassName().contains("BulkLoader") && e.getMethodName().contains("end") /* overwriting root node at end of bulkload */)) {
+            for (StackTraceElement e : stackTraceElements) {
+                if (e.getMethodName().contains("markAsValid")
+                        || e.getClassName().contains("BloomFilter")
+                        || // pin the whole thing?
+                        e.getMethodName().contains("getFreePage" /*metadata*/)
+                        || e.getMethodName().contains("FilterInfo")
+                        || e.getMethodName().contains("isEmptyTree" /* working on root page */)
+                        || (e.getClassName().contains("BulkLoader") && e.getMethodName().contains("end") /* overwriting root node at end of bulkload */)) {
                     ignore = true;
                     break;
                 }
             }
-            if(!ignore) {
-                System.out.println("Attempted to write page already flushed to disk");   
+            if (!ignore) {
+                //System.out.println("Attempted to write page already flushed to disk");
             }
         }
         if (closed) {
@@ -710,7 +733,8 @@ public class BufferCache implements IBufferCacheInternal, ILifeCycleComponent {
                 pinCount = cPage.pinCount.get();
             }
             if (pinCount > 0) {
-                throw new IllegalStateException("Page is pinned and file is being closed. Pincount is: " + pinCount);
+                throw new IllegalStateException("Page is pinned and file is being closed. Pincount is: " + pinCount
+                        + " Page is virtual: " + cPage.virtual);
             }
             cPage.invalidate();
             return true;
@@ -797,7 +821,7 @@ public class BufferCache implements IBufferCacheInternal, ILifeCycleComponent {
         synchronized (virtualFiles) {
             virtualFiles.remove(fileId);
         }
-        synchronized(fileInfoMap){
+        synchronized (fileInfoMap) {
             fileMapManager.unregisterMemFile(fileId);
         }
     }
