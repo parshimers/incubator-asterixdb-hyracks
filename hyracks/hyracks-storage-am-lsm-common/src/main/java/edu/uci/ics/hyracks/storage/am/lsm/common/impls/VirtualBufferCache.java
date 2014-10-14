@@ -20,6 +20,8 @@ import java.util.Collections;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import edu.uci.ics.hyracks.api.exceptions.HyracksDataException;
 import edu.uci.ics.hyracks.api.io.FileReference;
@@ -31,6 +33,8 @@ import edu.uci.ics.hyracks.storage.common.file.IFileMapManager;
 import edu.uci.ics.hyracks.storage.common.file.TransientFileMapManager;
 
 public class VirtualBufferCache implements IVirtualBufferCache {
+    private static final Logger LOGGER = Logger.getLogger(ExternalIndexHarness.class.getName());
+
     private static final int OVERFLOW_PADDING = 8;
 
     private final ICacheMemoryAllocator allocator;
@@ -370,4 +374,13 @@ public class VirtualBufferCache implements IVirtualBufferCache {
     public int getNumPagesOfFile(int fileId) throws HyracksDataException {
         throw new UnsupportedOperationException();
     }
+
+    @Override
+    public void adviseWontNeed(ICachedPage page) {
+        if (LOGGER.isLoggable(Level.INFO)) {
+            LOGGER.log(Level.INFO, "Calling adviseWontNeed on " + this.getClass().getName()
+                    + " makes no sense as this BufferCache cannot evict pages");
+        }
+    }
+
 }

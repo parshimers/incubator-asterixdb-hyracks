@@ -193,4 +193,9 @@ public class DebugBufferCache implements IBufferCache {
         return bufferCache.getNumPagesOfFile(fileId);
     }
 
+    @Override
+    public void adviseWontNeed(ICachedPage page) {
+        bufferCache.adviseWontNeed(page);
+    }
+
 }
