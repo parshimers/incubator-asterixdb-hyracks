@@ -39,7 +39,7 @@ import edu.uci.ics.hyracks.storage.common.file.IFileMapProvider;
 
 public abstract class AbstractTreeIndex implements ITreeIndex {
 
-    protected final static int rootPage = 1;
+    protected int rootPage = 1;
 
     protected final IBufferCache bufferCache;
     protected final IFileMapProvider fileMapProvider;
@@ -95,6 +95,13 @@ public abstract class AbstractTreeIndex implements ITreeIndex {
         }
 
         freePageManager.open(fileId);
+        if(freePageManager.getFirstMetadataPage() < 1) {
+            // regular or empty tree
+            rootPage = 1;
+        } else {
+            // bulkload-only tree (used e.g. for HDFS). -1 is meta page, -2 is root page
+            rootPage = bufferCache.getNumPagesOfFile(fileId) - 2;
+        }
         initEmptyTree();
         freePageManager.close();
         bufferCache.closeFile(fileId);
@@ -252,9 +259,13 @@ public abstract class AbstractTreeIndex implements ITreeIndex {
         protected final ITreeIndexTupleWriter tupleWriter;
         protected ITreeIndexFrame leafFrame;
         protected ITreeIndexFrame interiorFrame;
+        protected boolean makeImmutable;
+            // Immutable bulk loaders write their root page at page -2, as needed e.g. by append-only file systems such as HDFS. 
+            // Since loading this tree relies on the root page actually being at that point, no further inserts into that tree are allowed.
+            // Currently, this is not enforced.
         private boolean releasedLatches;
 
-        public AbstractTreeIndexBulkLoader(float fillFactor) throws TreeIndexException, HyracksDataException {
+        public AbstractTreeIndexBulkLoader(float fillFactor, boolean makeImmutable) throws TreeIndexException, HyracksDataException {
             leafFrame = leafFrameFactory.createFrame();
             interiorFrame = interiorFrameFactory.createFrame();
             metaFrame = freePageManager.getMetaDataFrameFactory().createFrame();
@@ -301,6 +312,7 @@ public abstract class AbstractTreeIndex implements ITreeIndex {
         @Override
         public void end() throws HyracksDataException {
             // copy the root generated from the bulk-load to *the* root page location
+            if(makeImmutable) rootPage = freePageManager.getFreePage(metaFrame);
             ICachedPage newRoot = bufferCache.pin(BufferedFileHandle.getDiskPageId(fileId, rootPage), true);
             newRoot.acquireWriteLatch();
             NodeFrontier lastNodeFrontier = nodeFrontiers.get(nodeFrontiers.size() - 1);
