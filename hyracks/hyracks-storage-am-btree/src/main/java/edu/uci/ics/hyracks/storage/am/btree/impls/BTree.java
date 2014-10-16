@@ -994,7 +994,7 @@ public class BTree extends AbstractTreeIndex {
                     bufferCache.unpin(leafFrontier.page);
 
                     splitKey.setRightPage(leafFrontier.pageId);
-                    propagateBulk(1, false);
+                    propagateBulk(1);
 
                     leafFrontier.page = bufferCache.pin(BufferedFileHandle.getDiskPageId(fileId, leafFrontier.pageId),
                             true);
@@ -1038,7 +1038,7 @@ public class BTree extends AbstractTreeIndex {
 
         }
 
-        protected void propagateBulk(int level, boolean finalize) throws HyracksDataException {
+        protected void propagateBulk(int level) throws HyracksDataException {
             if (splitKey.getBuffer() == null)
                 return;
 
@@ -1062,9 +1062,6 @@ public class BTree extends AbstractTreeIndex {
                 tupleWriter.writeTupleFields(frontier.lastTuple, 0, cmp.getKeyFieldCount(), splitKey.getBuffer()
                         .array(), 0);
                 splitKey.getTuple().resetByTupleOffset(splitKey.getBuffer(), 0);
-                if (finalizedNodeFrontiers.get(level) != null) {
-                    splitKey.setLeftPage(finalizedNodeFrontiers.get(level));
-                }
 
                 ((IBTreeInteriorFrame) interiorFrame).deleteGreatest();
 
@@ -1073,29 +1070,44 @@ public class BTree extends AbstractTreeIndex {
                 ICachedPage realPage = bufferCache.unpinVirtual(frontier.page,
                         BufferedFileHandle.getDiskPageId(fileId, finalPageId));
                 bufferCache.unpin(realPage);
+                splitKey.setRightPage(-1);
+                splitKey.setLeftPage(-1);
                 frontier.pageId = ++virtualPageIncrement;
-                splitKey.setRightPage(finalPageId);
-                frontier.page = bufferCache.pin(BufferedFileHandle.getDiskPageId(virtualFileId, frontier.pageId), true);
+                //                splitKey.setRightPage(finalPageId);
+                frontier.page = bufferCache
+                        .pinVirtual(BufferedFileHandle.getDiskPageId(virtualFileId, frontier.pageId));
                 frontier.page.acquireWriteLatch();
                 interiorFrame.setPage(frontier.page);
                 interiorFrame.initBuffer((byte) level);
-                if (!finalizedNodeFrontiers.containsKey(level)) {
-                    finalizedNodeFrontiers.put(level, finalPageId);
-                } else if (finalize && finalizedNodeFrontiers.containsKey(level)) {
-                    propagateBulk(level, finalize);
-                } else {
-                    propagateBulk(level + 1, finalize);
-                    finalizedNodeFrontiers.put(level, finalPageId);
-                }
-
             }
             ((IBTreeInteriorFrame) interiorFrame).insertSorted(tuple);
         }
 
+        protected void finalize(int level, int rightPage) throws HyracksDataException {
+            if (level >= nodeFrontiers.size())
+                return;
+            if (level < 1)
+                finalize(level + 1, -1);
+            NodeFrontier frontier = nodeFrontiers.get(level);
+            interiorFrame.setPage(frontier.page);
+            //just finalize = the layer right above the leaves has correct righthand pointers already
+            if (rightPage != -1) {
+                ((IBTreeInteriorFrame) interiorFrame).setRightmostChildPageId(rightPage);
+            }
+            //otherwise...
+            int finalPageId = freePageManager.getFreePage(metaFrame);
+            ICachedPage realPage = bufferCache.unpinVirtual(frontier.page,
+                    BufferedFileHandle.getDiskPageId(fileId, finalPageId));
+            bufferCache.unpin(realPage);
+            frontier.pageId = finalPageId;
+            frontier.page = realPage;
+
+            finalize(level + 1, finalPageId);
+        }
+
         @Override
         public void end() throws HyracksDataException {
-            //first advance the bulk propagation
-            propagateBulk(1, true);
+            finalize(1, -1);
             ICachedPage newRoot = bufferCache.pin(BufferedFileHandle.getDiskPageId(fileId, rootPage), true);
             newRoot.acquireWriteLatch();
             NodeFrontier lastNodeFrontier = nodeFrontiers.get(nodeFrontiers.size() - 1);
@@ -1115,19 +1127,6 @@ public class BTree extends AbstractTreeIndex {
                             nodeFrontiers.get(i).page.releaseWriteLatch(true);
                         } catch (Exception e) {
                             //ignore illegal monitor state exception
-                        }
-                        if (i > 0) { //do not attempt to remap non-virtual leaves
-                            ICachedPage front = nodeFrontiers.get(i).page;
-                            if (!bufferCache.isVirtual(front)) {
-                                continue;
-                            }
-                            int finalPageId = freePageManager.getFreePage(metaFrame);
-                            ICachedPage realPage = bufferCache.unpinVirtual(nodeFrontiers.get(i).page,
-                                    BufferedFileHandle.getDiskPageId(fileId, finalPageId));
-                            bufferCache.unpin(realPage);
-                            if (i < nodeFrontiers.size() - 1 && finalizedNodeFrontiers.size() != 0) {
-                                finalizedNodeFrontiers.put(i, finalPageId); //this is only useful for interiors at level-1 or lower
-                            }
                         }
                     }
                 }

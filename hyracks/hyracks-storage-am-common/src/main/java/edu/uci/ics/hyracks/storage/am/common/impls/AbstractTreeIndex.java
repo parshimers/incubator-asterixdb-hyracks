@@ -16,8 +16,6 @@
 package edu.uci.ics.hyracks.storage.am.common.impls;
 
 import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Map;
 
 import edu.uci.ics.hyracks.api.dataflow.value.IBinaryComparatorFactory;
 import edu.uci.ics.hyracks.api.exceptions.HyracksDataException;
@@ -251,7 +249,6 @@ public abstract class AbstractTreeIndex implements ITreeIndex {
         protected final int interiorMaxBytes;
         protected final ArrayList<NodeFrontier> nodeFrontiers = new ArrayList<NodeFrontier>();
         //n-1 interior nodes for sequential bulkload
-        protected final Map<Integer, Integer> finalizedNodeFrontiers = new HashMap<Integer, Integer>();
         protected final ITreeIndexMetaDataFrame metaFrame;
         protected final ITreeIndexTupleWriter tupleWriter;
         protected ITreeIndexFrame leafFrame;
@@ -304,7 +301,6 @@ public abstract class AbstractTreeIndex implements ITreeIndex {
                 ICachedPage realPage = bufferCache.unpinVirtual(nodeFrontier.page,
                         BufferedFileHandle.getDiskPageId(fileId, finalPageId));
                 bufferCache.unpin(realPage);
-                finalizedNodeFrontiers.put(nodeFrontiers.indexOf(nodeFrontier), finalPageId);
             }
             releasedLatches = true;
         }
@@ -332,15 +328,6 @@ public abstract class AbstractTreeIndex implements ITreeIndex {
                             nodeFrontiers.get(i).page.releaseWriteLatch(true);
                         } catch (Exception e) {
                             //ignore illegal monitor state exception
-                        }
-                        if (i > 0) { //do not attempt to remap non-virtual leaves
-                            int finalPageId = freePageManager.getFreePage(metaFrame);
-                            ICachedPage realPage = bufferCache.unpinVirtual(nodeFrontiers.get(i).page,
-                                    BufferedFileHandle.getDiskPageId(fileId, finalPageId));
-                            bufferCache.unpin(realPage);
-                            if (i < nodeFrontiers.size() - 1 && finalizedNodeFrontiers.size() != 0) {
-                                finalizedNodeFrontiers.put(i, finalPageId); //this is only useful for interiors at level-1 or lower
-                            }
                         }
                     }
                 }
