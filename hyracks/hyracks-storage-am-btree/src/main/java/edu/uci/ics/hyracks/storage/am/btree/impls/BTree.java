@@ -937,8 +937,13 @@ public class BTree extends AbstractTreeIndex {
     @Override
     public IIndexBulkLoader createBulkLoader(float fillFactor, boolean verifyInput, long numElementsHint,
             boolean checkIfEmptyIndex) throws TreeIndexException {
+        return createBulkLoader(fillFactor, verifyInput, numElementsHint, checkIfEmptyIndex, false);
+    }
+    
+    public IIndexBulkLoader createBulkLoader(float fillFactor, boolean verifyInput, long numElementsHint,
+            boolean checkIfEmptyIndex, boolean makeImmutable) throws TreeIndexException {
         try {
-            return new BTreeBulkLoader(fillFactor, verifyInput);
+            return new BTreeBulkLoader(fillFactor, verifyInput, makeImmutable);
         } catch (HyracksDataException e) {
             throw new TreeIndexException(e);
         }
@@ -948,8 +953,8 @@ public class BTree extends AbstractTreeIndex {
         protected final ISplitKey splitKey;
         protected final boolean verifyInput;
 
-        public BTreeBulkLoader(float fillFactor, boolean verifyInput) throws TreeIndexException, HyracksDataException {
-            super(fillFactor);
+        public BTreeBulkLoader(float fillFactor, boolean verifyInput, boolean makeImmutable) throws TreeIndexException, HyracksDataException {
+            super(fillFactor, makeImmutable);
             this.verifyInput = verifyInput;
             splitKey = new BTreeSplitKey(leafFrame.getTupleWriter().createTupleReference());
             splitKey.getTuple().setFieldCount(cmp.getKeyFieldCount());

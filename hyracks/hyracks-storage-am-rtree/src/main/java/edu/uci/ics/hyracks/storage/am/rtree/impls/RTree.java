@@ -863,8 +863,14 @@ public class RTree extends AbstractTreeIndex {
     public IIndexBulkLoader createBulkLoader(float fillFactor, boolean verifyInput, long numElementsHint,
             boolean checkIfEmptyIndex) throws TreeIndexException {
         // TODO: verifyInput currently does nothing.
+        return createBulkLoader(fillFactor, verifyInput, numElementsHint, checkIfEmptyIndex, false);
+    }
+    
+    public IIndexBulkLoader createBulkLoader(float fillFactor, boolean verifyInput, long numElementsHint,
+            boolean checkIfEmptyIndex, boolean makeImmutable) throws TreeIndexException {
+        // TODO: verifyInput currently does nothing.
         try {
-            return new RTreeBulkLoader(fillFactor);
+            return new RTreeBulkLoader(fillFactor, makeImmutable);
         } catch (HyracksDataException e) {
             throw new TreeIndexException(e);
         }
@@ -876,8 +882,8 @@ public class RTree extends AbstractTreeIndex {
         ITreeIndexTupleReference mbrTuple = interiorFrame.createTupleReference();
         ByteBuffer mbr;
 
-        public RTreeBulkLoader(float fillFactor) throws TreeIndexException, HyracksDataException {
-            super(fillFactor);
+        public RTreeBulkLoader(float fillFactor, boolean makeImmutable) throws TreeIndexException, HyracksDataException {
+            super(fillFactor, makeImmutable);
             prevInteriorFrame = interiorFrameFactory.createFrame();
         }
 
