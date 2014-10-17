@@ -196,7 +196,8 @@ public class BufferCache implements IBufferCacheInternal, ILifeCycleComponent {
             unpin(realPage);
             System.out.println(((CachedPage) realPage).pinCount.get());
         }
-        virtPage.reset(-1); //now cause the virtual page to die
+        virtPage.invalidate();
+        unpin(virtPage); //now cause the virtual page to die
         return realPage;
     }
 

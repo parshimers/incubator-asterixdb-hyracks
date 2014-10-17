@@ -19,6 +19,7 @@ import edu.uci.ics.hyracks.api.exceptions.HyracksDataException;
 public interface IFreePageManager {
 	public void open(int fileId);
 	
+
 	public void close();
 	
 	public int getFreePage(ITreeIndexMetaDataFrame metaFrame)

@@ -48,12 +48,11 @@ class CachedPage implements ICachedPageInternal {
         valid = false;
         virtual = false;
     }
-
     public void reset(long dpid) {
         this.dpid = dpid;
         dirty.set(false);
+        //pinCount is not reset, as findPage expects the pinCount to be 1 as it is right now when this is called.
         valid = false;
-        pinCount.set(0);
         pageReplacementStrategy.notifyCachePageReset(this);
     }
 

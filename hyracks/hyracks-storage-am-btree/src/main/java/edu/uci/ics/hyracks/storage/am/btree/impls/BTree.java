@@ -95,8 +95,9 @@ public class BTree extends AbstractTreeIndex {
         TreeIndexDiskOrderScanCursor cursor = (TreeIndexDiskOrderScanCursor) icursor;
         ctx.reset();
         RangePredicate diskOrderScanPred = new RangePredicate(null, null, true, true, ctx.cmp, ctx.cmp);
-        int currentPageId = rootPage;
+        IBTreeInteriorFrame rootFrame = (IBTreeInteriorFrame) interiorFrameFactory.createFrame();
         int maxPageId = freePageManager.getMaxPage(ctx.metaFrame);
+        int currentPageId = 2;
         ICachedPage page = bufferCache.pin(BufferedFileHandle.getDiskPageId(fileId, currentPageId), false);
         page.acquireReadLatch();
         try {
@@ -939,7 +940,7 @@ public class BTree extends AbstractTreeIndex {
             boolean checkIfEmptyIndex) throws TreeIndexException {
         return createBulkLoader(fillFactor, verifyInput, numElementsHint, checkIfEmptyIndex, false);
     }
-    
+
     public IIndexBulkLoader createBulkLoader(float fillFactor, boolean verifyInput, long numElementsHint,
             boolean checkIfEmptyIndex, boolean makeImmutable) throws TreeIndexException {
         try {
@@ -953,7 +954,8 @@ public class BTree extends AbstractTreeIndex {
         protected final ISplitKey splitKey;
         protected final boolean verifyInput;
 
-        public BTreeBulkLoader(float fillFactor, boolean verifyInput, boolean makeImmutable) throws TreeIndexException, HyracksDataException {
+        public BTreeBulkLoader(float fillFactor, boolean verifyInput, boolean makeImmutable) throws TreeIndexException,
+                HyracksDataException {
             super(fillFactor, makeImmutable);
             this.verifyInput = verifyInput;
             splitKey = new BTreeSplitKey(leafFrame.getTupleWriter().createTupleReference());
@@ -1039,10 +1041,6 @@ public class BTree extends AbstractTreeIndex {
             }
         }
 
-        protected void rewriteSplitKey(int left, int right) {
-
-        }
-
         protected void propagateBulk(int level) throws HyracksDataException {
             if (splitKey.getBuffer() == null)
                 return;
@@ -1074,11 +1072,13 @@ public class BTree extends AbstractTreeIndex {
                 int finalPageId = freePageManager.getFreePage(metaFrame);
                 ICachedPage realPage = bufferCache.unpinVirtual(frontier.page,
                         BufferedFileHandle.getDiskPageId(fileId, finalPageId));
+                //realPage.releaseWriteLatch(true);
                 bufferCache.unpin(realPage);
-                splitKey.setRightPage(-1);
-                splitKey.setLeftPage(-1);
+                //splitKey.setRightPage();
+                splitKey.setLeftPage(finalPageId);
+
+                propagateBulk(level + 1);
                 frontier.pageId = ++virtualPageIncrement;
-                //                splitKey.setRightPage(finalPageId);
                 frontier.page = bufferCache
                         .pinVirtual(BufferedFileHandle.getDiskPageId(virtualFileId, frontier.pageId));
                 frontier.page.acquireWriteLatch();
@@ -1096,7 +1096,7 @@ public class BTree extends AbstractTreeIndex {
             NodeFrontier frontier = nodeFrontiers.get(level);
             interiorFrame.setPage(frontier.page);
             //just finalize = the layer right above the leaves has correct righthand pointers already
-            if (rightPage != -1) {
+            if (rightPage > 0) {
                 ((IBTreeInteriorFrame) interiorFrame).setRightmostChildPageId(rightPage);
             }
             //otherwise...
@@ -1113,6 +1113,8 @@ public class BTree extends AbstractTreeIndex {
         @Override
         public void end() throws HyracksDataException {
             finalize(1, -1);
+            if (makeImmutable)
+                rootPage = freePageManager.getFreePage(metaFrame);
             ICachedPage newRoot = bufferCache.pin(BufferedFileHandle.getDiskPageId(fileId, rootPage), true);
             newRoot.acquireWriteLatch();
             NodeFrontier lastNodeFrontier = nodeFrontiers.get(nodeFrontiers.size() - 1);
@@ -1133,6 +1135,7 @@ public class BTree extends AbstractTreeIndex {
                         } catch (Exception e) {
                             //ignore illegal monitor state exception
                         }
+                        bufferCache.unpin(nodeFrontiers.get(i).page);
                     }
                 }
             }
