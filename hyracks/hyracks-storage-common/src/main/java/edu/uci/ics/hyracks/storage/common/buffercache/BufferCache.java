@@ -144,6 +144,7 @@ public class BufferCache implements IBufferCacheInternal, ILifeCycleComponent {
         // Calling the pinSanityCheck should be used only for debugging, since the synchronized block over the fileInfoMap is a hot spot.
 
         pinSanityCheck(dpid);
+
         CachedPage cPage = findPage(dpid, false);
         if (!newPage) {
             // Resolve race of multiple threads trying to read the page from
@@ -184,6 +185,9 @@ public class BufferCache implements IBufferCacheInternal, ILifeCycleComponent {
             //TODO: this should be a runtime exception, because it is not possible to incur outside of programmer error
             throw new HyracksDataException("First argument must be a virtual page");
         }
+        if (virtPage.pinCount.get() <= 1) {
+            throw new IllegalStateException("Unpin called on a page that isn't pinned");
+        }
         pinSanityCheck(dpid); //debug
         ICachedPage realPage = pin(dpid, true);
         try {
@@ -194,10 +198,12 @@ public class BufferCache implements IBufferCacheInternal, ILifeCycleComponent {
             realPage.releaseWriteLatch(true);
             virtPage.releaseReadLatch();
             unpin(realPage);
-            System.out.println(((CachedPage) realPage).pinCount.get());
         }
+        virtPage.virtual = false;
+        virtPage.dirty.set(false);
+        virtPage.pinCount.set(0);
         virtPage.invalidate();
-        unpin(virtPage); //now cause the virtual page to die
+        System.out.println(((CachedPage) virtPage).pinCount.get());
         return realPage;
     }
 
@@ -408,6 +414,7 @@ public class BufferCache implements IBufferCacheInternal, ILifeCycleComponent {
                                 .append(BufferedFileHandle.getFileId(cp.dpid)).append(':')
                                 .append(BufferedFileHandle.getPageId(cp.dpid)).append(", ").append(cp.pinCount.get())
                                 .append(", ").append(cp.valid ? "valid" : "invalid").append(", ")
+                                .append(cp.virtual ? "virtual" : "physical").append(", ")
                                 .append(cp.dirty.get() ? "dirty" : "clean").append("]\n");
                         cp = cp.next;
                         ++nCachedPages;
@@ -498,7 +505,9 @@ public class BufferCache implements IBufferCacheInternal, ILifeCycleComponent {
 
     @Override
     public ICachedPageInternal getPage(int cpid) {
-        return cachedPages.get(cpid);
+        synchronized (cachedPages) {
+            return cachedPages.get(cpid);
+        }
     }
 
     private class CleanerThread extends Thread {
@@ -842,7 +851,9 @@ public class BufferCache implements IBufferCacheInternal, ILifeCycleComponent {
 
     @Override
     public void addPage(ICachedPageInternal page) {
-        cachedPages.add(page);
+        synchronized (cachedPages) {
+            cachedPages.add(page);
+        }
     }
 
     public void dumpState(OutputStream os) throws IOException {
@@ -864,6 +875,60 @@ public class BufferCache implements IBufferCacheInternal, ILifeCycleComponent {
     @Override
     public void adviseWontNeed(ICachedPage page) {
         pageReplacementStrategy.adviseWontNeed((ICachedPageInternal) page);
+    }
+
+    @Override
+    public ICachedPage confiscatePage() {
+        synchronized (cachedPages) {
+            for (ICachedPageInternal cPage : cachedPages) {
+                //find a page that would possibly be evicted anyway
+                if (cPage.pinIfGoodVictim()) {
+                    int pageHash = hash(cPage.getDiskPageId());
+                    CacheBucket bucket = pageMap[pageHash];
+                    try {
+                        bucket.bucketLock.lock();
+                        //readjust the next pointers to remove this page from the pagemap
+                        CachedPage curr = bucket.cachedPage;
+                        CachedPage prev = null;
+                        while (curr != null) {
+                            if (curr == cPage) {
+                                if (prev == null) {
+                                    bucket.cachedPage = null;
+                                } else {
+                                    prev.next = curr.next;
+                                    curr.next = null;
+                                }
+                            }
+                            prev = curr;
+                            curr = curr.next;
+                        }
+                        synchronized (cachedPages) { //TODO: there might be a faster concurrency control mechanism for this?
+                            pageReplacementStrategy.subtractPage();
+                            cachedPages.remove(cPage);
+                        }
+                        return cPage;
+                    } finally {
+                        bucket.bucketLock.unlock();
+                    }
+                }
+            }
+            //no page available to confiscate. TODO:throw exception?
+            return null;
+        }
+    }
+
+    @Override
+    public void returnPage(ICachedPage page) {
+        CachedPage cPage = (CachedPage) page;
+        synchronized (cachedPages) {
+            cachedPages.add(cPage);
+            int pageHash = hash(cPage.getDiskPageId());
+            if (pageMap[pageHash].cachedPage != null) {
+                pageMap[pageHash].cachedPage.next = cPage;
+            } else {
+                pageMap[pageHash].cachedPage = cPage;
+            }
+        }
     }
 
 }

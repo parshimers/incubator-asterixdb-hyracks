@@ -383,4 +383,34 @@ public class VirtualBufferCache implements IVirtualBufferCache {
         }
     }
 
+    @Override
+    public ICachedPage unpinVirtual(ICachedPage vp, long dpid) throws HyracksDataException {
+        // TODO Auto-generated method stub
+        return null;
+    }
+
+    @Override
+    public boolean isVirtual(long vpid) throws HyracksDataException {
+        // TODO Auto-generated method stub
+        return false;
+    }
+
+    @Override
+    public boolean isVirtual(ICachedPage vp) throws HyracksDataException {
+        // TODO Auto-generated method stub
+        return false;
+    }
+
+    @Override
+    public ICachedPage confiscatePage() {
+        // TODO Auto-generated method stub
+        return null;
+    }
+
+    @Override
+    public void returnPage(ICachedPage page) {
+        // TODO Auto-generated method stub
+
+    }
+
 }

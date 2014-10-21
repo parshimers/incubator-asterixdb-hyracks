@@ -17,6 +17,8 @@ package edu.uci.ics.hyracks.storage.common.buffercache;
 public interface ICachedPageInternal extends ICachedPage {
     public int getCachedPageId();
 
+    public long getDiskPageId();
+
     public Object getReplacementStrategyObject();
 
     public boolean pinIfGoodVictim();

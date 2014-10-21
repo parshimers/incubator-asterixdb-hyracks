@@ -198,4 +198,29 @@ public class DebugBufferCache implements IBufferCache {
         bufferCache.adviseWontNeed(page);
     }
 
+    @Override
+    public ICachedPage unpinVirtual(ICachedPage vp, long dpid) throws HyracksDataException {
+        return bufferCache.unpinVirtual(vp, dpid);
+    }
+
+    @Override
+    public boolean isVirtual(long vpid) throws HyracksDataException {
+        return bufferCache.isVirtual(vpid);
+    }
+
+    @Override
+    public boolean isVirtual(ICachedPage vp) throws HyracksDataException {
+        return bufferCache.isVirtual(vp);
+    }
+
+    @Override
+    public ICachedPage confiscatePage() {
+        return bufferCache.confiscatePage();
+    }
+
+    @Override
+    public void returnPage(ICachedPage page) {
+        bufferCache.returnPage(page);
+    }
+
 }

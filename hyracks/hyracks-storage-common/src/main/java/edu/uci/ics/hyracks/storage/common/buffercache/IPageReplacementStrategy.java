@@ -29,6 +29,10 @@ public interface IPageReplacementStrategy {
 
     public int getNumPages();
 
+    public int addPage();
+
+    public int subtractPage();
+
     public int getPageSize();
 
     public int getMaxAllowedNumPages();

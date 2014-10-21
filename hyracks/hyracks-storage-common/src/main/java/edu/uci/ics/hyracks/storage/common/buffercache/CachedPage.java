@@ -107,4 +107,9 @@ class CachedPage implements ICachedPageInternal {
         }
         latch.writeLock().unlock();
     }
+
+    @Override
+    public long getDiskPageId() {
+        return dpid;
+    }
 }

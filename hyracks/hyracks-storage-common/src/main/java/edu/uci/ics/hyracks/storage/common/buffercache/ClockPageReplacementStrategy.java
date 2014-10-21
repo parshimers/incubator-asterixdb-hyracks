@@ -14,6 +14,8 @@
  */
 package edu.uci.ics.hyracks.storage.common.buffercache;
 
+import java.util.concurrent.BlockingDeque;
+import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
@@ -28,12 +30,14 @@ public class ClockPageReplacementStrategy implements IPageReplacementStrategy {
     private int numPages = 0;
     private final int pageSize;
     private final int maxAllowedNumPages;
+    private BlockingDeque<ICachedPageInternal> hatedPages;
 
     public ClockPageReplacementStrategy(ICacheMemoryAllocator allocator, int pageSize, int maxAllowedNumPages) {
         this.lock = new ReentrantLock();
         this.allocator = allocator;
         this.pageSize = pageSize;
         this.maxAllowedNumPages = maxAllowedNumPages;
+        this.hatedPages = new LinkedBlockingDeque<ICachedPageInternal>();
         clockPtr = 0;
     }
 
@@ -74,6 +78,11 @@ public class ClockPageReplacementStrategy implements IPageReplacementStrategy {
     }
 
     private ICachedPageInternal findVictimByEviction() {
+        //first, check if there is a hated page we can return.
+        ICachedPageInternal hated = hatedPages.poll();
+        if (hated != null) {
+            return hated;
+        }
         int startClockPtr = clockPtr;
         int cycleCount = 0;
         do {
@@ -112,6 +121,35 @@ public class ClockPageReplacementStrategy implements IPageReplacementStrategy {
         }
         return retNumPages;
     }
+    
+    public int subtractPage(){
+        int retNumPages = 0;
+        lock.lock();
+        try{
+            //if we're at the edge, push the clock pointer forward
+            if (clockPtr == numPages - 1) {
+                clockPtr = 0;
+            }
+            --numPages;
+            retNumPages = numPages;
+        }
+        finally{
+            lock.unlock();
+        }
+        return retNumPages;
+    }
+
+    public int addPage() {
+        int retNumPages = 0;
+        lock.lock();
+        try {
+            ++numPages;
+            retNumPages = numPages;
+        } finally {
+            lock.unlock();
+        }
+        return retNumPages;
+    }
 
     private ICachedPageInternal allocatePage() {
         CachedPage cPage = new CachedPage(numPages, allocator.allocate(pageSize, 1)[0], this);
@@ -142,9 +180,7 @@ public class ClockPageReplacementStrategy implements IPageReplacementStrategy {
 
     @Override
     public void adviseWontNeed(ICachedPageInternal cPage) {
-        getPerPageObject(cPage).set(false);
-        lock.lock();
-        clockPtr = cPage.getCachedPageId();
-        lock.unlock();
+        //just offer, if the page replacement policy is busy and doesn't want to listen then it's fine.
+        hatedPages.offer(cPage);
     }
 }

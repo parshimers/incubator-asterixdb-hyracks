@@ -123,26 +123,22 @@ public class MultitenantVirtualBufferCache implements IVirtualBufferCache {
     //These 4 methods are not applicable here
     @Override
     public int createMemFile() throws HyracksDataException {
-        // TODO Auto-generated method stub
-        return 0;
+        throw new UnsupportedOperationException("Virtual Pages are not a valid concept in this context");
     }
 
     @Override
     public void deleteMemFile(int fileId) throws HyracksDataException {
-        // TODO Auto-generated method stub
-
+        throw new UnsupportedOperationException("Virtual Pages are not a valid concept in this context");
     }
 
     @Override
     public ICachedPage pinVirtual(long vpid) throws HyracksDataException {
-        // TODO Auto-generated method stub
-        return null;
+        throw new UnsupportedOperationException("Virtual Pages are not a valid concept in this context");
     }
 
     @Override
     public ICachedPage unpinVirtual(long vpid, long dpid) throws HyracksDataException {
-        // TODO Auto-generated method stub
-        return null;
+        throw new UnsupportedOperationException("Virtual Pages are not a valid concept in this context");
     }
 
     @Override
@@ -156,5 +152,30 @@ public class MultitenantVirtualBufferCache implements IVirtualBufferCache {
             LOGGER.log(Level.INFO, "Calling adviseWontNeed on " + this.getClass().getName()
                     + " makes no sense as this BufferCache cannot evict pages");
         }
+    }
+
+    @Override
+    public ICachedPage unpinVirtual(ICachedPage vp, long dpid) throws HyracksDataException {
+        throw new UnsupportedOperationException("Virtual Pages are not a valid concept in this context");
+    }
+
+    @Override
+    public boolean isVirtual(long vpid) throws HyracksDataException {
+        throw new UnsupportedOperationException("Virtual Pages are not a valid concept in this context");
+    }
+
+    @Override
+    public boolean isVirtual(ICachedPage vp) throws HyracksDataException {
+        throw new UnsupportedOperationException("Virtual Pages are not a valid concept in this context");
+    }
+
+    @Override
+    public ICachedPage confiscatePage() {
+        return vbc.confiscatePage();
+    }
+
+    @Override
+    public void returnPage(ICachedPage page) {
+        vbc.returnPage(page);
     }
 }
