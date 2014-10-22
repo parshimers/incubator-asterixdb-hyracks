@@ -306,11 +306,18 @@ public abstract class AbstractTreeIndex implements ITreeIndex {
         protected void handleException() throws HyracksDataException {
             // Unlatch and unpin pages.
             for (NodeFrontier nodeFrontier : nodeFrontiers) {
-                nodeFrontier.page.releaseWriteLatch(true);
-                int finalPageId = freePageManager.getFreePage(metaFrame);
-                ICachedPage realPage = bufferCache.unpinVirtual(nodeFrontier.page,
+                ICachedPage frontierPage = nodeFrontier.page;
+                if (bufferCache.isVirtual(frontierPage)) {
+                    frontierPage.releaseWriteLatch(true);
+                    bufferCache.unpin(frontierPage);
+                    continue;
+                } else {
+                    frontierPage.releaseWriteLatch(true);
+                    int finalPageId = freePageManager.getFreePage(metaFrame);
+                    ICachedPage realPage = bufferCache.unpinVirtual(nodeFrontier.page,
                         BufferedFileHandle.getDiskPageId(fileId, finalPageId));
-                bufferCache.unpin(realPage);
+                    bufferCache.unpin(realPage);
+                }
             }
             releasedLatches = true;
         }

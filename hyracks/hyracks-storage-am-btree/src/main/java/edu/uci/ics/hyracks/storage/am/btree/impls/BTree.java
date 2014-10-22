@@ -1018,13 +1018,13 @@ public class BTree extends AbstractTreeIndex {
                 leafFrame.setPage(leafFrontier.page);
                 ((IBTreeLeafFrame) leafFrame).insertSorted(tuple);
             } catch (IndexException e) {
-                //    handleException();
+                handleException();
                 throw e;
             } catch (HyracksDataException e) {
-                //    handleException();
+                handleException();
                 throw e;
             } catch (RuntimeException e) {
-                //    handleException();
+                handleException();
                 throw e;
             }
         }
@@ -1072,7 +1072,6 @@ public class BTree extends AbstractTreeIndex {
                 int finalPageId = freePageManager.getFreePage(metaFrame);
                 ICachedPage realPage = bufferCache.unpinVirtual(frontier.page,
                         BufferedFileHandle.getDiskPageId(fileId, finalPageId));
-                //realPage.releaseWriteLatch(true);
                 bufferCache.unpin(realPage);
                 //splitKey.setRightPage();
                 splitKey.setLeftPage(finalPageId);
@@ -1089,10 +1088,18 @@ public class BTree extends AbstractTreeIndex {
         }
 
         protected void finalize(int level, int rightPage) throws HyracksDataException {
-            if (level >= nodeFrontiers.size())
+            if (level >= nodeFrontiers.size()) {
+                //at root
+                rootPage = nodeFrontiers.get(level - 1).pageId;
                 return;
-            if (level < 1)
+            }
+            if (level < 1) {
+                ICachedPage lastLeaf = nodeFrontiers.get(level).page;
+                lastLeaf.releaseWriteLatch(true);
+                bufferCache.unpin(lastLeaf);
                 finalize(level + 1, -1);
+                return;
+            }
             NodeFrontier frontier = nodeFrontiers.get(level);
             interiorFrame.setPage(frontier.page);
             //just finalize = the layer right above the leaves has correct righthand pointers already
@@ -1100,6 +1107,7 @@ public class BTree extends AbstractTreeIndex {
                 ((IBTreeInteriorFrame) interiorFrame).setRightmostChildPageId(rightPage);
             }
             //otherwise...
+            frontier.page.releaseWriteLatch(false);
             int finalPageId = freePageManager.getFreePage(metaFrame);
             ICachedPage realPage = bufferCache.unpinVirtual(frontier.page,
                     BufferedFileHandle.getDiskPageId(fileId, finalPageId));
@@ -1111,31 +1119,38 @@ public class BTree extends AbstractTreeIndex {
         }
 
         @Override
+        protected void handleException() throws HyracksDataException {
+            finalize(0, -1);
+            releasedLatches = true;
+        }
+
+        @Override
         public void end() throws HyracksDataException {
-            finalize(1, -1);
-            if (makeImmutable)
+            finalize(0, -1);
+            if (!makeImmutable) {
                 rootPage = freePageManager.getFreePage(metaFrame);
-            ICachedPage newRoot = bufferCache.pin(BufferedFileHandle.getDiskPageId(fileId, rootPage), true);
-            newRoot.acquireWriteLatch();
-            NodeFrontier lastNodeFrontier = nodeFrontiers.get(nodeFrontiers.size() - 1);
-            try {
-                System.arraycopy(lastNodeFrontier.page.getBuffer().array(), 0, newRoot.getBuffer().array(), 0,
-                        lastNodeFrontier.page.getBuffer().capacity());
-            } finally {
-                newRoot.releaseWriteLatch(true);
-                bufferCache.unpin(newRoot);
+                ICachedPage newRoot = bufferCache.pin(BufferedFileHandle.getDiskPageId(fileId, rootPage), true);
+                newRoot.acquireWriteLatch();
+                NodeFrontier lastNodeFrontier = nodeFrontiers.get(nodeFrontiers.size() - 1);
+                try {
+                    System.arraycopy(lastNodeFrontier.page.getBuffer().array(), 0, newRoot.getBuffer().array(), 0,
+                            lastNodeFrontier.page.getBuffer().capacity());
+                } finally {
+                    newRoot.releaseWriteLatch(true);
+                    bufferCache.unpin(newRoot);
 
-                // register old root as a free page
-                freePageManager.addFreePage(metaFrame, lastNodeFrontier.pageId);
+                    // register old root as a free page
+                    freePageManager.addFreePage(metaFrame, lastNodeFrontier.pageId);
 
-                if (!releasedLatches) {
-                    for (int i = 0; i < nodeFrontiers.size(); i++) {
-                        try {
-                            nodeFrontiers.get(i).page.releaseWriteLatch(true);
-                        } catch (Exception e) {
-                            //ignore illegal monitor state exception
+                    if (!releasedLatches) {
+                        for (int i = 0; i < nodeFrontiers.size(); i++) {
+                            try {
+                                nodeFrontiers.get(i).page.releaseWriteLatch(true);
+                            } catch (Exception e) {
+                                //ignore illegal monitor state exception
+                            }
+                            bufferCache.unpin(nodeFrontiers.get(i).page);
                         }
-                        bufferCache.unpin(nodeFrontiers.get(i).page);
                     }
                 }
             }

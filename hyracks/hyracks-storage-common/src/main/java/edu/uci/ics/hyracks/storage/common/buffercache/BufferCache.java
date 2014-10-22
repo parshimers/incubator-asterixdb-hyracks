@@ -197,13 +197,11 @@ public class BufferCache implements IBufferCacheInternal, ILifeCycleComponent {
         } finally {
             realPage.releaseWriteLatch(true);
             virtPage.releaseReadLatch();
-            unpin(realPage);
         }
         virtPage.virtual = false;
         virtPage.dirty.set(false);
+        virtPage.valid = false;
         virtPage.pinCount.set(0);
-        virtPage.invalidate();
-        System.out.println(((CachedPage) virtPage).pinCount.get());
         return realPage;
     }
 
@@ -358,7 +356,7 @@ public class BufferCache implements IBufferCacheInternal, ILifeCycleComponent {
                         } else {
                             CachedPage victimPrev = victimBucket.cachedPage;
                             while (victimPrev != null && victimPrev.next != victim) {
-                                victimPrev = victimPrev.next;
+                                    victimPrev = victimPrev.next;
                             }
                             assert victimPrev != null;
                             victimPrev.next = victim.next;
@@ -481,7 +479,7 @@ public class BufferCache implements IBufferCacheInternal, ILifeCycleComponent {
                 }
             }
             if (!ignore) {
-                //System.out.println("Attempted to write page already flushed to disk");
+                System.out.println("Attempted to write page already flushed to disk");
             }
         }
         if (closed) {
