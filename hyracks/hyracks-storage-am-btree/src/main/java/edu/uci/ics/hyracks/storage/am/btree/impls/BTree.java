@@ -73,6 +73,7 @@ public class BTree extends AbstractTreeIndex {
     private final static long RESTART_OP = Long.MIN_VALUE;
     private final static long FULL_RESTART_OP = Long.MIN_VALUE + 1;
     private final static int MAX_RESTARTS = 10;
+    private final static int BULKLOAD_LEAF_START = 2;
 
     private final AtomicInteger smoCounter;
     private final ReadWriteLock treeLatch;
@@ -97,7 +98,7 @@ public class BTree extends AbstractTreeIndex {
         RangePredicate diskOrderScanPred = new RangePredicate(null, null, true, true, ctx.cmp, ctx.cmp);
         IBTreeInteriorFrame rootFrame = (IBTreeInteriorFrame) interiorFrameFactory.createFrame();
         int maxPageId = freePageManager.getMaxPage(ctx.metaFrame);
-        int currentPageId = 2;
+        int currentPageId = BULKLOAD_LEAF_START;
         ICachedPage page = bufferCache.pin(BufferedFileHandle.getDiskPageId(fileId, currentPageId), false);
         page.acquireReadLatch();
         try {

@@ -95,7 +95,7 @@ public abstract class AbstractTreeIndex implements ITreeIndex {
         }
 
         freePageManager.open(fileId);
-        if(freePageManager.getFirstMetadataPage() < 1) {
+        if (freePageManager.getFirstMetadataPage() < 1) {
             // regular or empty tree
             rootPage = 1;
         } else {
@@ -260,15 +260,15 @@ public abstract class AbstractTreeIndex implements ITreeIndex {
         protected ITreeIndexFrame leafFrame;
         protected ITreeIndexFrame interiorFrame;
         protected boolean makeImmutable = true;//DEBUG;
-            // Immutable bulk loaders write their root page at page -2, as needed e.g. by append-only file systems such as HDFS. 
-            // Since loading this tree relies on the root page actually being at that point, no further inserts into that tree are allowed.
-            // Currently, this is not enforced.
+        // Immutable bulk loaders write their root page at page -2, as needed e.g. by append-only file systems such as HDFS. 
+        // Since loading this tree relies on the root page actually being at that point, no further inserts into that tree are allowed.
+        // Currently, this is not enforced.
         protected boolean releasedLatches;
         protected int virtualFileId = bufferCache.createMemFile();
         protected int virtualPageIncrement = 0;
 
-
-        public AbstractTreeIndexBulkLoader(float fillFactor, boolean makeImmutable) throws TreeIndexException, HyracksDataException {
+        public AbstractTreeIndexBulkLoader(float fillFactor, boolean makeImmutable) throws TreeIndexException,
+                HyracksDataException {
             leafFrame = leafFrameFactory.createFrame();
             interiorFrame = interiorFrameFactory.createFrame();
             metaFrame = freePageManager.getMetaDataFrameFactory().createFrame();
@@ -315,7 +315,7 @@ public abstract class AbstractTreeIndex implements ITreeIndex {
                     frontierPage.releaseWriteLatch(true);
                     int finalPageId = freePageManager.getFreePage(metaFrame);
                     ICachedPage realPage = bufferCache.unpinVirtual(nodeFrontier.page,
-                        BufferedFileHandle.getDiskPageId(fileId, finalPageId));
+                            BufferedFileHandle.getDiskPageId(fileId, finalPageId));
                     bufferCache.unpin(realPage);
                 }
             }
@@ -325,20 +325,32 @@ public abstract class AbstractTreeIndex implements ITreeIndex {
         @Override
         public void end() throws HyracksDataException {
             // copy the root generated from the bulk-load to *the* root page location
-            if(makeImmutable) rootPage = freePageManager.getFreePage(metaFrame);
-            ICachedPage newRoot = bufferCache.pin(BufferedFileHandle.getDiskPageId(fileId, rootPage), true);
-            newRoot.acquireWriteLatch();
-            NodeFrontier lastNodeFrontier = nodeFrontiers.get(nodeFrontiers.size() - 1);
-            try {
-                System.arraycopy(lastNodeFrontier.page.getBuffer().array(), 0, newRoot.getBuffer().array(), 0,
-                        lastNodeFrontier.page.getBuffer().capacity());
-            } finally {
-                newRoot.releaseWriteLatch(true);
-                bufferCache.unpin(newRoot);
-
-                // register old root as a free page
-                freePageManager.addFreePage(metaFrame, lastNodeFrontier.pageId);
-
+            if (!makeImmutable) {
+                rootPage = freePageManager.getFreePage(metaFrame);
+                ICachedPage newRoot = bufferCache.pin(BufferedFileHandle.getDiskPageId(fileId, rootPage), true);
+                newRoot.acquireWriteLatch();
+                NodeFrontier lastNodeFrontier = nodeFrontiers.get(nodeFrontiers.size() - 1);
+                try {
+                    System.arraycopy(lastNodeFrontier.page.getBuffer().array(), 0, newRoot.getBuffer().array(), 0,
+                            lastNodeFrontier.page.getBuffer().capacity());
+                } finally {
+                    newRoot.releaseWriteLatch(true);
+                    bufferCache.unpin(newRoot);
+                    // register old root as a free page
+                    freePageManager.addFreePage(metaFrame, lastNodeFrontier.pageId);
+                    if (!releasedLatches) {
+                        for (int i = 0; i < nodeFrontiers.size(); i++) {
+                            try {
+                                nodeFrontiers.get(i).page.releaseWriteLatch(true);
+                            } catch (Exception e) {
+                                //ignore illegal monitor state exception
+                            }
+                            bufferCache.unpin(nodeFrontiers.get(i).page);
+                        }
+                    }
+                }
+            } else {
+                rootPage = freePageManager.getMaxPage(metaFrame);
                 if (!releasedLatches) {
                     for (int i = 0; i < nodeFrontiers.size(); i++) {
                         try {
@@ -405,7 +417,7 @@ public abstract class AbstractTreeIndex implements ITreeIndex {
     public IBinaryComparatorFactory[] getCmpFactories() {
         return cmpFactories;
     }
-    
+
     @Override
     public boolean hasMemoryComponents() {
         return true;

@@ -741,7 +741,8 @@ public class BufferCache implements IBufferCacheInternal, ILifeCycleComponent {
                 pinCount = cPage.pinCount.get();
             }
             if (pinCount > 0) {
-                throw new IllegalStateException("Page is pinned and file is being closed. Pincount is: " + pinCount
+                throw new IllegalStateException("Page " + cPage.dpid
+                        + " is pinned and file is being closed. Pincount is: " + pinCount
                         + " Page is virtual: " + cPage.virtual);
             }
             cPage.invalidate();
