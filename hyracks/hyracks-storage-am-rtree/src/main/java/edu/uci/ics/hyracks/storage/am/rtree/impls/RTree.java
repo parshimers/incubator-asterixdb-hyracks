@@ -991,6 +991,8 @@ public class RTree extends AbstractTreeIndex {
             if (level >= nodeFrontiers.size())
                 addLevel();
 
+            //adjust the tuple pointers of the lower frame to allow us to calculate our MBR
+            //if this is a leaf, then there is only one tuple, so this is trivial
             ((RTreeNSMFrame) lowerFrame).adjustMBR();
 
             if (mbr == null) {

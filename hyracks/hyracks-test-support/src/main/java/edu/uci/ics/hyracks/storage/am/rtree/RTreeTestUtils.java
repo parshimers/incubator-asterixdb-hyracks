@@ -226,6 +226,7 @@ public class RTreeTestUtils extends TreeIndexTestUtils {
             } while (secondValue < firstValue);
             fieldValues[j] = firstValue;
             fieldValues[k] = secondValue;
+            System.out.println("Leaf: " + firstValue + "," + secondValue);
         }
     }
 
