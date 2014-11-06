@@ -14,8 +14,11 @@
  */
 package edu.uci.ics.hyracks.storage.common.buffercache;
 
+import java.util.concurrent.ConcurrentLinkedQueue;
+
 import edu.uci.ics.hyracks.api.exceptions.HyracksDataException;
 import edu.uci.ics.hyracks.api.io.FileReference;
+import edu.uci.ics.hyracks.api.io.IFileHandle;
 
 public interface IBufferCache {
     public void createFile(FileReference fileRef) throws HyracksDataException;
@@ -63,4 +66,8 @@ public interface IBufferCache {
     public int getNumPagesOfFile(int fileId) throws HyracksDataException;
 
     public void close() throws HyracksDataException;
+
+    public ConcurrentLinkedQueue<ICachedPage> createFIFOQueue();
+
+    public void finishQueue(ConcurrentLinkedQueue<ICachedPage> queue);
 }
