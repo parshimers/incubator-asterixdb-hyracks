@@ -16,10 +16,12 @@
 package edu.uci.ics.hyracks.storage.am.common.impls;
 
 import java.util.ArrayList;
+import java.util.concurrent.ConcurrentLinkedQueue;
 
 import edu.uci.ics.hyracks.api.dataflow.value.IBinaryComparatorFactory;
 import edu.uci.ics.hyracks.api.exceptions.HyracksDataException;
 import edu.uci.ics.hyracks.api.io.FileReference;
+import edu.uci.ics.hyracks.api.io.IFileHandle;
 import edu.uci.ics.hyracks.dataflow.common.data.accessors.ITupleReference;
 import edu.uci.ics.hyracks.storage.am.common.api.IFreePageManager;
 import edu.uci.ics.hyracks.storage.am.common.api.IIndexBulkLoader;
@@ -266,12 +268,14 @@ public abstract class AbstractTreeIndex implements ITreeIndex {
         protected boolean releasedLatches;
         protected int virtualFileId = bufferCache.createMemFile();
         protected int virtualPageIncrement = 0;
-
+        protected final ConcurrentLinkedQueue<ICachedPage> queue;
 
         public AbstractTreeIndexBulkLoader(float fillFactor, boolean makeImmutable) throws TreeIndexException, HyracksDataException {
             leafFrame = leafFrameFactory.createFrame();
             interiorFrame = interiorFrameFactory.createFrame();
             metaFrame = freePageManager.getMetaDataFrameFactory().createFrame();
+            
+            queue = bufferCache.createFIFOQueue();
 
             if (!isEmptyTree(leafFrame)) {
                 throw new TreeIndexException("Cannot bulk-load a non-empty tree.");
@@ -350,6 +354,7 @@ public abstract class AbstractTreeIndex implements ITreeIndex {
                     }
                 }
             }
+            bufferCache.finishQueue(queue);
         }
 
         protected void addLevel() throws HyracksDataException {
