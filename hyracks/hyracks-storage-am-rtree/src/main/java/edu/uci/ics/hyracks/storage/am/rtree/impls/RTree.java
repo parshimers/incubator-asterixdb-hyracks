@@ -952,11 +952,12 @@ public class RTree extends AbstractTreeIndex {
 
         protected void finalize() throws HyracksDataException {
             NodeFrontier prev = null;
+            //here we assign physical identifiers to everything we can
             for (NodeFrontier n : nodeFrontiers) {
                 if (bufferCache.isVirtual(n.page)) {
                     interiorFrame.setPage(n.page);
                     ((RTreeNSMFrame) lowerFrame).adjustMBR();
-                    tupleWriter.writeTupleFields(((RTreeNSMFrame) lowerFrame).getTuples(), 0, mbr, 0);
+                    tupleWriter.writeTupleFields(((RTreeNSMFrame) lowerFrame).getMBRTuples(), 0, mbr, 0);
                     mbrTuple.resetByTupleOffset(mbr, 0);
                     interiorFrame.insert(mbrTuple, -1);
                     interiorFrame.getBuffer().putInt(
@@ -996,20 +997,23 @@ public class RTree extends AbstractTreeIndex {
             ((RTreeNSMFrame) lowerFrame).adjustMBR();
 
             if (mbr == null) {
-                int bytesRequired = tupleWriter.bytesRequired(((RTreeNSMFrame) lowerFrame).getTuples()[0], 0,
+                int bytesRequired = tupleWriter.bytesRequired(((RTreeNSMFrame) lowerFrame).getMBRTuples()[0], 0,
                         cmp.getKeyFieldCount())
                         + ((RTreeNSMInteriorFrame) interiorFrame).getChildPointerSize();
                 mbr = ByteBuffer.allocate(bytesRequired);
             }
-            tupleWriter.writeTupleFields(((RTreeNSMFrame) lowerFrame).getTuples(), 0, mbr, 0);
+            tupleWriter.writeTupleFields(((RTreeNSMFrame) lowerFrame).getMBRTuples(), 0, mbr, 0);
             mbrTuple.resetByTupleOffset(mbr, 0);
 
             NodeFrontier frontier = nodeFrontiers.get(level);
             interiorFrame.setPage(frontier.page);
-
-            if ((((RTreeNSMInteriorFrame) interiorFrame)
-                    .hasSpaceInsert(2 * (mbrTuple.getTupleSize() + RTreeNSMInteriorFrame.childPtrSize)) != FrameOpSpaceStatus.SUFFICIENT_CONTIGUOUS_SPACE)
-                    && !toRoot) {
+            //see if we have space for two tuples. this works around a  tricky boundary condition with sequential bulk load where
+            //finalization can possibly lead to a split
+            //TODO: accomplish this without wasting 1 tuple
+            int sizeOfTwoTuples = 2 * (mbrTuple.getTupleSize() + RTreeNSMInteriorFrame.childPtrSize);
+            FrameOpSpaceStatus spaceForTwoTuples = (((RTreeNSMInteriorFrame) interiorFrame)
+                    .hasSpaceInsert(sizeOfTwoTuples));
+            if ( spaceForTwoTuples!= FrameOpSpaceStatus.SUFFICIENT_CONTIGUOUS_SPACE && !toRoot) {
 
                 int finalPageId = freePageManager.getFreePage(metaFrame);
                 if (prevNodeFrontierPages.size() <= level) {
@@ -1032,7 +1036,7 @@ public class RTree extends AbstractTreeIndex {
                 interiorFrame.setPage(frontier.page);
                 interiorFrame.initBuffer((byte) level);
 
-                interiorFrame.insert(mbrTuple, -1);
+                interiorFrame.insert(mbrTuple,AbstractSlotManager.GREATEST_KEY_INDICATOR );
 
                 interiorFrame.getBuffer().putInt(
                         interiorFrame.getTupleOffset(interiorFrame.getTupleCount() - 1) + mbrTuple.getTupleSize(),
