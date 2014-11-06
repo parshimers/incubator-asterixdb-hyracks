@@ -17,6 +17,7 @@ package edu.uci.ics.hyracks.storage.am.lsm.common.impls;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
@@ -25,6 +26,7 @@ import java.util.logging.Logger;
 
 import edu.uci.ics.hyracks.api.exceptions.HyracksDataException;
 import edu.uci.ics.hyracks.api.io.FileReference;
+import edu.uci.ics.hyracks.api.io.IFileHandle;
 import edu.uci.ics.hyracks.storage.am.lsm.common.api.IVirtualBufferCache;
 import edu.uci.ics.hyracks.storage.common.buffercache.ICacheMemoryAllocator;
 import edu.uci.ics.hyracks.storage.common.buffercache.ICachedPage;
@@ -411,6 +413,16 @@ public class VirtualBufferCache implements IVirtualBufferCache {
     public void returnPage(ICachedPage page) {
         // TODO Auto-generated method stub
 
+    }
+
+    @Override
+    public ConcurrentLinkedQueue<ICachedPage> createFIFOQueue() {
+        throw new UnsupportedOperationException("Virtual buffer caches don't have FIFO writers");
+    }
+
+    @Override
+    public void finishQueue(ConcurrentLinkedQueue<ICachedPage> queue) {
+        throw new UnsupportedOperationException("Virtual buffer caches don't have FIFO writers");
     }
 
 }

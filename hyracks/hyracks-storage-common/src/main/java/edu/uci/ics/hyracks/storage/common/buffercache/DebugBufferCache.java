@@ -15,10 +15,12 @@
 
 package edu.uci.ics.hyracks.storage.common.buffercache;
 
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicLong;
 
 import edu.uci.ics.hyracks.api.exceptions.HyracksDataException;
 import edu.uci.ics.hyracks.api.io.FileReference;
+import edu.uci.ics.hyracks.api.io.IFileHandle;
 
 /**
  * Implementation of an IBufferCache that counts the number of pins/unpins,
@@ -221,6 +223,16 @@ public class DebugBufferCache implements IBufferCache {
     @Override
     public void returnPage(ICachedPage page) {
         bufferCache.returnPage(page);
+    }
+
+    @Override
+    public ConcurrentLinkedQueue<ICachedPage> createFIFOQueue() {
+        return bufferCache.createFIFOQueue();
+    }
+
+    @Override
+    public void finishQueue(ConcurrentLinkedQueue<ICachedPage> queue) {
+        bufferCache.finishQueue(queue);
     }
 
 }

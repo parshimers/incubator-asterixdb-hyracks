@@ -22,6 +22,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
@@ -55,6 +56,7 @@ public class BufferCache implements IBufferCacheInternal, ILifeCycleComponent {
     private final CleanerThread cleanerThread;
     private final Map<Integer, BufferedFileHandle> fileInfoMap;
     private final Set<Integer> virtualFiles;
+    private final AsyncFIFOFileWriter fifoWriter;
 
     private final Set<Long> DEBUG_writtenPages;
 
@@ -83,6 +85,8 @@ public class BufferCache implements IBufferCacheInternal, ILifeCycleComponent {
         cleanerThread = new CleanerThread();
         executor.execute(cleanerThread);
         closed = false;
+        
+        fifoWriter = new AsyncFIFOFileWriter();
 
         DEBUG_writtenPages = new HashSet<Long>();
     }
@@ -928,6 +932,16 @@ public class BufferCache implements IBufferCacheInternal, ILifeCycleComponent {
                 pageMap[pageHash].cachedPage = cPage;
             }
         }
+    }
+
+    @Override
+    public ConcurrentLinkedQueue<ICachedPage> createFIFOQueue() {
+        return fifoWriter.createQueue();
+    }
+
+    @Override
+    public void finishQueue(ConcurrentLinkedQueue<ICachedPage> queue) {
+        fifoWriter.finishQueue(queue);
     }
 
 }

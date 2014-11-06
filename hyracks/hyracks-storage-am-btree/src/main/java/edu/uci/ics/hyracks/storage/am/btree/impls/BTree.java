@@ -1000,6 +1000,7 @@ public class BTree extends AbstractTreeIndex {
                     ((IBTreeLeafFrame) leafFrame).setNextLeaf(leafFrontier.pageId);
                     leafFrontier.page.releaseWriteLatch(true);
                     bufferCache.unpin(leafFrontier.page);
+                    queue.offer(leafFrontier.page);
 
                     splitKey.setRightPage(leafFrontier.pageId);
                     propagateBulk(1);
@@ -1155,6 +1156,7 @@ public class BTree extends AbstractTreeIndex {
                     }
                 }
             }
+            bufferCache.finishQueue(queue);
         }
     }
 

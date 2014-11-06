@@ -46,5 +46,5 @@ public interface IFreePageManager {
 
 	public boolean isFreePage(ITreeIndexMetaDataFrame metaFrame);
 	
-	public int getFirstMetadataPage();		
+	public int getFirstMetadataPage() throws HyracksDataException;	
 }

@@ -42,7 +42,7 @@ public class LinkedListFreePageManager implements IFreePageManager {
 			throws HyracksDataException {
 
 		ICachedPage metaNode = bufferCache.pin(
-				BufferedFileHandle.getDiskPageId(fileId, getHeadPage()), false);
+				BufferedFileHandle.getDiskPageId(fileId, getFirstMetadataPage()), false);
 		metaNode.acquireWriteLatch();
 
 		try {
@@ -92,7 +92,7 @@ public class LinkedListFreePageManager implements IFreePageManager {
 	public int getFreePage(ITreeIndexMetaDataFrame metaFrame)
 			throws HyracksDataException {
 		ICachedPage metaNode = bufferCache.pin(
-				BufferedFileHandle.getDiskPageId(fileId, getHeadPage()), false);
+				BufferedFileHandle.getDiskPageId(fileId, getFirstMetadataPage()), false);
 
 		metaNode.acquireWriteLatch();
 
@@ -156,7 +156,7 @@ public class LinkedListFreePageManager implements IFreePageManager {
 	public int getMaxPage(ITreeIndexMetaDataFrame metaFrame)
 			throws HyracksDataException {
 		ICachedPage metaNode = bufferCache.pin(
-				BufferedFileHandle.getDiskPageId(fileId, getHeadPage()), false);
+				BufferedFileHandle.getDiskPageId(fileId, getFirstMetadataPage()), false);
 		metaNode.acquireWriteLatch();
 		int maxPage = -1;
 		try {
@@ -174,7 +174,7 @@ public class LinkedListFreePageManager implements IFreePageManager {
 			throws HyracksDataException {
 		// initialize meta data page
 		ICachedPage metaNode = bufferCache.pin(
-				BufferedFileHandle.getDiskPageId(fileId, getHeadPage()), true);
+				BufferedFileHandle.getDiskPageId(fileId, getFirstMetadataPage()), true);
 
 		metaNode.acquireWriteLatch();
 		try {
@@ -212,10 +212,6 @@ public class LinkedListFreePageManager implements IFreePageManager {
 		return metaFrame.getLevel() == META_PAGE_LEVEL_INDICATOR;
 	}
 
-    @Override
-    public int getFirstMetadataPage() {
-        return headPage;
-    }
 
 	@Override
 	public void open(int fileId) {
@@ -235,7 +231,8 @@ public class LinkedListFreePageManager implements IFreePageManager {
 	 * @return The Id of the page holding the meta data
 	 * @throws HyracksDataException
 	 */
-    protected int getHeadPage() throws HyracksDataException {
+    @Override
+    public int getFirstMetadataPage() throws HyracksDataException {
         if(headPage != -1) return headPage;
             
         ITreeIndexMetaDataFrame metaFrame = metaDataFrameFactory.createFrame();
@@ -257,6 +254,7 @@ public class LinkedListFreePageManager implements IFreePageManager {
                 bufferCache.unpin(metaNode);
             }
         }
-        return 0;//throw new HyracksDataException("Cannot find meta page");
+        headPage = 0;
+        return headPage;
     }
 }

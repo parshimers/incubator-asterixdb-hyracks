@@ -16,10 +16,12 @@
 package edu.uci.ics.hyracks.storage.am.common.impls;
 
 import java.util.ArrayList;
+import java.util.concurrent.ConcurrentLinkedQueue;
 
 import edu.uci.ics.hyracks.api.dataflow.value.IBinaryComparatorFactory;
 import edu.uci.ics.hyracks.api.exceptions.HyracksDataException;
 import edu.uci.ics.hyracks.api.io.FileReference;
+import edu.uci.ics.hyracks.api.io.IFileHandle;
 import edu.uci.ics.hyracks.dataflow.common.data.accessors.ITupleReference;
 import edu.uci.ics.hyracks.storage.am.common.api.IFreePageManager;
 import edu.uci.ics.hyracks.storage.am.common.api.IIndexBulkLoader;
@@ -95,7 +97,7 @@ public abstract class AbstractTreeIndex implements ITreeIndex {
         }
 
         freePageManager.open(fileId);
-        if (freePageManager.getFirstMetadataPage() < 1) {
+        if(freePageManager.getFirstMetadataPage() < 1) {
             // regular or empty tree
             rootPage = 1;
         } else {
@@ -260,18 +262,20 @@ public abstract class AbstractTreeIndex implements ITreeIndex {
         protected ITreeIndexFrame leafFrame;
         protected ITreeIndexFrame interiorFrame;
         protected boolean makeImmutable = true;//DEBUG;
-        // Immutable bulk loaders write their root page at page -2, as needed e.g. by append-only file systems such as HDFS. 
-        // Since loading this tree relies on the root page actually being at that point, no further inserts into that tree are allowed.
-        // Currently, this is not enforced.
+            // Immutable bulk loaders write their root page at page -2, as needed e.g. by append-only file systems such as HDFS. 
+            // Since loading this tree relies on the root page actually being at that point, no further inserts into that tree are allowed.
+            // Currently, this is not enforced.
         protected boolean releasedLatches;
         protected int virtualFileId = bufferCache.createMemFile();
         protected int virtualPageIncrement = 0;
+        protected final ConcurrentLinkedQueue<ICachedPage> queue;
 
-        public AbstractTreeIndexBulkLoader(float fillFactor, boolean makeImmutable) throws TreeIndexException,
-                HyracksDataException {
+        public AbstractTreeIndexBulkLoader(float fillFactor, boolean makeImmutable) throws TreeIndexException, HyracksDataException {
             leafFrame = leafFrameFactory.createFrame();
             interiorFrame = interiorFrameFactory.createFrame();
             metaFrame = freePageManager.getMetaDataFrameFactory().createFrame();
+            
+            queue = bufferCache.createFIFOQueue();
 
             if (!isEmptyTree(leafFrame)) {
                 throw new TreeIndexException("Cannot bulk-load a non-empty tree.");
@@ -362,6 +366,7 @@ public abstract class AbstractTreeIndex implements ITreeIndex {
                     }
                 }
             }
+            bufferCache.finishQueue(queue);
         }
 
         protected void addLevel() throws HyracksDataException {
