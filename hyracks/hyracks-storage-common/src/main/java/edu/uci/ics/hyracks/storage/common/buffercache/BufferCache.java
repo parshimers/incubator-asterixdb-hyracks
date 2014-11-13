@@ -48,7 +48,7 @@ public class BufferCache implements IBufferCacheInternal, ILifeCycleComponent {
 
     private final int pageSize;
     private final int maxOpenFiles;
-    private final IIOManager ioManager;
+    final IIOManager ioManager;
     private final CacheBucket[] pageMap;
     private final IPageReplacementStrategy pageReplacementStrategy;
     private final IPageCleanerPolicy pageCleanerPolicy;
@@ -56,7 +56,7 @@ public class BufferCache implements IBufferCacheInternal, ILifeCycleComponent {
     private final CleanerThread cleanerThread;
     private final Map<Integer, BufferedFileHandle> fileInfoMap;
     private final Set<Integer> virtualFiles;
-    private final AsyncFIFOFileWriter fifoWriter;
+    private final AsyncFIFOPageQueueManager fifoWriter;
 
     private final Set<Long> DEBUG_writtenPages;
 
@@ -86,7 +86,7 @@ public class BufferCache implements IBufferCacheInternal, ILifeCycleComponent {
         executor.execute(cleanerThread);
         closed = false;
         
-        fifoWriter = new AsyncFIFOFileWriter();
+        fifoWriter = new AsyncFIFOPageQueueManager();
 
         DEBUG_writtenPages = new HashSet<Long>();
     }
@@ -437,7 +437,7 @@ public class BufferCache implements IBufferCacheInternal, ILifeCycleComponent {
                 cPage.buffer);
     }
 
-    private BufferedFileHandle getFileInfo(CachedPage cPage) throws HyracksDataException {
+    BufferedFileHandle getFileInfo(CachedPage cPage) throws HyracksDataException {
         synchronized (fileInfoMap) {
             BufferedFileHandle fInfo = fileInfoMap.get(BufferedFileHandle.getFileId(cPage.dpid));
             if (fInfo == null) {
@@ -935,7 +935,7 @@ public class BufferCache implements IBufferCacheInternal, ILifeCycleComponent {
 
     @Override
     public ConcurrentLinkedQueue<ICachedPage> createFIFOQueue() {
-        return fifoWriter.createQueue();
+        return fifoWriter.createQueue(this, FIFOLocalWriter.instance());
     }
 
     @Override
