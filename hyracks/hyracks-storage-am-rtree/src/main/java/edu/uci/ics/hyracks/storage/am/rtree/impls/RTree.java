@@ -974,6 +974,7 @@ public class RTree extends AbstractTreeIndex {
                     lowerFrame.setPage(prev.page);
                 } else {
                     n.page.releaseWriteLatch(true);
+                    bufferCache.unpin(n.page);
                     prev = n;
                     lowerFrame.setPage(prev.page);
                 }
