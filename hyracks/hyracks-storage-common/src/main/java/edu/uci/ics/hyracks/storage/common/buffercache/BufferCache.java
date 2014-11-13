@@ -48,7 +48,7 @@ public class BufferCache implements IBufferCacheInternal, ILifeCycleComponent {
 
     private final int pageSize;
     private final int maxOpenFiles;
-    private final IIOManager ioManager;
+    final IIOManager ioManager;
     private final CacheBucket[] pageMap;
     private final IPageReplacementStrategy pageReplacementStrategy;
     private final IPageCleanerPolicy pageCleanerPolicy;
@@ -56,7 +56,7 @@ public class BufferCache implements IBufferCacheInternal, ILifeCycleComponent {
     private final CleanerThread cleanerThread;
     private final Map<Integer, BufferedFileHandle> fileInfoMap;
     private final Set<Integer> virtualFiles;
-    private final AsyncFIFOFileWriter fifoWriter;
+    private final AsyncFIFOPageQueueManager fifoWriter;
 
     private final Set<Long> DEBUG_writtenPages;
 
@@ -85,6 +85,8 @@ public class BufferCache implements IBufferCacheInternal, ILifeCycleComponent {
         cleanerThread = new CleanerThread();
         executor.execute(cleanerThread);
         closed = false;
+        
+        fifoWriter = new AsyncFIFOPageQueueManager();
 
         fifoWriter = new AsyncFIFOFileWriter(ioManager, this);
         DEBUG_writtenPages = new HashSet<Long>();
@@ -436,7 +438,7 @@ public class BufferCache implements IBufferCacheInternal, ILifeCycleComponent {
                 cPage.buffer);
     }
 
-    private BufferedFileHandle getFileInfo(CachedPage cPage) throws HyracksDataException {
+    BufferedFileHandle getFileInfo(CachedPage cPage) throws HyracksDataException {
         synchronized (fileInfoMap) {
             BufferedFileHandle fInfo = fileInfoMap.get(BufferedFileHandle.getFileId(cPage.dpid));
             if (fInfo == null) {
@@ -455,10 +457,6 @@ public class BufferCache implements IBufferCacheInternal, ILifeCycleComponent {
         cPage.buffer.limit(pageSize);
         ioManager.syncWrite(fInfo.getFileHandle(), (long) BufferedFileHandle.getPageId(cPage.dpid) * pageSize,
                 cPage.buffer);
-    }
-
-    public void write(ICachedPage cPage) throws HyracksDataException {
-        write((CachedPage) cPage);
     }
 
     @Override
@@ -664,6 +662,7 @@ public class BufferCache implements IBufferCacheInternal, ILifeCycleComponent {
             BufferedFileHandle fInfo;
             fInfo = fileInfoMap.get(fileId);
             if (fInfo == null) {
+
                 // map is full, make room by cleaning up unreferenced files
                 boolean unreferencedFileFound = true;
                 while (fileInfoMap.size() >= maxOpenFiles && unreferencedFileFound) {
@@ -939,7 +938,7 @@ public class BufferCache implements IBufferCacheInternal, ILifeCycleComponent {
 
     @Override
     public ConcurrentLinkedQueue<ICachedPage> createFIFOQueue() {
-        return fifoWriter.createQueue();
+        return fifoWriter.createQueue(this, FIFOLocalWriter.instance());
     }
 
     @Override
