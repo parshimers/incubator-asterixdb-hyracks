@@ -97,7 +97,7 @@ public abstract class AbstractTreeIndex implements ITreeIndex {
         }
 
         freePageManager.open(fileId);
-        if(freePageManager.getFirstMetadataPage() < 1) {
+        if (freePageManager.getFirstMetadataPage() < 1) {
             // regular or empty tree
             rootPage = 1;
         } else {
@@ -262,19 +262,21 @@ public abstract class AbstractTreeIndex implements ITreeIndex {
         protected ITreeIndexFrame leafFrame;
         protected ITreeIndexFrame interiorFrame;
         protected boolean makeImmutable = true;//DEBUG;
-            // Immutable bulk loaders write their root page at page -2, as needed e.g. by append-only file systems such as HDFS. 
-            // Since loading this tree relies on the root page actually being at that point, no further inserts into that tree are allowed.
-            // Currently, this is not enforced.
+        // Immutable bulk loaders write their root page at page -2, as needed e.g. by append-only file systems such as HDFS. 
+        // Since loading this tree relies on the root page actually being at that point, no further inserts into that tree are allowed.
+        // Currently, this is not enforced.
+        private boolean fifo = true;
         protected boolean releasedLatches;
         protected int virtualFileId = bufferCache.createMemFile();
         protected int virtualPageIncrement = 0;
         protected final ConcurrentLinkedQueue<ICachedPage> queue;
 
-        public AbstractTreeIndexBulkLoader(float fillFactor, boolean makeImmutable) throws TreeIndexException, HyracksDataException {
+        public AbstractTreeIndexBulkLoader(float fillFactor, boolean makeImmutable) throws TreeIndexException,
+                HyracksDataException {
             leafFrame = leafFrameFactory.createFrame();
             interiorFrame = interiorFrameFactory.createFrame();
             metaFrame = freePageManager.getMetaDataFrameFactory().createFrame();
-            
+
             queue = bufferCache.createFIFOQueue();
 
             if (!isEmptyTree(leafFrame)) {
@@ -290,7 +292,14 @@ public abstract class AbstractTreeIndex implements ITreeIndex {
 
             NodeFrontier leafFrontier = new NodeFrontier(leafFrame.createTupleReference());
             leafFrontier.pageId = freePageManager.getFreePage(metaFrame);
-            leafFrontier.page = bufferCache.pin(BufferedFileHandle.getDiskPageId(fileId, leafFrontier.pageId), true);
+            if (fifo) {
+                leafFrontier.page = bufferCache.confiscatePage(BufferedFileHandle.getDiskPageId(fileId,
+                        leafFrontier.pageId));
+            } else {
+
+                leafFrontier.page = bufferCache
+                        .pin(BufferedFileHandle.getDiskPageId(fileId, leafFrontier.pageId), true);
+            }
             leafFrontier.page.acquireWriteLatch();
 
             interiorFrame.setPage(leafFrontier.page);
@@ -311,18 +320,21 @@ public abstract class AbstractTreeIndex implements ITreeIndex {
             // Unlatch and unpin pages.
             for (NodeFrontier nodeFrontier : nodeFrontiers) {
                 ICachedPage frontierPage = nodeFrontier.page;
-                if (bufferCache.isVirtual(frontierPage)) {
-                    frontierPage.releaseWriteLatch(true);
-                    bufferCache.unpin(frontierPage);
-                    continue;
-                } else {
-                    frontierPage.releaseWriteLatch(true);
-                    int finalPageId = freePageManager.getFreePage(metaFrame);
-                    ICachedPage realPage = bufferCache.unpinVirtual(nodeFrontier.page,
-                            BufferedFileHandle.getDiskPageId(fileId, finalPageId));
-                    bufferCache.unpin(realPage);
+                if (!fifo) {
+                    if (bufferCache.isVirtual(frontierPage)) {
+                        frontierPage.releaseWriteLatch(true);
+                        bufferCache.unpin(frontierPage);
+                        continue;
+                    } else {
+                        frontierPage.releaseWriteLatch(true);
+                        int finalPageId = freePageManager.getFreePage(metaFrame);
+                        ICachedPage realPage = bufferCache.unpinVirtual(nodeFrontier.page,
+                                BufferedFileHandle.getDiskPageId(fileId, finalPageId));
+                        bufferCache.unpin(realPage);
+                    }
                 }
             }
+            bufferCache.finishQueue(queue);
             releasedLatches = true;
         }
 
@@ -362,7 +374,11 @@ public abstract class AbstractTreeIndex implements ITreeIndex {
                         } catch (Exception e) {
                             //ignore illegal monitor state exception
                         }
-                        bufferCache.unpin(nodeFrontiers.get(i).page);
+                        if (fifo) {
+                            queue.offer(nodeFrontiers.get(i).page);
+                        } else {
+                            bufferCache.unpin(nodeFrontiers.get(i).page);
+                        }
                     }
                 }
             }
@@ -372,8 +388,14 @@ public abstract class AbstractTreeIndex implements ITreeIndex {
         protected void addLevel() throws HyracksDataException {
             NodeFrontier frontier = new NodeFrontier(tupleWriter.createTupleReference());
             //frontier.pageId = freePageManager.getFreePage(metaFrame);
-            frontier.pageId = ++virtualPageIncrement;
-            frontier.page = bufferCache.pinVirtual(BufferedFileHandle.getDiskPageId(virtualFileId, frontier.pageId));
+            if (fifo) {
+                frontier.page = bufferCache.confiscatePage(-1);
+            } else {
+
+                frontier.pageId = ++virtualPageIncrement;
+                frontier.page = bufferCache
+                        .pinVirtual(BufferedFileHandle.getDiskPageId(virtualFileId, frontier.pageId));
+            }
             frontier.page.acquireWriteLatch();
             frontier.lastTuple.setFieldCount(cmp.getKeyFieldCount());
             interiorFrame.setPage(frontier.page);

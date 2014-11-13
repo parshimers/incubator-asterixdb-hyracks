@@ -404,12 +404,6 @@ public class VirtualBufferCache implements IVirtualBufferCache {
     }
 
     @Override
-    public ICachedPage confiscatePage() {
-        // TODO Auto-generated method stub
-        return null;
-    }
-
-    @Override
     public void returnPage(ICachedPage page) {
         // TODO Auto-generated method stub
 
@@ -423,6 +417,18 @@ public class VirtualBufferCache implements IVirtualBufferCache {
     @Override
     public void finishQueue(ConcurrentLinkedQueue<ICachedPage> queue) {
         throw new UnsupportedOperationException("Virtual buffer caches don't have FIFO writers");
+    }
+
+    @Override
+    public ICachedPage confiscatePage(long dpid) {
+        // TODO Auto-generated method stub
+        return null;
+    }
+
+    @Override
+    public void write(ICachedPage cPage) throws HyracksDataException {
+        // TODO Auto-generated method stub
+        
     }
 
 }

@@ -216,8 +216,8 @@ public class DebugBufferCache implements IBufferCache {
     }
 
     @Override
-    public ICachedPage confiscatePage() {
-        return bufferCache.confiscatePage();
+    public ICachedPage confiscatePage(long dpid) {
+        return bufferCache.confiscatePage(dpid);
     }
 
     @Override
@@ -233,6 +233,12 @@ public class DebugBufferCache implements IBufferCache {
     @Override
     public void finishQueue(ConcurrentLinkedQueue<ICachedPage> queue) {
         bufferCache.finishQueue(queue);
+    }
+
+    @Override
+    public void write(ICachedPage cPage) throws HyracksDataException {
+        // TODO Auto-generated method stub
+        
     }
 
 }

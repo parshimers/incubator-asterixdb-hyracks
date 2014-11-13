@@ -53,6 +53,7 @@ import edu.uci.ics.hyracks.storage.am.rtree.api.IRTreeLeafFrame;
 import edu.uci.ics.hyracks.storage.am.rtree.frames.RTreeNSMFrame;
 import edu.uci.ics.hyracks.storage.am.rtree.frames.RTreeNSMInteriorFrame;
 import edu.uci.ics.hyracks.storage.am.rtree.tuples.RTreeTypeAwareTupleWriter;
+import edu.uci.ics.hyracks.storage.common.buffercache.AsyncFIFOFileWriter;
 import edu.uci.ics.hyracks.storage.common.buffercache.IBufferCache;
 import edu.uci.ics.hyracks.storage.common.buffercache.ICachedPage;
 import edu.uci.ics.hyracks.storage.common.file.BufferedFileHandle;
@@ -65,6 +66,7 @@ public class RTree extends AbstractTreeIndex {
     private final static int BULKLOAD_LEAF_START = 2;
 
     private final int maxTupleSize;
+    private final boolean fifo = true;
 
     public RTree(IBufferCache bufferCache, IFileMapProvider fileMapProvider, IFreePageManager freePageManager,
             ITreeIndexFrameFactory interiorFrameFactory, ITreeIndexFrameFactory leafFrameFactory,
@@ -923,9 +925,15 @@ public class RTree extends AbstractTreeIndex {
 
                     leafFrontier.pageId = freePageManager.getFreePage(metaFrame);
                     leafFrontier.page.releaseWriteLatch(true);
-                    bufferCache.unpin(leafFrontier.page);
-                    leafFrontier.page = bufferCache.pin(BufferedFileHandle.getDiskPageId(fileId, leafFrontier.pageId),
-                            true);
+                    if (fifo) {
+                        queue.offer(leafFrontier.page);
+                        leafFrontier.page = bufferCache.confiscatePage(BufferedFileHandle.getDiskPageId(fileId,
+                                leafFrontier.pageId));
+                    } else {
+                        bufferCache.unpin(leafFrontier.page);
+                        leafFrontier.page = bufferCache.pin(
+                                BufferedFileHandle.getDiskPageId(fileId, leafFrontier.pageId), true);
+                    }
                     leafFrontier.page.acquireWriteLatch();
                     leafFrame.setPage(leafFrontier.page);
                     leafFrame.initBuffer((byte) 0);
@@ -966,15 +974,26 @@ public class RTree extends AbstractTreeIndex {
 
                     int finalPageId = freePageManager.getFreePage(metaFrame);
                     n.page.releaseWriteLatch(true);
-                    ICachedPage finalPage = bufferCache.unpinVirtual(n.page, finalPageId);
-                    n.page = finalPage;
+                    if (fifo) {
+                        AsyncFIFOFileWriter.setDpid(n.page, BufferedFileHandle.getDiskPageId(fileId, finalPageId));
+                        queue.offer(n.page);
+                    } else {
+
+                        ICachedPage finalPage = bufferCache.unpinVirtual(n.page,
+                                BufferedFileHandle.getDiskPageId(fileId, finalPageId));
+                        n.page = finalPage;
+                        bufferCache.unpin(prev.page);
+                    }
                     n.pageId = finalPageId;
-                    bufferCache.unpin(prev.page);
                     prev = n;
                     lowerFrame.setPage(prev.page);
                 } else {
                     n.page.releaseWriteLatch(true);
-                    bufferCache.unpin(n.page);
+                    if (fifo) {
+                        queue.offer(n.page);
+                    } else {
+                        bufferCache.unpin(n.page);
+                    }
                     prev = n;
                     lowerFrame.setPage(prev.page);
                 }
@@ -1014,7 +1033,7 @@ public class RTree extends AbstractTreeIndex {
             int sizeOfTwoTuples = 2 * (mbrTuple.getTupleSize() + RTreeNSMInteriorFrame.childPtrSize);
             FrameOpSpaceStatus spaceForTwoTuples = (((RTreeNSMInteriorFrame) interiorFrame)
                     .hasSpaceInsert(sizeOfTwoTuples));
-            if ( spaceForTwoTuples!= FrameOpSpaceStatus.SUFFICIENT_CONTIGUOUS_SPACE && !toRoot) {
+            if (spaceForTwoTuples != FrameOpSpaceStatus.SUFFICIENT_CONTIGUOUS_SPACE && !toRoot) {
 
                 int finalPageId = freePageManager.getFreePage(metaFrame);
                 if (prevNodeFrontierPages.size() <= level) {
@@ -1023,21 +1042,31 @@ public class RTree extends AbstractTreeIndex {
                     prevNodeFrontierPages.set(level, finalPageId);
                 }
                 frontier.page.releaseWriteLatch(true);
-                ICachedPage finalPage = bufferCache.unpinVirtual(frontier.page,
-                        BufferedFileHandle.getDiskPageId(fileId, finalPageId));
-                bufferCache.unpin(finalPage);
+                if (fifo) {
+                    AsyncFIFOFileWriter.setDpid(frontier.page, BufferedFileHandle.getDiskPageId(fileId,finalPageId));
+                    queue.offer(frontier.page);
+                } else {
+                    ICachedPage finalPage = bufferCache.unpinVirtual(frontier.page,
+                            BufferedFileHandle.getDiskPageId(fileId, finalPageId));
+                    bufferCache.unpin(finalPage);
+                }
 
                 lowerFrame = prevInteriorFrame;
                 lowerFrame.setPage(frontier.page);
 
-                frontier.pageId = ++virtualPageIncrement;
-                frontier.page = bufferCache
-                        .pinVirtual(BufferedFileHandle.getDiskPageId(virtualFileId, frontier.pageId));
+                if (fifo) {
+                    frontier.page = bufferCache.confiscatePage(-1);
+                } else {
+
+                    frontier.pageId = ++virtualPageIncrement;
+                    frontier.page = bufferCache.pinVirtual(BufferedFileHandle.getDiskPageId(virtualFileId,
+                            frontier.pageId));
+                }
                 frontier.page.acquireWriteLatch();
                 interiorFrame.setPage(frontier.page);
                 interiorFrame.initBuffer((byte) level);
 
-                interiorFrame.insert(mbrTuple,AbstractSlotManager.GREATEST_KEY_INDICATOR );
+                interiorFrame.insert(mbrTuple, AbstractSlotManager.GREATEST_KEY_INDICATOR);
 
                 interiorFrame.getBuffer().putInt(
                         interiorFrame.getTupleOffset(interiorFrame.getTupleCount() - 1) + mbrTuple.getTupleSize(),

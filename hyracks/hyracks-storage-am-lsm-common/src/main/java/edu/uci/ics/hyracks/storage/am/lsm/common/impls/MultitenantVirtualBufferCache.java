@@ -172,8 +172,8 @@ public class MultitenantVirtualBufferCache implements IVirtualBufferCache {
     }
 
     @Override
-    public ICachedPage confiscatePage() {
-        return vbc.confiscatePage();
+    public ICachedPage confiscatePage(long dpid) {
+        return vbc.confiscatePage(dpid);
     }
 
     @Override
@@ -189,5 +189,11 @@ public class MultitenantVirtualBufferCache implements IVirtualBufferCache {
     @Override
     public void finishQueue(ConcurrentLinkedQueue<ICachedPage> queue) {
         throw new UnsupportedOperationException("Virtual buffer caches don't have FIFO writers");
+    }
+
+    @Override
+    public void write(ICachedPage cPage) throws HyracksDataException {
+        // TODO Auto-generated method stub
+        
     }
 }
