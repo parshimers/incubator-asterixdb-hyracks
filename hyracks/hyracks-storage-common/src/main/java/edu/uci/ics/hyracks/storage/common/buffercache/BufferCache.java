@@ -438,8 +438,12 @@ public class BufferCache implements IBufferCacheInternal, ILifeCycleComponent {
     }
 
     BufferedFileHandle getFileInfo(CachedPage cPage) throws HyracksDataException {
+        return getFileInfo(BufferedFileHandle.getFileId(cPage.dpid));
+    }
+    
+    BufferedFileHandle getFileInfo(int fileId) throws HyracksDataException {
         synchronized (fileInfoMap) {
-            BufferedFileHandle fInfo = fileInfoMap.get(BufferedFileHandle.getFileId(cPage.dpid));
+            BufferedFileHandle fInfo = fileInfoMap.get(fileId);
             if (fInfo == null) {
                 throw new HyracksDataException("No such file mapped");
             }
