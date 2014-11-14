@@ -88,7 +88,6 @@ public class BufferCache implements IBufferCacheInternal, ILifeCycleComponent {
         
         fifoWriter = new AsyncFIFOPageQueueManager();
 
-        fifoWriter = new AsyncFIFOFileWriter(ioManager, this);
         DEBUG_writtenPages = new HashSet<Long>();
     }
 

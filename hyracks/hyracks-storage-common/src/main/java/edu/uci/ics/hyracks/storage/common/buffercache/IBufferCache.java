@@ -71,6 +71,4 @@ public interface IBufferCache {
 
     public void finishQueue(ConcurrentLinkedQueue<ICachedPage> queue);
 
-    public void write(ICachedPage cPage) throws HyracksDataException;
-
 }

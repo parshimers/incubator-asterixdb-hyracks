@@ -190,10 +190,4 @@ public class MultitenantVirtualBufferCache implements IVirtualBufferCache {
     public void finishQueue(ConcurrentLinkedQueue<ICachedPage> queue) {
         throw new UnsupportedOperationException("Virtual buffer caches don't have FIFO writers");
     }
-
-    @Override
-    public void write(ICachedPage cPage) throws HyracksDataException {
-        // TODO Auto-generated method stub
-        
-    }
 }

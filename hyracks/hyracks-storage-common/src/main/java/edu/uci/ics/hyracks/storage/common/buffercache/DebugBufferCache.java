@@ -235,10 +235,4 @@ public class DebugBufferCache implements IBufferCache {
         bufferCache.finishQueue(queue);
     }
 
-    @Override
-    public void write(ICachedPage cPage) throws HyracksDataException {
-        // TODO Auto-generated method stub
-        
-    }
-
 }
