@@ -61,6 +61,7 @@ import edu.uci.ics.hyracks.storage.am.common.impls.NodeFrontier;
 import edu.uci.ics.hyracks.storage.am.common.impls.TreeIndexDiskOrderScanCursor;
 import edu.uci.ics.hyracks.storage.am.common.ophelpers.IndexOperation;
 import edu.uci.ics.hyracks.storage.am.common.ophelpers.MultiComparator;
+import edu.uci.ics.hyracks.storage.common.buffercache.AsyncFIFOFileWriter;
 import edu.uci.ics.hyracks.storage.common.buffercache.IBufferCache;
 import edu.uci.ics.hyracks.storage.common.buffercache.ICachedPage;
 import edu.uci.ics.hyracks.storage.common.file.BufferedFileHandle;
@@ -73,10 +74,12 @@ public class BTree extends AbstractTreeIndex {
     private final static long RESTART_OP = Long.MIN_VALUE;
     private final static long FULL_RESTART_OP = Long.MIN_VALUE + 1;
     private final static int MAX_RESTARTS = 10;
+    private final static int BULKLOAD_LEAF_START = 2;
 
     private final AtomicInteger smoCounter;
     private final ReadWriteLock treeLatch;
     private final int maxTupleSize;
+    private boolean fifo = true;
 
     public BTree(IBufferCache bufferCache, IFileMapProvider fileMapProvider, IFreePageManager freePageManager,
             ITreeIndexFrameFactory interiorFrameFactory, ITreeIndexFrameFactory leafFrameFactory,
@@ -97,7 +100,7 @@ public class BTree extends AbstractTreeIndex {
         RangePredicate diskOrderScanPred = new RangePredicate(null, null, true, true, ctx.cmp, ctx.cmp);
         IBTreeInteriorFrame rootFrame = (IBTreeInteriorFrame) interiorFrameFactory.createFrame();
         int maxPageId = freePageManager.getMaxPage(ctx.metaFrame);
-        int currentPageId = 2;
+        int currentPageId = BULKLOAD_LEAF_START;
         ICachedPage page = bufferCache.pin(BufferedFileHandle.getDiskPageId(fileId, currentPageId), false);
         page.acquireReadLatch();
         try {
@@ -998,14 +1001,21 @@ public class BTree extends AbstractTreeIndex {
 
                     ((IBTreeLeafFrame) leafFrame).setNextLeaf(leafFrontier.pageId);
                     leafFrontier.page.releaseWriteLatch(true);
-                    bufferCache.unpin(leafFrontier.page);
-                    queue.offer(leafFrontier.page);
+                    if (fifo) {
+                        queue.offer(leafFrontier.page);
+                    } else {
+                        bufferCache.unpin(leafFrontier.page);
+                    }
 
                     splitKey.setRightPage(leafFrontier.pageId);
                     propagateBulk(1);
-
-                    leafFrontier.page = bufferCache.pin(BufferedFileHandle.getDiskPageId(fileId, leafFrontier.pageId),
-                            true);
+                    if (fifo) {
+                        leafFrontier.page = bufferCache.confiscatePage(BufferedFileHandle.getDiskPageId(fileId,
+                                leafFrontier.pageId));
+                    } else {
+                        leafFrontier.page = bufferCache.pin(
+                                BufferedFileHandle.getDiskPageId(fileId, leafFrontier.pageId), true);
+                    }
                     leafFrontier.page.acquireWriteLatch();
                     leafFrame.setPage(leafFrontier.page);
                     leafFrame.initBuffer((byte) 0);
@@ -1071,16 +1081,25 @@ public class BTree extends AbstractTreeIndex {
 
                 frontier.page.releaseWriteLatch(true);
                 int finalPageId = freePageManager.getFreePage(metaFrame);
-                ICachedPage realPage = bufferCache.unpinVirtual(frontier.page,
-                        BufferedFileHandle.getDiskPageId(fileId, finalPageId));
-                bufferCache.unpin(realPage);
+                if (fifo) {
+                    AsyncFIFOFileWriter.setDpid(frontier.page, BufferedFileHandle.getDiskPageId(fileId, finalPageId));
+                    queue.offer(frontier.page);
+                } else {
+                    ICachedPage realPage = bufferCache.unpinVirtual(frontier.page,
+                            BufferedFileHandle.getDiskPageId(fileId, finalPageId));
+                    bufferCache.unpin(realPage);
+                }
                 //splitKey.setRightPage();
                 splitKey.setLeftPage(finalPageId);
 
                 propagateBulk(level + 1);
-                frontier.pageId = ++virtualPageIncrement;
-                frontier.page = bufferCache
-                        .pinVirtual(BufferedFileHandle.getDiskPageId(virtualFileId, frontier.pageId));
+                if (fifo) {
+                    frontier.page = bufferCache.confiscatePage(-1);
+                } else {
+                    frontier.pageId = ++virtualPageIncrement;
+                    frontier.page = bufferCache.pinVirtual(BufferedFileHandle.getDiskPageId(virtualFileId,
+                            frontier.pageId));
+                }
                 frontier.page.acquireWriteLatch();
                 interiorFrame.setPage(frontier.page);
                 interiorFrame.initBuffer((byte) level);
@@ -1097,7 +1116,11 @@ public class BTree extends AbstractTreeIndex {
             if (level < 1) {
                 ICachedPage lastLeaf = nodeFrontiers.get(level).page;
                 lastLeaf.releaseWriteLatch(true);
-                bufferCache.unpin(lastLeaf);
+                if (fifo) {
+                    queue.offer(lastLeaf);
+                } else {
+                    bufferCache.unpin(lastLeaf);
+                }
                 finalize(level + 1, -1);
                 return;
             }
@@ -1110,11 +1133,16 @@ public class BTree extends AbstractTreeIndex {
             //otherwise...
             frontier.page.releaseWriteLatch(false);
             int finalPageId = freePageManager.getFreePage(metaFrame);
-            ICachedPage realPage = bufferCache.unpinVirtual(frontier.page,
-                    BufferedFileHandle.getDiskPageId(fileId, finalPageId));
-            bufferCache.unpin(realPage);
+            if (fifo) {
+                AsyncFIFOFileWriter.setDpid(frontier.page, BufferedFileHandle.getDiskPageId(fileId, finalPageId));
+                queue.offer(frontier.page);
+            } else {
+                ICachedPage realPage = bufferCache.unpinVirtual(frontier.page,
+                        BufferedFileHandle.getDiskPageId(fileId, finalPageId));
+                bufferCache.unpin(realPage);
+                frontier.page = realPage;
+            }
             frontier.pageId = finalPageId;
-            frontier.page = realPage;
 
             finalize(level + 1, finalPageId);
         }
@@ -1150,12 +1178,16 @@ public class BTree extends AbstractTreeIndex {
                             } catch (Exception e) {
                                 //ignore illegal monitor state exception
                             }
-                            bufferCache.unpin(nodeFrontiers.get(i).page);
+                            if (!fifo) {
+                                bufferCache.unpin(nodeFrontiers.get(i).page);
+                            }
                         }
                     }
                 }
             }
-            bufferCache.finishQueue(queue);
+            if (fifo) {
+                bufferCache.finishQueue(queue);
+            }
         }
     }
 

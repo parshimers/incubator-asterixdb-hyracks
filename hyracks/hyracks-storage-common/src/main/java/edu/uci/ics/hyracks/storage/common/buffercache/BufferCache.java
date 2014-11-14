@@ -88,6 +88,7 @@ public class BufferCache implements IBufferCacheInternal, ILifeCycleComponent {
         
         fifoWriter = new AsyncFIFOPageQueueManager();
 
+        fifoWriter = new AsyncFIFOFileWriter(ioManager, this);
         DEBUG_writtenPages = new HashSet<Long>();
     }
 
@@ -360,7 +361,7 @@ public class BufferCache implements IBufferCacheInternal, ILifeCycleComponent {
                         } else {
                             CachedPage victimPrev = victimBucket.cachedPage;
                             while (victimPrev != null && victimPrev.next != victim) {
-                                    victimPrev = victimPrev.next;
+                                victimPrev = victimPrev.next;
                             }
                             assert victimPrev != null;
                             victimPrev.next = victim.next;
@@ -749,8 +750,9 @@ public class BufferCache implements IBufferCacheInternal, ILifeCycleComponent {
                 pinCount = cPage.pinCount.get();
             }
             if (pinCount > 0) {
-                throw new IllegalStateException("Page is pinned and file is being closed. Pincount is: " + pinCount
-                        + " Page is virtual: " + cPage.virtual);
+                throw new IllegalStateException("Page " + cPage.dpid
+                        + " is pinned and file is being closed. Pincount is: " + pinCount + " Page is virtual: "
+                        + cPage.virtual);
             }
             cPage.invalidate();
             return true;
@@ -884,7 +886,7 @@ public class BufferCache implements IBufferCacheInternal, ILifeCycleComponent {
     }
 
     @Override
-    public ICachedPage confiscatePage() {
+    public ICachedPage confiscatePage(long dpid) {
         synchronized (cachedPages) {
             for (ICachedPageInternal cPage : cachedPages) {
                 //find a page that would possibly be evicted anyway
@@ -912,6 +914,7 @@ public class BufferCache implements IBufferCacheInternal, ILifeCycleComponent {
                             pageReplacementStrategy.subtractPage();
                             cachedPages.remove(cPage);
                         }
+                        ((CachedPage)cPage).dpid = dpid;
                         return cPage;
                     } finally {
                         bucket.bucketLock.unlock();

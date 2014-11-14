@@ -22,7 +22,7 @@ import edu.uci.ics.hyracks.api.io.IFileHandle;
 
 public interface IBufferCache {
     public void createFile(FileReference fileRef) throws HyracksDataException;
-    
+
     public int createMemFile() throws HyracksDataException;
 
     public void openFile(int fileId) throws HyracksDataException;
@@ -36,9 +36,9 @@ public interface IBufferCache {
     public ICachedPage tryPin(long dpid) throws HyracksDataException;
 
     public ICachedPage pin(long dpid, boolean newPage) throws HyracksDataException;
-    
+
     public ICachedPage pinVirtual(long vpid) throws HyracksDataException;
-    
+
     public ICachedPage unpinVirtual(long vpid, long dpid) throws HyracksDataException;
 
     public ICachedPage unpinVirtual(ICachedPage vp, long dpid) throws HyracksDataException;
@@ -53,7 +53,7 @@ public interface IBufferCache {
 
     public void adviseWontNeed(ICachedPage page);
 
-    public ICachedPage confiscatePage();
+    public ICachedPage confiscatePage(long dpid);
 
     public void returnPage(ICachedPage page);
 
@@ -62,7 +62,7 @@ public interface IBufferCache {
     public int getPageSize();
 
     public int getNumPages();
-    
+
     public int getNumPagesOfFile(int fileId) throws HyracksDataException;
 
     public void close() throws HyracksDataException;
@@ -70,4 +70,7 @@ public interface IBufferCache {
     public ConcurrentLinkedQueue<ICachedPage> createFIFOQueue();
 
     public void finishQueue(ConcurrentLinkedQueue<ICachedPage> queue);
+
+    public void write(ICachedPage cPage) throws HyracksDataException;
+
 }
