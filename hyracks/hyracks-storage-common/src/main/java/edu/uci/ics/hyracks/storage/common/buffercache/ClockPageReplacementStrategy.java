@@ -29,7 +29,7 @@ public class ClockPageReplacementStrategy implements IPageReplacementStrategy {
     private ICacheMemoryAllocator allocator;
     private int numPages = 0;
     private final int pageSize;
-    private final int maxAllowedNumPages;
+    private int maxAllowedNumPages;
     private BlockingDeque<ICachedPageInternal> hatedPages;
 
     public ClockPageReplacementStrategy(ICacheMemoryAllocator allocator, int pageSize, int maxAllowedNumPages) {
@@ -121,19 +121,19 @@ public class ClockPageReplacementStrategy implements IPageReplacementStrategy {
         }
         return retNumPages;
     }
-    
-    public int subtractPage(){
+
+    public int subtractPage() {
         int retNumPages = 0;
         lock.lock();
-        try{
+        try {
             //if we're at the edge, push the clock pointer forward
             if (clockPtr == numPages - 1) {
                 clockPtr = 0;
             }
+            --maxAllowedNumPages;
             --numPages;
             retNumPages = numPages;
-        }
-        finally{
+        } finally {
             lock.unlock();
         }
         return retNumPages;
@@ -162,6 +162,15 @@ public class ClockPageReplacementStrategy implements IPageReplacementStrategy {
             }
         }
         return null;
+    }
+
+    public ICachedPageInternal allocateAndConfiscate() {
+        if (numPages >= maxAllowedNumPages) {
+            --maxAllowedNumPages;
+            CachedPage cPage = new CachedPage(numPages, allocator.allocate(pageSize, 1)[0], this);
+            return cPage;
+        }
+        else return null;
     }
 
     private AtomicBoolean getPerPageObject(ICachedPageInternal cPage) {

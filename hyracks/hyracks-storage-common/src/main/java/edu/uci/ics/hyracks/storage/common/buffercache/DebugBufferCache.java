@@ -216,7 +216,7 @@ public class DebugBufferCache implements IBufferCache {
     }
 
     @Override
-    public ICachedPage confiscatePage(long dpid) {
+    public ICachedPage confiscatePage(long dpid) throws HyracksDataException {
         return bufferCache.confiscatePage(dpid);
     }
 

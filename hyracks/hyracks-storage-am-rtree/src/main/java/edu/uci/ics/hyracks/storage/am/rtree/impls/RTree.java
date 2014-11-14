@@ -66,7 +66,6 @@ public class RTree extends AbstractTreeIndex {
     private final static int BULKLOAD_LEAF_START = 2;
 
     private final int maxTupleSize;
-    private final boolean fifo = true;
 
     public RTree(IBufferCache bufferCache, IFileMapProvider fileMapProvider, IFreePageManager freePageManager,
             ITreeIndexFrameFactory interiorFrameFactory, ITreeIndexFrameFactory leafFrameFactory,

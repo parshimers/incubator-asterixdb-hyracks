@@ -53,7 +53,7 @@ public interface IBufferCache {
 
     public void adviseWontNeed(ICachedPage page);
 
-    public ICachedPage confiscatePage(long dpid);
+    public ICachedPage confiscatePage(long dpid) throws HyracksDataException;
 
     public void returnPage(ICachedPage page);
 

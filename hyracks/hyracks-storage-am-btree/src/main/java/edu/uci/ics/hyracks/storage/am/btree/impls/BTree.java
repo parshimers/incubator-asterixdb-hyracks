@@ -79,7 +79,6 @@ public class BTree extends AbstractTreeIndex {
     private final AtomicInteger smoCounter;
     private final ReadWriteLock treeLatch;
     private final int maxTupleSize;
-    private boolean fifo = true;
 
     public BTree(IBufferCache bufferCache, IFileMapProvider fileMapProvider, IFreePageManager freePageManager,
             ITreeIndexFrameFactory interiorFrameFactory, ITreeIndexFrameFactory leafFrameFactory,

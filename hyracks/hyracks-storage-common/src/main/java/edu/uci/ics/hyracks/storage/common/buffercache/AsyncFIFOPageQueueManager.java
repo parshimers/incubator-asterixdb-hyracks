@@ -105,10 +105,9 @@ public class AsyncFIFOPageQueueManager implements Runnable {
     public void run() {
         System.out.println("[FIFO] Writer started");
         while(!haltWriter) {
-            System.out.println("[FIFO] Poll");
+            //System.out.println("[FIFO] Poll");
             boolean success = false;
             for(Queue queue : queues) {
-                System.out.println("Probing " + queue);
                 ICachedPage page = queue.getPageQueue().poll();
                 if(page == null) {
                     synchronized(queue.getPageQueue()) {
@@ -128,7 +127,7 @@ public class AsyncFIFOPageQueueManager implements Runnable {
             }
             if(!success) {
                 try {
-                    System.out.println("[FIFO] Sleep");
+                    //System.out.println("[FIFO] Sleep");
                     Thread.sleep(100);
                 } catch (InterruptedException e) {
                     // TODO Auto-generated catch block

@@ -265,7 +265,7 @@ public abstract class AbstractTreeIndex implements ITreeIndex {
         // Immutable bulk loaders write their root page at page -2, as needed e.g. by append-only file systems such as HDFS. 
         // Since loading this tree relies on the root page actually being at that point, no further inserts into that tree are allowed.
         // Currently, this is not enforced.
-        private boolean fifo = true;
+        protected boolean fifo = true;
         protected boolean releasedLatches;
         protected int virtualFileId = bufferCache.createMemFile();
         protected int virtualPageIncrement = 0;
