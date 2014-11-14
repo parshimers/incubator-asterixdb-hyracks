@@ -5,12 +5,14 @@ import java.util.concurrent.CopyOnWriteArrayList;
 
 import edu.uci.ics.hyracks.api.exceptions.HyracksDataException;
 import edu.uci.ics.hyracks.api.io.IFileHandle;
+import edu.uci.ics.hyracks.storage.common.file.BufferedFileHandle;
 
 public class AsyncFIFOPageQueueManager implements Runnable {
     protected class Queue {
         final ConcurrentLinkedQueue<ICachedPage> pageQueue;
         final IBufferCache bufferCache;
         final IFIFOPageWriter writer;
+        int fileid = -1;
         
         protected Queue(IBufferCache bufferCache, IFIFOPageWriter writer) {
             System.out.println("[FIFO] New Queue");
@@ -29,6 +31,14 @@ public class AsyncFIFOPageQueueManager implements Runnable {
         
         protected IFIFOPageWriter getWriter() {
             return writer;
+        }
+
+        public void setFileId(int fileid) {
+            this.fileid = fileid;
+        }
+
+        public int getFileId() {
+            return fileid;
         }
     }
     
@@ -61,12 +71,14 @@ public class AsyncFIFOPageQueueManager implements Runnable {
                 pageQueue.wait();
             }
             for(Queue queue : queues) {
+                boolean removed = false;
                 if(queue.getPageQueue() == pageQueue) {
-                    boolean removed = queues.remove(queue);
-                    assert(removed);
+                    removed = queues.remove(queue);
+                    if(queue.getFileId() != -1) queue.getWriter().sync(queue.getFileId(), queue.getBufferCache());
                     System.out.println("[FIFO] Removed? " + removed);
                     break;
                 }
+                assert(removed);
             }
             if(queues.size() == 0) {
                 synchronized(this) {
@@ -78,7 +90,7 @@ public class AsyncFIFOPageQueueManager implements Runnable {
                     }
                 }
             }
-        } catch (InterruptedException e) {
+        } catch (InterruptedException | HyracksDataException e) {
             // TODO what do we do here?
             e.printStackTrace();
         }
@@ -100,6 +112,7 @@ public class AsyncFIFOPageQueueManager implements Runnable {
                     }
                 } else {
                     System.out.println("[FIFO] Write " + page);
+                    queue.setFileId(BufferedFileHandle.getFileId(((CachedPage)page).dpid));
                     try {
                         queue.getWriter().write(page, queue.getBufferCache());
                     } catch (HyracksDataException e) {

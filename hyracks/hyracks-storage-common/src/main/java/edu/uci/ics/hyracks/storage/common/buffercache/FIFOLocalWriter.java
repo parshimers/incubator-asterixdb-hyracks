@@ -28,4 +28,11 @@ public class FIFOLocalWriter implements IFIFOPageWriter {
         bufferCache.returnPage(cPage);
         System.out.println("[FIFO] Return page");
     }
+    
+    @Override
+    public void sync(int fileId, IBufferCache ibufferCache) throws HyracksDataException {
+        BufferCache bufferCache = (BufferCache)ibufferCache;
+        BufferedFileHandle fInfo = bufferCache.getFileInfo(fileId);
+        bufferCache.ioManager.sync(fInfo.getFileHandle(), true);
+    }
 }
