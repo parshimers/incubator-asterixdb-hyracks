@@ -53,7 +53,7 @@ import edu.uci.ics.hyracks.storage.am.rtree.api.IRTreeLeafFrame;
 import edu.uci.ics.hyracks.storage.am.rtree.frames.RTreeNSMFrame;
 import edu.uci.ics.hyracks.storage.am.rtree.frames.RTreeNSMInteriorFrame;
 import edu.uci.ics.hyracks.storage.am.rtree.tuples.RTreeTypeAwareTupleWriter;
-import edu.uci.ics.hyracks.storage.common.buffercache.AsyncFIFOFileWriter;
+import edu.uci.ics.hyracks.storage.common.buffercache.AsyncFIFOPageQueueManager;
 import edu.uci.ics.hyracks.storage.common.buffercache.IBufferCache;
 import edu.uci.ics.hyracks.storage.common.buffercache.ICachedPage;
 import edu.uci.ics.hyracks.storage.common.file.BufferedFileHandle;
@@ -975,7 +975,7 @@ public class RTree extends AbstractTreeIndex {
                     int finalPageId = freePageManager.getFreePage(metaFrame);
                     n.page.releaseWriteLatch(true);
                     if (fifo) {
-                        AsyncFIFOFileWriter.setDpid(n.page, BufferedFileHandle.getDiskPageId(fileId, finalPageId));
+                        AsyncFIFOPageQueueManager.setDpid(n.page, BufferedFileHandle.getDiskPageId(fileId, finalPageId));
                         queue.offer(n.page);
                     } else {
 
@@ -1043,7 +1043,7 @@ public class RTree extends AbstractTreeIndex {
                 }
                 frontier.page.releaseWriteLatch(true);
                 if (fifo) {
-                    AsyncFIFOFileWriter.setDpid(frontier.page, BufferedFileHandle.getDiskPageId(fileId,finalPageId));
+                    AsyncFIFOPageQueueManager.setDpid(frontier.page, BufferedFileHandle.getDiskPageId(fileId,finalPageId));
                     queue.offer(frontier.page);
                 } else {
                     ICachedPage finalPage = bufferCache.unpinVirtual(frontier.page,

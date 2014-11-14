@@ -63,6 +63,10 @@ public class AsyncFIFOPageQueueManager implements Runnable {
         return queue.getPageQueue();
     }
     
+    public static void setDpid(ICachedPage page, long dpid){
+        ((CachedPage)page).dpid = dpid;
+    }
+    
     public void finishQueue(ConcurrentLinkedQueue<ICachedPage> pageQueue) {
         System.out.println("[FIFO] Finishing Queue");
         try {

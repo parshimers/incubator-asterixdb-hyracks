@@ -425,10 +425,4 @@ public class VirtualBufferCache implements IVirtualBufferCache {
         return null;
     }
 
-    @Override
-    public void write(ICachedPage cPage) throws HyracksDataException {
-        // TODO Auto-generated method stub
-        
-    }
-
 }
