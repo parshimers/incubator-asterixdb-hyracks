@@ -151,6 +151,17 @@ public class ClockPageReplacementStrategy implements IPageReplacementStrategy {
         return retNumPages;
     }
 
+    @Override
+    public void returnPage(){
+        addPage();
+        lock.lock();
+        try{
+            ++maxAllowedNumPages;
+        }finally{
+            lock.unlock();
+        }
+    }
+
     private ICachedPageInternal allocatePage() {
         CachedPage cPage = new CachedPage(numPages, allocator.allocate(pageSize, 1)[0], this);
         bufferCache.addPage(cPage);
@@ -165,7 +176,7 @@ public class ClockPageReplacementStrategy implements IPageReplacementStrategy {
     }
 
     public ICachedPageInternal allocateAndConfiscate() {
-        if (numPages >= maxAllowedNumPages) {
+        if (numPages < maxAllowedNumPages) {
             --maxAllowedNumPages;
             CachedPage cPage = new CachedPage(numPages, allocator.allocate(pageSize, 1)[0], this);
             return cPage;

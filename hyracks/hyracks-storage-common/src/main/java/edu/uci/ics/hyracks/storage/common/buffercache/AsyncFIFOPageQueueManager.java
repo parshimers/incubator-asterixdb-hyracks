@@ -114,7 +114,7 @@ public class AsyncFIFOPageQueueManager implements Runnable {
                         queue.getPageQueue().notifyAll();
                     }
                 } else {
-                    System.out.println("[FIFO] Write " + page);
+                    System.out.println("[FIFO] Write " + ((CachedPage)page).dpid);
                     queue.setFileId(BufferedFileHandle.getFileId(((CachedPage)page).dpid));
                     try {
                         queue.getWriter().write(page, queue.getBufferCache());

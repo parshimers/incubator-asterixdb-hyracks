@@ -467,7 +467,7 @@ public class BufferCache implements IBufferCacheInternal, ILifeCycleComponent {
         if (((CachedPage) page).dirty.get()
                 && !DEBUG_writtenPages.add(getFileInfo(((CachedPage) page)).getFileId() * 10000
                         + ((CachedPage) page).dpid)) {
-            boolean ignore = false;
+            boolean ignore = true;
             switch (((CachedPage) page).cpid) {
                 case 0: // metadata page
                 case 1: // root page of tree
@@ -893,6 +893,7 @@ public class BufferCache implements IBufferCacheInternal, ILifeCycleComponent {
                 returnPage = pageReplacementStrategy.allocateAndConfiscate();
                 if (returnPage != null) {
                     System.out.println("[FIFO] Confiscated and Allocated Page");
+                    ((CachedPage) returnPage).dpid = dpid;
                     return returnPage;
                 }
 
@@ -955,7 +956,6 @@ public class BufferCache implements IBufferCacheInternal, ILifeCycleComponent {
     public void returnPage(ICachedPage page) {
         CachedPage cPage = (CachedPage) page;
         synchronized (cachedPages) {
-            cachedPages.add(cPage);
             int pageHash = hash(cPage.getDiskPageId());
             try {
                 pageMap[pageHash].bucketLock.lock();
@@ -967,8 +967,9 @@ public class BufferCache implements IBufferCacheInternal, ILifeCycleComponent {
                 pageMap[pageHash].cachedPage = cPage;
             } finally {
                 pageMap[pageHash].bucketLock.unlock();
-
             }
+            cachedPages.add(cPage);
+            pageReplacementStrategy.returnPage();
         }
     }
 
