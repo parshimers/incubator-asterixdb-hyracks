@@ -960,8 +960,14 @@ public class RTree extends AbstractTreeIndex {
         protected void finalize() throws HyracksDataException {
             NodeFrontier prev = null;
             //here we assign physical identifiers to everything we can
+            if(fifo){
+                
+            }
+            else{
+                
+            }
             for (NodeFrontier n : nodeFrontiers) {
-                if (bufferCache.isVirtual(n.page)) {
+                if (nodeFrontiers.indexOf(n)!=0) {
                     interiorFrame.setPage(n.page);
                     ((RTreeNSMFrame) lowerFrame).adjustMBR();
                     tupleWriter.writeTupleFields(((RTreeNSMFrame) lowerFrame).getMBRTuples(), 0, mbr, 0);
