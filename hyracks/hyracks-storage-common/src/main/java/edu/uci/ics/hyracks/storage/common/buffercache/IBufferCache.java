@@ -71,4 +71,8 @@ public interface IBufferCache {
 
     public void finishQueue(ConcurrentLinkedQueue<ICachedPage> queue);
 
+    void copyPage(ICachedPage src, ICachedPage dst);
+
+    void setPageDiskId(ICachedPage page, long dpid);
+
 }

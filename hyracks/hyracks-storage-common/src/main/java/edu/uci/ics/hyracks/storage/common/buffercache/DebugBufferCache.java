@@ -235,4 +235,16 @@ public class DebugBufferCache implements IBufferCache {
         bufferCache.finishQueue(queue);
     }
 
+    @Override
+    public void copyPage(ICachedPage src, ICachedPage dst) {
+        // TODO Auto-generated method stub
+        
+    }
+
+    @Override
+    public void setPageDiskId(ICachedPage page, long dpid) {
+        // TODO Auto-generated method stub
+        
+    }
+
 }

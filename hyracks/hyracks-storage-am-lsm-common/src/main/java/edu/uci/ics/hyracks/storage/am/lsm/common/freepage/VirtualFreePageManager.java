@@ -114,4 +114,10 @@ public class VirtualFreePageManager implements IVirtualFreePageManager {
 
     }
 
+    @Override
+    public void init(ITreeIndexMetaDataFrame metaFrame) throws HyracksDataException {
+        // TODO Auto-generated method stub
+        
+    }
+
 }

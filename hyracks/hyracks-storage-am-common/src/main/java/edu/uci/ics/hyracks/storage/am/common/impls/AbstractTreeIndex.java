@@ -58,6 +58,9 @@ public abstract class AbstractTreeIndex implements ITreeIndex {
 
     private boolean isActivated = false;
 
+    protected boolean makeImmutable = true;//DEBUG;
+    protected boolean fifo = true; //DEBUG
+
     public AbstractTreeIndex(IBufferCache bufferCache, IFileMapProvider fileMapProvider,
             IFreePageManager freePageManager, ITreeIndexFrameFactory interiorFrameFactory,
             ITreeIndexFrameFactory leafFrameFactory, IBinaryComparatorFactory[] cmpFactories, int fieldCount,
@@ -104,7 +107,12 @@ public abstract class AbstractTreeIndex implements ITreeIndex {
             // bulkload-only tree (used e.g. for HDFS). -1 is meta page, -2 is root page
             rootPage = bufferCache.getNumPagesOfFile(fileId) - 2;
         }
-        initEmptyTree();
+        if (!makeImmutable) {
+            initEmptyTree();
+        } else {
+            //initVirtualMetaDataFrame();
+            initEmptyTree();
+        }
         freePageManager.close();
         bufferCache.closeFile(fileId);
     }
@@ -113,6 +121,22 @@ public abstract class AbstractTreeIndex implements ITreeIndex {
         ITreeIndexFrame frame = leafFrameFactory.createFrame();
         ITreeIndexMetaDataFrame metaFrame = freePageManager.getMetaDataFrameFactory().createFrame();
         freePageManager.init(metaFrame, rootPage);
+
+        ICachedPage rootNode = bufferCache.pin(BufferedFileHandle.getDiskPageId(fileId, rootPage), true);
+        rootNode.acquireWriteLatch();
+        try {
+            frame.setPage(rootNode);
+            frame.initBuffer((byte) 0);
+        } finally {
+            rootNode.releaseWriteLatch(true);
+            bufferCache.unpin(rootNode);
+        }
+    }
+
+    private void initVirtualMetaDataFrame() throws HyracksDataException {
+        ITreeIndexFrame frame = leafFrameFactory.createFrame();
+        ITreeIndexMetaDataFrame metaFrame = freePageManager.getMetaDataFrameFactory().createFrame();
+        freePageManager.init(metaFrame);
 
         ICachedPage rootNode = bufferCache.pin(BufferedFileHandle.getDiskPageId(fileId, rootPage), true);
         rootNode.acquireWriteLatch();
@@ -161,8 +185,8 @@ public abstract class AbstractTreeIndex implements ITreeIndex {
             throw new HyracksDataException("Failed to deactivate the index since it is already deactivated.");
         }
 
-        bufferCache.closeFile(fileId);
         freePageManager.close();
+        bufferCache.closeFile(fileId);
 
         isActivated = false;
     }
@@ -261,11 +285,9 @@ public abstract class AbstractTreeIndex implements ITreeIndex {
         protected final ITreeIndexTupleWriter tupleWriter;
         protected ITreeIndexFrame leafFrame;
         protected ITreeIndexFrame interiorFrame;
-        protected boolean makeImmutable = true;//DEBUG;
         // Immutable bulk loaders write their root page at page -2, as needed e.g. by append-only file systems such as HDFS. 
         // Since loading this tree relies on the root page actually being at that point, no further inserts into that tree are allowed.
         // Currently, this is not enforced.
-        protected boolean fifo = true;
         protected boolean releasedLatches;
         protected int virtualFileId = bufferCache.createMemFile();
         protected int virtualPageIncrement = 0;

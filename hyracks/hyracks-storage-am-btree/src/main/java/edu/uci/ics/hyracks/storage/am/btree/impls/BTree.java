@@ -74,7 +74,7 @@ public class BTree extends AbstractTreeIndex {
     private final static long RESTART_OP = Long.MIN_VALUE;
     private final static long FULL_RESTART_OP = Long.MIN_VALUE + 1;
     private final static int MAX_RESTARTS = 10;
-    private final static int BULKLOAD_LEAF_START = 2;
+    private final static int BULKLOAD_LEAF_START = 0;
 
     private final AtomicInteger smoCounter;
     private final ReadWriteLock treeLatch;

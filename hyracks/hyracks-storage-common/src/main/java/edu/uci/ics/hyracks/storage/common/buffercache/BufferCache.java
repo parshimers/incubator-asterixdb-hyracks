@@ -467,7 +467,7 @@ public class BufferCache implements IBufferCacheInternal, ILifeCycleComponent {
         if (((CachedPage) page).dirty.get()
                 && !DEBUG_writtenPages.add(getFileInfo(((CachedPage) page)).getFileId() * 10000
                         + ((CachedPage) page).dpid)) {
-            boolean ignore = true;
+            boolean ignore = false;
             switch (((CachedPage) page).cpid) {
                 case 0: // metadata page
                 case 1: // root page of tree
@@ -919,34 +919,29 @@ public class BufferCache implements IBufferCacheInternal, ILifeCycleComponent {
                                 prev = curr;
                                 curr = curr.next;
                             }
-                            pageReplacementStrategy.subtractPage();
-                            cachedPages.remove(cPage);
-                            ((CachedPage) cPage).dpid = dpid;
-                            returnPage = cPage;
-                            System.out.println("[FIFO] Confiscated Page");
-                            return returnPage;
+                            return cPage;
                         } finally {
                             bucket.bucketLock.unlock();
                         }
                     }
                 }
-            }
-            //no page available to confiscate. TODO:throw exception?
-            synchronized (cleanerThread) {
-                pageCleanerPolicy.notifyVictimNotFound(cleanerThread);
-            }
-            // Heuristic optimization. Check whether the cleaner thread has
-            // cleaned pages since we did our last pin attempt.
-            if (cleanerThread.cleanedCount - startCleanedCount > MIN_CLEANED_COUNT_DIFF) {
-                // Don't go to sleep and wait for notification from the cleaner,
-                // just try to pin again immediately.
-                continue;
-            }
-            synchronized (cleanerThread.cleanNotification) {
-                try {
-                    cleanerThread.cleanNotification.wait(PIN_MAX_WAIT_TIME);
-                } catch (InterruptedException e) {
-                    // Do nothing
+                //no page available to confiscate. TODO:throw exception?
+                synchronized (cleanerThread) {
+                    pageCleanerPolicy.notifyVictimNotFound(cleanerThread);
+                }
+                // Heuristic optimization. Check whether the cleaner thread has
+                // cleaned pages since we did our last pin attempt.
+                if (cleanerThread.cleanedCount - startCleanedCount > MIN_CLEANED_COUNT_DIFF) {
+                    // Don't go to sleep and wait for notification from the cleaner,
+                    // just try to pin again immediately.
+                    continue;
+                }
+                synchronized (cleanerThread.cleanNotification) {
+                    try {
+                        cleanerThread.cleanNotification.wait(PIN_MAX_WAIT_TIME);
+                    } catch (InterruptedException e) {
+                        // Do nothing
+                    }
                 }
             }
         }
@@ -956,10 +951,11 @@ public class BufferCache implements IBufferCacheInternal, ILifeCycleComponent {
     public void returnPage(ICachedPage page) {
         CachedPage cPage = (CachedPage) page;
         synchronized (cachedPages) {
+            cachedPages.add(cPage);
             int pageHash = hash(cPage.getDiskPageId());
             try {
                 pageMap[pageHash].bucketLock.lock();
-                if (pageMap[pageHash].cachedPage != null) {
+                if (pageMap[pageHash].cachedPage != null){ //&& pageMap[pageHash].cachedPage != cPage) { //TODO: where is the 2nd guard being hit?
                     cPage.next = pageMap[pageHash].cachedPage;
                 } else {
                     cPage.next = null;
@@ -974,6 +970,11 @@ public class BufferCache implements IBufferCacheInternal, ILifeCycleComponent {
     }
 
     @Override
+    public void setPageDiskId(ICachedPage page, long dpid) {
+        ((CachedPage) page).dpid = dpid;
+    }
+
+    @Override
     public ConcurrentLinkedQueue<ICachedPage> createFIFOQueue() {
         return fifoWriter.createQueue(this, FIFOLocalWriter.instance());
     }
@@ -981,6 +982,13 @@ public class BufferCache implements IBufferCacheInternal, ILifeCycleComponent {
     @Override
     public void finishQueue(ConcurrentLinkedQueue<ICachedPage> queue) {
         fifoWriter.finishQueue(queue);
+    }
+
+    @Override
+    public void copyPage(ICachedPage src, ICachedPage dst) {
+        CachedPage srcCast = (CachedPage) src;
+        CachedPage dstCast = (CachedPage) dst;
+        System.arraycopy(srcCast.buffer.array(), 0, dstCast.getBuffer().array(), 0, srcCast.buffer.capacity());
     }
 
 }
