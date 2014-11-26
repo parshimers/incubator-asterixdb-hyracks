@@ -63,7 +63,6 @@ public class RTree extends AbstractTreeIndex {
 
     // Global node sequence number used for the concurrency control protocol
     private final AtomicLong globalNsn;
-    private final static int BULKLOAD_LEAF_START = 2;
 
     private final int maxTupleSize;
 
@@ -871,10 +870,10 @@ public class RTree extends AbstractTreeIndex {
     }
 
     public IIndexBulkLoader createBulkLoader(float fillFactor, boolean verifyInput, long numElementsHint,
-            boolean checkIfEmptyIndex, boolean makeImmutable) throws TreeIndexException {
+            boolean checkIfEmptyIndex, boolean appendOnly) throws TreeIndexException {
         // TODO: verifyInput currently does nothing.
         try {
-            return new RTreeBulkLoader(fillFactor, makeImmutable);
+            return new RTreeBulkLoader(fillFactor, appendOnly);
         } catch (HyracksDataException e) {
             throw new TreeIndexException(e);
         }
@@ -887,8 +886,8 @@ public class RTree extends AbstractTreeIndex {
         ByteBuffer mbr;
         List<Integer> prevNodeFrontierPages = new ArrayList<Integer>();
 
-        public RTreeBulkLoader(float fillFactor, boolean makeImmutable) throws TreeIndexException, HyracksDataException {
-            super(fillFactor, makeImmutable);
+        public RTreeBulkLoader(float fillFactor, boolean appendOnly) throws TreeIndexException, HyracksDataException {
+            super(fillFactor, appendOnly);
             prevInteriorFrame = interiorFrameFactory.createFrame();
         }
 

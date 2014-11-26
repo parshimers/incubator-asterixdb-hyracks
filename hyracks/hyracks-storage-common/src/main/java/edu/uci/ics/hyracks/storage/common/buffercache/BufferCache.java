@@ -900,6 +900,11 @@ public class BufferCache implements IBufferCacheInternal, ILifeCycleComponent {
                 for (ICachedPageInternal cPage : cachedPages) {
                     //find a page that would possibly be evicted anyway
                     if (cPage.pinIfGoodVictim()) {
+                        //Case 1 from findPage()
+                        if(((CachedPage)cPage).dpid < 0){
+                            return cPage;
+                        }
+                        //Case 2a/b
                         int pageHash = hash(cPage.getDiskPageId());
                         CacheBucket bucket = pageMap[pageHash];
                         try {
@@ -936,13 +941,6 @@ public class BufferCache implements IBufferCacheInternal, ILifeCycleComponent {
                     // just try to pin again immediately.
                     continue;
                 }
-                synchronized (cleanerThread.cleanNotification) {
-                    try {
-                        cleanerThread.cleanNotification.wait(PIN_MAX_WAIT_TIME);
-                    } catch (InterruptedException e) {
-                        // Do nothing
-                    }
-                }
             }
         }
     }
@@ -950,21 +948,15 @@ public class BufferCache implements IBufferCacheInternal, ILifeCycleComponent {
     @Override
     public void returnPage(ICachedPage page) {
         CachedPage cPage = (CachedPage) page;
+        cPage.virtual = false;
+        cPage.dirty.set(false);
+        cPage.valid = false;
+        cPage.pinCount.set(0);
+        cPage.dpid = -1;
+        
         synchronized (cachedPages) {
             cachedPages.add(cPage);
-            int pageHash = hash(cPage.getDiskPageId());
-            try {
-                pageMap[pageHash].bucketLock.lock();
-                if (pageMap[pageHash].cachedPage != null){ //&& pageMap[pageHash].cachedPage != cPage) { //TODO: where is the 2nd guard being hit?
-                    cPage.next = pageMap[pageHash].cachedPage;
-                } else {
-                    cPage.next = null;
-                }
-                pageMap[pageHash].cachedPage = cPage;
-            } finally {
-                pageMap[pageHash].bucketLock.unlock();
-            }
-            cachedPages.add(cPage);
+            pageReplacementStrategy.adviseWontNeed(cPage);
             pageReplacementStrategy.returnPage();
         }
     }

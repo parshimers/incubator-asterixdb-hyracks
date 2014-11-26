@@ -17,6 +17,7 @@ package edu.uci.ics.hyracks.storage.am.common.impls;
 
 import java.util.ArrayList;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import edu.uci.ics.hyracks.api.dataflow.value.IBinaryComparatorFactory;
 import edu.uci.ics.hyracks.api.exceptions.HyracksDataException;
@@ -57,9 +58,11 @@ public abstract class AbstractTreeIndex implements ITreeIndex {
     protected int fileId = -1;
 
     private boolean isActivated = false;
+    private boolean fileOpen = false;
 
-    protected boolean makeImmutable = true;//DEBUG;
     protected boolean fifo = true; //DEBUG
+
+    protected int BULKLOAD_LEAF_START = 0;
 
     public AbstractTreeIndex(IBufferCache bufferCache, IFileMapProvider fileMapProvider,
             IFreePageManager freePageManager, ITreeIndexFrameFactory interiorFrameFactory,
@@ -76,6 +79,10 @@ public abstract class AbstractTreeIndex implements ITreeIndex {
     }
 
     public synchronized void create() throws HyracksDataException {
+        create(false);
+    }
+
+    private synchronized void create(boolean appendOnly) throws HyracksDataException {
         if (isActivated) {
             throw new HyracksDataException("Failed to create the index since it is activated.");
         }
@@ -103,18 +110,21 @@ public abstract class AbstractTreeIndex implements ITreeIndex {
         if (freePageManager.getFirstMetadataPage() < 1) {
             // regular or empty tree
             rootPage = 1;
+            BULKLOAD_LEAF_START = 1;
         } else {
             // bulkload-only tree (used e.g. for HDFS). -1 is meta page, -2 is root page
             rootPage = bufferCache.getNumPagesOfFile(fileId) - 2;
+            BULKLOAD_LEAF_START = 0;
         }
-        if (!makeImmutable) {
+        if (!appendOnly) {
             initEmptyTree();
+            freePageManager.close();
+            bufferCache.closeFile(fileId);
         } else {
-            //initVirtualMetaDataFrame();
-            initEmptyTree();
+            initVirtualMetaDataFrame();
+            fileOpen = true;
+            //initEmptyTree();
         }
-        freePageManager.close();
-        bufferCache.closeFile(fileId);
     }
 
     private void initEmptyTree() throws HyracksDataException {
@@ -137,16 +147,6 @@ public abstract class AbstractTreeIndex implements ITreeIndex {
         ITreeIndexFrame frame = leafFrameFactory.createFrame();
         ITreeIndexMetaDataFrame metaFrame = freePageManager.getMetaDataFrameFactory().createFrame();
         freePageManager.init(metaFrame);
-
-        ICachedPage rootNode = bufferCache.pin(BufferedFileHandle.getDiskPageId(fileId, rootPage), true);
-        rootNode.acquireWriteLatch();
-        try {
-            frame.setPage(rootNode);
-            frame.initBuffer((byte) 0);
-        } finally {
-            rootNode.releaseWriteLatch(true);
-            bufferCache.unpin(rootNode);
-        }
     }
 
     public synchronized void activate() throws HyracksDataException {
@@ -163,7 +163,9 @@ public abstract class AbstractTreeIndex implements ITreeIndex {
             fileId = fileMapProvider.lookupFileId(file);
             try {
                 // Also creates the file if it doesn't exist yet.
-                bufferCache.openFile(fileId);
+                if (!fileOpen) {
+                    bufferCache.openFile(fileId);
+                }
             } catch (HyracksDataException e) {
                 // Revert state of buffer cache since file failed to open.
                 if (!fileIsMapped) {
@@ -172,7 +174,10 @@ public abstract class AbstractTreeIndex implements ITreeIndex {
                 throw e;
             }
         }
-        freePageManager.open(fileId);
+        if (!fileOpen) {
+            freePageManager.open(fileId);
+            fileOpen = true;
+        }
 
         // TODO: Should probably have some way to check that the tree is physically consistent
         // or that the file we just opened actually is a tree
@@ -187,6 +192,7 @@ public abstract class AbstractTreeIndex implements ITreeIndex {
 
         freePageManager.close();
         bufferCache.closeFile(fileId);
+        fileOpen = false;
 
         isActivated = false;
     }
@@ -292,9 +298,16 @@ public abstract class AbstractTreeIndex implements ITreeIndex {
         protected int virtualFileId = bufferCache.createMemFile();
         protected int virtualPageIncrement = 0;
         protected final ConcurrentLinkedQueue<ICachedPage> queue;
+        public boolean appendOnly = false;
 
-        public AbstractTreeIndexBulkLoader(float fillFactor, boolean makeImmutable) throws TreeIndexException,
+        public AbstractTreeIndexBulkLoader(float fillFactor, boolean appendOnly) throws TreeIndexException,
                 HyracksDataException {
+            //Initialize the tree 
+            if (appendOnly) {
+                create(appendOnly);
+                activate();
+            }
+
             leafFrame = leafFrameFactory.createFrame();
             interiorFrame = interiorFrameFactory.createFrame();
             metaFrame = freePageManager.getMetaDataFrameFactory().createFrame();
@@ -363,7 +376,7 @@ public abstract class AbstractTreeIndex implements ITreeIndex {
         @Override
         public void end() throws HyracksDataException {
             // copy the root generated from the bulk-load to *the* root page location
-            if (!makeImmutable) {
+            if (!appendOnly) {
                 rootPage = freePageManager.getFreePage(metaFrame);
                 ICachedPage newRoot = bufferCache.pin(BufferedFileHandle.getDiskPageId(fileId, rootPage), true);
                 newRoot.acquireWriteLatch();
@@ -375,9 +388,9 @@ public abstract class AbstractTreeIndex implements ITreeIndex {
                     newRoot.releaseWriteLatch(true);
                     bufferCache.unpin(newRoot);
                     // register old root as a free page
-                    freePageManager.addFreePage(metaFrame, lastNodeFrontier.pageId);
+                    //freePageManager.addFreePage(metaFrame, lastNodeFrontier.pageId);
                     if (!releasedLatches) {
-                        for (int i = 0; i < nodeFrontiers.size(); i++) {
+                        for (int i = 0; i < nodeFrontiers.size()-1; i++) {
                             try {
                                 nodeFrontiers.get(i).page.releaseWriteLatch(true);
                             } catch (Exception e) {

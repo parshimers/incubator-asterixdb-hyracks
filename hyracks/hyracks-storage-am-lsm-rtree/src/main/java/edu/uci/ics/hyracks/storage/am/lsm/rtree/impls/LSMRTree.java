@@ -252,7 +252,7 @@ public class LSMRTree extends AbstractLSMRTree {
         if (!isEmpty) {
             rTreeTupleSorter.sort();
 
-            rTreeBulkloader = diskRTree.createBulkLoader(1.0f, false, 0L, false);
+            rTreeBulkloader = diskRTree.createBulkLoader(1.0f, false, 0L, false, true);
             cursor = rTreeTupleSorter;
 
             try {
@@ -360,7 +360,7 @@ public class LSMRTree extends AbstractLSMRTree {
             search(opCtx, btreeCursor, rtreeSearchPred);
 
             BTree btree = mergedComponent.getBTree();
-            IIndexBulkLoader btreeBulkLoader = btree.createBulkLoader(1.0f, true, 0L, false);
+            IIndexBulkLoader btreeBulkLoader = btree.createBulkLoader(1.0f, true, 0L, false, true);
 
             long numElements = 0L;
             for (int i = 0; i < mergeOp.getMergingComponents().size(); ++i) {
@@ -388,7 +388,7 @@ public class LSMRTree extends AbstractLSMRTree {
             btreeBulkLoader.end();
         }
 
-        IIndexBulkLoader bulkLoader = mergedComponent.getRTree().createBulkLoader(1.0f, false, 0L, false);
+        IIndexBulkLoader bulkLoader = mergedComponent.getRTree().createBulkLoader(1.0f, false, 0L, false, true);
         try {
             while (cursor.hasNext()) {
                 cursor.next();
@@ -534,7 +534,7 @@ public class LSMRTree extends AbstractLSMRTree {
                 throw new TreeIndexException(e);
             }
             bulkLoader = ((LSMRTreeDiskComponent) component).getRTree().createBulkLoader(fillFactor, verifyInput,
-                    numElementsHint, false);
+                    numElementsHint, false, true);
 
             if (filterFields != null) {
                 indexTuple = new PermutingTupleReference(rtreeFields);
@@ -617,5 +617,12 @@ public class LSMRTree extends AbstractLSMRTree {
         markAsValidInternal(component.getRTree());
         forceFlushDirtyPages(component.getBTree());
         markAsValidInternal(component.getBTree());
+    }
+
+    @Override
+    public IIndexBulkLoader createBulkLoader(float fillFactor, boolean verifyInput, long numElementsHint,
+            boolean checkIfEmptyIndex, boolean appendOnly) throws IndexException {
+        // TODO Auto-generated method stub
+        return null;
     }
 }

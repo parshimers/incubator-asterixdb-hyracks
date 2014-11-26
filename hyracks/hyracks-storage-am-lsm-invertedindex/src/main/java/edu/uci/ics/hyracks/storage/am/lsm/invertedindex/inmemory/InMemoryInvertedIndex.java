@@ -207,4 +207,11 @@ public class InMemoryInvertedIndex implements IInvertedIndex {
     public boolean hasMemoryComponents() {
         return true;
     }
+
+    @Override
+    public IIndexBulkLoader createBulkLoader(float fillFactor, boolean verifyInput, long numElementsHint,
+            boolean checkIfEmptyIndex, boolean appendOnly) throws IndexException {
+        // TODO Auto-generated method stub
+        return null;
+    }
 }

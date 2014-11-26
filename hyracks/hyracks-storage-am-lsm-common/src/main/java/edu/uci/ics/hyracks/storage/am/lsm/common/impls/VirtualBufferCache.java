@@ -431,4 +431,10 @@ public class VirtualBufferCache implements IVirtualBufferCache {
         
     }
 
+    @Override
+    public void setPageDiskId(ICachedPage page, long dpid) {
+        // TODO Auto-generated method stub
+        
+    }
+
 }

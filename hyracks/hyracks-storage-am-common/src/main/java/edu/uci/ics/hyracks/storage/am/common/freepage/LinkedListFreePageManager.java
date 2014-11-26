@@ -250,16 +250,8 @@ public class LinkedListFreePageManager implements IFreePageManager {
             } finally {
                 finalMeta.releaseWriteLatch(true);
                 bufferCache.unpin(finalMeta); //should be in finally but I don't want to change method signature
+                confiscatedMetaNode.releaseReadLatch();
                 bufferCache.returnPage(confiscatedMetaNode);
-                try {
-                    confiscatedMetaNode.releaseReadLatch();
-                } catch (IllegalMonitorStateException e) {
-                    if (e.getMessage().equalsIgnoreCase("attempt to unlock read lock, not locked by current thread")) {
-                        //do nada!
-                    } else {
-                        throw e;
-                    }
-                }
             }
 
         }

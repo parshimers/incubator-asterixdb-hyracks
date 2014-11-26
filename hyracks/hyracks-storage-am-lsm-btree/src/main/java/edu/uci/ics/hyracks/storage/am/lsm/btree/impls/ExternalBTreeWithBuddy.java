@@ -412,7 +412,7 @@ public class ExternalBTreeWithBuddy extends AbstractLSMIndex implements ITreeInd
             search(opCtx, buddyBtreeCursor, btreeSearchPred);
 
             BTree buddyBtree = mergedComponent.getBuddyBTree();
-            IIndexBulkLoader buddyBtreeBulkLoader = buddyBtree.createBulkLoader(1.0f, true, 0L, false);
+            IIndexBulkLoader buddyBtreeBulkLoader = buddyBtree.createBulkLoader(1.0f, true, 0L, false, true);
 
             long numElements = 0L;
             for (int i = 0; i < mergeOp.getMergingComponents().size(); ++i) {
@@ -617,8 +617,8 @@ public class ExternalBTreeWithBuddy extends AbstractLSMIndex implements ITreeInd
                 .createLSMComponentInstance(new LSMComponentFileReferences(insertFileRef, deleteFileRef,
                         bloomFilterFileRef));
         if (createComponent) {
-            component.getBTree().create();
-            component.getBuddyBTree().create();
+            //component.getBTree().create(false);
+            //component.getBuddyBTree().create(false);
             component.getBloomFilter().create();
         }
 
@@ -688,7 +688,7 @@ public class ExternalBTreeWithBuddy extends AbstractLSMIndex implements ITreeInd
 
             // Create the three loaders
             btreeBulkLoader = (BTreeBulkLoader) ((LSMBTreeWithBuddyDiskComponent) component).getBTree()
-                    .createBulkLoader(fillFactor, verifyInput, numElementsHint, false);
+                    .createBulkLoader(fillFactor, verifyInput, numElementsHint, false,true);
             buddyBtreeBulkLoader = (BTreeBulkLoader) ((LSMBTreeWithBuddyDiskComponent) component).getBuddyBTree()
                     .createBulkLoader(fillFactor, verifyInput, numElementsHint, false);
             int maxBucketsPerElement = BloomCalculations.maxBucketsPerElement(numElementsHint);
@@ -874,5 +874,12 @@ public class ExternalBTreeWithBuddy extends AbstractLSMIndex implements ITreeInd
     @Override
     public boolean isPrimaryIndex() {
         return false;
+    }
+
+    @Override
+    public IIndexBulkLoader createBulkLoader(float fillFactor, boolean verifyInput, long numElementsHint,
+            boolean checkIfEmptyIndex, boolean appendOnly) throws IndexException {
+        // TODO Auto-generated method stub
+        return null;
     }
 }

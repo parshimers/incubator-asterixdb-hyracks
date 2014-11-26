@@ -17,28 +17,27 @@ package edu.uci.ics.hyracks.storage.common.buffercache;
 import java.util.concurrent.BlockingDeque;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
 public class ClockPageReplacementStrategy implements IPageReplacementStrategy {
     private static final int MAX_UNSUCCESSFUL_CYCLE_COUNT = 3;
 
-    private final Lock lock;
     private IBufferCacheInternal bufferCache;
-    private int clockPtr;
+    private AtomicInteger clockPtr;
     private ICacheMemoryAllocator allocator;
-    private int numPages = 0;
+    private AtomicInteger numPages = new AtomicInteger(0);
     private final int pageSize;
-    private int maxAllowedNumPages;
+    private AtomicInteger maxAllowedNumPages;
     private BlockingDeque<ICachedPageInternal> hatedPages;
 
     public ClockPageReplacementStrategy(ICacheMemoryAllocator allocator, int pageSize, int maxAllowedNumPages) {
-        this.lock = new ReentrantLock();
         this.allocator = allocator;
         this.pageSize = pageSize;
-        this.maxAllowedNumPages = maxAllowedNumPages;
+        this.maxAllowedNumPages = new AtomicInteger(maxAllowedNumPages);
         this.hatedPages = new LinkedBlockingDeque<ICachedPageInternal>();
-        clockPtr = 0;
+        clockPtr = new AtomicInteger(0);
     }
 
     @Override
@@ -63,16 +62,11 @@ public class ClockPageReplacementStrategy implements IPageReplacementStrategy {
 
     @Override
     public ICachedPageInternal findVictim() {
-        lock.lock();
         ICachedPageInternal cachedPage = null;
-        try {
-            if (numPages >= maxAllowedNumPages) {
-                cachedPage = findVictimByEviction();
-            } else {
-                cachedPage = allocatePage();
-            }
-        } finally {
-            lock.unlock();
+        if (numPages.get() >= maxAllowedNumPages.get()) {
+            cachedPage = findVictimByEviction();
+        } else {
+            cachedPage = allocatePage();
         }
         return cachedPage;
     }
@@ -83,10 +77,10 @@ public class ClockPageReplacementStrategy implements IPageReplacementStrategy {
         if (hated != null) {
             return hated;
         }
-        int startClockPtr = clockPtr;
+        int startClockPtr = clockPtr.get();
         int cycleCount = 0;
         do {
-            ICachedPageInternal cPage = bufferCache.getPage(clockPtr);
+            ICachedPageInternal cPage = bufferCache.getPage(clockPtr.get());
 
             /*
              * We do two things here:
@@ -102,8 +96,8 @@ public class ClockPageReplacementStrategy implements IPageReplacementStrategy {
                     return cPage;
                 }
             }
-            clockPtr = (clockPtr + 1) % numPages;
-            if (clockPtr == startClockPtr) {
+            clockPtr.set(clockPtr.incrementAndGet() % numPages.get());
+            if (clockPtr.get() == startClockPtr) {
                 ++cycleCount;
             }
         } while (cycleCount < MAX_UNSUCCESSFUL_CYCLE_COUNT);
@@ -112,60 +106,32 @@ public class ClockPageReplacementStrategy implements IPageReplacementStrategy {
 
     @Override
     public int getNumPages() {
-        int retNumPages = 0;
-        lock.lock();
-        try {
-            retNumPages = numPages;
-        } finally {
-            lock.unlock();
-        }
-        return retNumPages;
+        return numPages.get();
     }
 
     public int subtractPage() {
-        int retNumPages = 0;
-        lock.lock();
-        try {
-            //if we're at the edge, push the clock pointer forward
-            if (clockPtr == numPages - 1) {
-                clockPtr = 0;
-            }
-            --maxAllowedNumPages;
-            --numPages;
-            retNumPages = numPages;
-        } finally {
-            lock.unlock();
+        //if we're at the edge, push the clock pointer forward
+        if (clockPtr.get() == numPages.get() - 1) {
+            clockPtr.set(0);
         }
-        return retNumPages;
+        maxAllowedNumPages.decrementAndGet();
+        return numPages.decrementAndGet();
     }
 
     public int addPage() {
-        int retNumPages = 0;
-        lock.lock();
-        try {
-            ++numPages;
-            retNumPages = numPages;
-        } finally {
-            lock.unlock();
-        }
-        return retNumPages;
+        return numPages.incrementAndGet();
     }
 
     @Override
-    public void returnPage(){
+    public void returnPage() {
         addPage();
-        lock.lock();
-        try{
-            ++maxAllowedNumPages;
-        }finally{
-            lock.unlock();
-        }
+        maxAllowedNumPages.incrementAndGet();
     }
 
     private ICachedPageInternal allocatePage() {
-        CachedPage cPage = new CachedPage(numPages, allocator.allocate(pageSize, 1)[0], this);
+        CachedPage cPage = new CachedPage(numPages.get(), allocator.allocate(pageSize, 1)[0], this);
         bufferCache.addPage(cPage);
-        numPages++;
+        numPages.incrementAndGet();
         AtomicBoolean accessedFlag = getPerPageObject(cPage);
         if (!accessedFlag.compareAndSet(true, false)) {
             if (cPage.pinIfGoodVictim()) {
@@ -176,12 +142,12 @@ public class ClockPageReplacementStrategy implements IPageReplacementStrategy {
     }
 
     public ICachedPageInternal allocateAndConfiscate() {
-        if (numPages < maxAllowedNumPages) {
-            --maxAllowedNumPages;
-            CachedPage cPage = new CachedPage(numPages, allocator.allocate(pageSize, 1)[0], this);
+        if (numPages.get() < maxAllowedNumPages.get()) {
+            maxAllowedNumPages.decrementAndGet();
+            CachedPage cPage = new CachedPage(numPages.get(), allocator.allocate(pageSize, 1)[0], this);
             return cPage;
-        }
-        else return null;
+        } else
+            return null;
     }
 
     private AtomicBoolean getPerPageObject(ICachedPageInternal cPage) {
@@ -195,7 +161,7 @@ public class ClockPageReplacementStrategy implements IPageReplacementStrategy {
 
     @Override
     public int getMaxAllowedNumPages() {
-        return maxAllowedNumPages;
+        return maxAllowedNumPages.get();
     }
 
     @Override

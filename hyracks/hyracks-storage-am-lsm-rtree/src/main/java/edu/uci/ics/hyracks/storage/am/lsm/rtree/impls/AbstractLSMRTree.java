@@ -310,9 +310,9 @@ public abstract class AbstractLSMRTree extends AbstractLSMIndex implements ITree
                 .createLSMComponentInstance(new LSMComponentFileReferences(insertFileRef, deleteFileRef,
                         bloomFilterFileRef));
         if (createComponent) {
-            component.getRTree().create();
+            //component.getRTree().create(false);
             if (component.getBTree() != null) {
-                component.getBTree().create();
+                //component.getBTree().create(false);
                 component.getBloomFilter().create();
             }
         }

@@ -474,7 +474,7 @@ public class LSMBTree extends AbstractLSMIndex implements ITreeIndex {
 
         LSMBTreeDiskComponent component = createDiskComponent(componentFactory, flushOp.getBTreeFlushTarget(),
                 flushOp.getBloomFilterFlushTarget(), true);
-        IIndexBulkLoader bulkLoader = component.getBTree().createBulkLoader(1.0f, false, numElements, false);
+        IIndexBulkLoader bulkLoader = component.getBTree().createBulkLoader(1.0f, false, numElements, false, true);
         IIndexBulkLoader builder = component.getBloomFilter().createBuilder(numElements,
                 bloomFilterSpec.getNumHashes(), bloomFilterSpec.getNumBucketsPerElements());
 
@@ -548,7 +548,7 @@ public class LSMBTree extends AbstractLSMIndex implements ITreeIndex {
         LSMBTreeDiskComponent mergedComponent = createDiskComponent(componentFactory, mergeOp.getBTreeMergeTarget(),
                 mergeOp.getBloomFilterMergeTarget(), true);
 
-        IIndexBulkLoader bulkLoader = mergedComponent.getBTree().createBulkLoader(1.0f, false, numElements, false);
+        IIndexBulkLoader bulkLoader = mergedComponent.getBTree().createBulkLoader(1.0f, false, numElements, false, true);
         IIndexBulkLoader builder = mergedComponent.getBloomFilter().createBuilder(numElements,
                 bloomFilterSpec.getNumHashes(), bloomFilterSpec.getNumBucketsPerElements());
         try {
@@ -584,11 +584,11 @@ public class LSMBTree extends AbstractLSMIndex implements ITreeIndex {
         LSMBTreeDiskComponent component = (LSMBTreeDiskComponent) factory
                 .createLSMComponentInstance(new LSMComponentFileReferences(btreeFileRef, null, bloomFilterFileRef));
         if (createComponent) {
-            component.getBTree().create();
+            //component.getBTree().create(true);
             component.getBloomFilter().create();
         }
         // BTree will be closed during cleanup of merge().
-        component.getBTree().activate();
+        //component.getBTree().activate();
         component.getBloomFilter().activate();
         if (component.getLSMComponentFilter() != null) {
             filterManager.readFilterInfo(component.getLSMComponentFilter(), component.getBTree());
@@ -649,7 +649,7 @@ public class LSMBTree extends AbstractLSMIndex implements ITreeIndex {
                 throw new TreeIndexException(e);
             }
             bulkLoader = (BTreeBulkLoader) ((LSMBTreeDiskComponent) component).getBTree().createBulkLoader(fillFactor,
-                    verifyInput, numElementsHint, false);
+                    verifyInput, numElementsHint, false, true);
 
             int maxBucketsPerElement = BloomCalculations.maxBucketsPerElement(numElementsHint);
             BloomFilterSpecification bloomFilterSpec = BloomCalculations.computeBloomSpec(maxBucketsPerElement,
@@ -845,5 +845,12 @@ public class LSMBTree extends AbstractLSMIndex implements ITreeIndex {
     @Override
     public boolean isPrimaryIndex() {
         return needKeyDupCheck;
+    }
+
+    @Override
+    public IIndexBulkLoader createBulkLoader(float fillFactor, boolean verifyInput, long numElementsHint,
+            boolean checkIfEmptyIndex, boolean appendOnly) throws IndexException {
+        // TODO Auto-generated method stub
+        return null;
     }
 }
