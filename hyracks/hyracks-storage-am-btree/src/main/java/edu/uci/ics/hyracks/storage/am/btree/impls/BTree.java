@@ -1079,7 +1079,8 @@ public class BTree extends AbstractTreeIndex {
                 frontier.page.releaseWriteLatch(true);
                 int finalPageId = freePageManager.getFreePage(metaFrame);
                 if (fifo) {
-                    AsyncFIFOPageQueueManager.setDpid(frontier.page, BufferedFileHandle.getDiskPageId(fileId, finalPageId));
+                    AsyncFIFOPageQueueManager.setDpid(frontier.page,
+                            BufferedFileHandle.getDiskPageId(fileId, finalPageId));
                     queue.offer(frontier.page);
                 } else {
                     ICachedPage realPage = bufferCache.unpinVirtual(frontier.page,
@@ -1107,19 +1108,21 @@ public class BTree extends AbstractTreeIndex {
         protected void finalize(int level, int rightPage) throws HyracksDataException {
             if (level >= nodeFrontiers.size()) {
                 //at root
-                rootPage = nodeFrontiers.get(level - 1).pageId;
+                if (appendOnly) {
+                    rootPage = nodeFrontiers.get(level - 1).pageId;
+                }
+                releasedLatches = true;
                 return;
             }
             if (level < 1) {
                 ICachedPage lastLeaf = nodeFrontiers.get(level).page;
+                int lastLeafPage = nodeFrontiers.get(level).pageId;
                 lastLeaf.releaseWriteLatch(true);
                 if (fifo) {
-                    int finalPageId = freePageManager.getFreePage(metaFrame);
-                    nodeFrontiers.get(level).pageId = finalPageId;
-                    AsyncFIFOPageQueueManager.setDpid(lastLeaf, BufferedFileHandle.getDiskPageId(fileId, finalPageId));
+                    AsyncFIFOPageQueueManager.setDpid(lastLeaf, BufferedFileHandle.getDiskPageId(fileId, lastLeafPage));
                     queue.offer(lastLeaf);
                     nodeFrontiers.get(level).page = null;
-                    finalize(level + 1, finalPageId);
+                    finalize(level + 1, lastLeafPage);
                 } else {
                     bufferCache.unpin(lastLeaf);
                     finalize(level + 1, -1);
@@ -1159,17 +1162,27 @@ public class BTree extends AbstractTreeIndex {
         @Override
         public void end() throws HyracksDataException {
             finalize(0, -1);
+            //move the root page to the first data page if necessary
+            if (fifo) {
+                bufferCache.finishQueue(queue);
+            }
             if (!appendOnly) {
-                rootPage = freePageManager.getFreePage(metaFrame);
                 ICachedPage newRoot = bufferCache.pin(BufferedFileHandle.getDiskPageId(fileId, rootPage), true);
                 newRoot.acquireWriteLatch();
+                //root will be the highest frontier
                 NodeFrontier lastNodeFrontier = nodeFrontiers.get(nodeFrontiers.size() - 1);
+                ICachedPage oldRoot = bufferCache.pin(
+                        BufferedFileHandle.getDiskPageId(fileId, lastNodeFrontier.pageId), false);
+                oldRoot.acquireReadLatch();
+                lastNodeFrontier.page = oldRoot;
                 try {
                     System.arraycopy(lastNodeFrontier.page.getBuffer().array(), 0, newRoot.getBuffer().array(), 0,
                             lastNodeFrontier.page.getBuffer().capacity());
                 } finally {
                     newRoot.releaseWriteLatch(true);
                     bufferCache.unpin(newRoot);
+                    oldRoot.releaseReadLatch();
+                    bufferCache.unpin(oldRoot);
 
                     // register old root as a free page
                     freePageManager.addFreePage(metaFrame, lastNodeFrontier.pageId);
@@ -1187,9 +1200,6 @@ public class BTree extends AbstractTreeIndex {
                         }
                     }
                 }
-            }
-            if (fifo) {
-                bufferCache.finishQueue(queue);
             }
         }
     }

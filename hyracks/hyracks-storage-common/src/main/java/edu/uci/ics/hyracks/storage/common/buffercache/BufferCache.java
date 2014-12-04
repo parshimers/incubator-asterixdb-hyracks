@@ -901,8 +901,11 @@ public class BufferCache implements IBufferCacheInternal, ILifeCycleComponent {
                     //find a page that would possibly be evicted anyway
                     if (cPage.pinIfGoodVictim()) {
                         //Case 1 from findPage()
-                        if(((CachedPage)cPage).dpid < 0){
-                            return cPage;
+                        if (((CachedPage) cPage).dpid < 0) {
+                            returnPage = cPage;
+                            ((CachedPage) returnPage).dpid = dpid;
+                            return returnPage;
+                          
                         }
                         //Case 2a/b
                         int pageHash = hash(cPage.getDiskPageId());
@@ -924,7 +927,9 @@ public class BufferCache implements IBufferCacheInternal, ILifeCycleComponent {
                                 prev = curr;
                                 curr = curr.next;
                             }
-                            return cPage;
+                            returnPage = cPage;
+                            ((CachedPage) returnPage).dpid = dpid;
+                            return returnPage;
                         } finally {
                             bucket.bucketLock.unlock();
                         }
@@ -953,7 +958,7 @@ public class BufferCache implements IBufferCacheInternal, ILifeCycleComponent {
         cPage.valid = false;
         cPage.pinCount.set(0);
         cPage.dpid = -1;
-        
+
         synchronized (cachedPages) {
             cachedPages.add(cPage);
             pageReplacementStrategy.adviseWontNeed(cPage);

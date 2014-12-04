@@ -110,7 +110,7 @@ public abstract class AbstractTreeIndex implements ITreeIndex {
         if (freePageManager.getFirstMetadataPage() < 1) {
             // regular or empty tree
             rootPage = 1;
-            BULKLOAD_LEAF_START = 1;
+            BULKLOAD_LEAF_START = 2;
         } else {
             // bulkload-only tree (used e.g. for HDFS). -1 is meta page, -2 is root page
             rootPage = bufferCache.getNumPagesOfFile(fileId) - 2;
@@ -425,6 +425,7 @@ public abstract class AbstractTreeIndex implements ITreeIndex {
             //frontier.pageId = freePageManager.getFreePage(metaFrame);
             if (fifo) {
                 frontier.page = bufferCache.confiscatePage(-1);
+                frontier.pageId = -1;
             } else {
 
                 frontier.pageId = ++virtualPageIncrement;
