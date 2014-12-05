@@ -30,13 +30,11 @@ public class ClockPageReplacementStrategy implements IPageReplacementStrategy {
     private AtomicInteger numPages = new AtomicInteger(0);
     private final int pageSize;
     private AtomicInteger maxAllowedNumPages;
-    private BlockingDeque<ICachedPageInternal> hatedPages;
 
     public ClockPageReplacementStrategy(ICacheMemoryAllocator allocator, int pageSize, int maxAllowedNumPages) {
         this.allocator = allocator;
         this.pageSize = pageSize;
         this.maxAllowedNumPages = new AtomicInteger(maxAllowedNumPages);
-        this.hatedPages = new LinkedBlockingDeque<ICachedPageInternal>();
         clockPtr = new AtomicInteger(0);
     }
 
@@ -73,10 +71,6 @@ public class ClockPageReplacementStrategy implements IPageReplacementStrategy {
 
     private ICachedPageInternal findVictimByEviction() {
         //first, check if there is a hated page we can return.
-        ICachedPageInternal hated = hatedPages.poll();
-        if (hated != null) {
-            return hated;
-        }
         int startClockPtr = clockPtr.get();
         int cycleCount = 0;
         do {
@@ -166,7 +160,7 @@ public class ClockPageReplacementStrategy implements IPageReplacementStrategy {
 
     @Override
     public void adviseWontNeed(ICachedPageInternal cPage) {
-        //just offer, if the page replacement policy is busy and doesn't want to listen then it's fine.
-        hatedPages.offer(cPage);
+        //make the page appear as if it wasn't accessed even if it was
+        getPerPageObject(cPage).set(false);
     }
 }

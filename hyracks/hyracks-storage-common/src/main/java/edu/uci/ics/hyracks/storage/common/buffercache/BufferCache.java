@@ -749,7 +749,8 @@ public class BufferCache implements IBufferCacheInternal, ILifeCycleComponent {
                 pinCount = cPage.pinCount.get();
             }
             if (pinCount > 0) {
-                throw new IllegalStateException("Page " + cPage.dpid
+                throw new IllegalStateException("Page " + BufferedFileHandle.getFileId(cPage.dpid) + ":"
+                        + BufferedFileHandle.getPageId(cPage.dpid)
                         + " is pinned and file is being closed. Pincount is: " + pinCount + " Page is virtual: "
                         + cPage.virtual);
             }
@@ -888,64 +889,74 @@ public class BufferCache implements IBufferCacheInternal, ILifeCycleComponent {
     public ICachedPage confiscatePage(long dpid) throws HyracksDataException {
         while (true) {
             int startCleanedCount = cleanerThread.cleanedCount;
-            synchronized (cachedPages) {
-                ICachedPage returnPage = null;
-                returnPage = pageReplacementStrategy.allocateAndConfiscate();
-                if (returnPage != null) {
-                    System.out.println("[FIFO] Confiscated and Allocated Page");
-                    ((CachedPage) returnPage).dpid = dpid;
-                    return returnPage;
-                }
+            ICachedPage returnPage = null;
+            returnPage = pageReplacementStrategy.allocateAndConfiscate();
+            if (returnPage != null) {
+                System.out.println("[FIFO] Confiscated and Allocated Page");
+                ((CachedPage) returnPage).dpid = dpid;
+            }
 
-                for (ICachedPageInternal cPage : cachedPages) {
-                    //find a page that would possibly be evicted anyway
-                    if (cPage.pinIfGoodVictim()) {
-                        //Case 1 from findPage()
-                        if (((CachedPage) cPage).dpid < 0) {
-                            returnPage = cPage;
-                            ((CachedPage) returnPage).dpid = dpid;
-                            return returnPage;
-                          
-                        }
-                        //Case 2a/b
-                        int pageHash = hash(cPage.getDiskPageId());
-                        CacheBucket bucket = pageMap[pageHash];
-                        try {
-                            bucket.bucketLock.lock();
-                            //readjust the next pointers to remove this page from the pagemap
-                            CachedPage curr = bucket.cachedPage;
-                            CachedPage prev = null;
-                            while (curr != null) {
-                                if (curr == cPage) {
-                                    if (prev == null) {
-                                        bucket.cachedPage = null;
-                                    } else {
-                                        prev.next = curr.next;
-                                        curr.next = null;
-                                    }
-                                }
-                                prev = curr;
-                                curr = curr.next;
+            synchronized (cachedPages) {
+                if (returnPage == null) {
+                    for (ICachedPageInternal cPage : cachedPages) {
+                        //find a page that would possibly be evicted anyway
+                        if (cPage.pinIfGoodVictim()) {
+                            //Case 1 from findPage()
+                            if (((CachedPage) cPage).dpid < 0) {
+                                returnPage = cPage;
+                                ((CachedPage) returnPage).dpid = dpid;
+                                break;
                             }
-                            returnPage = cPage;
-                            ((CachedPage) returnPage).dpid = dpid;
-                            return returnPage;
-                        } finally {
-                            bucket.bucketLock.unlock();
+                            //Case 2a/b
+                            int pageHash = hash(cPage.getDiskPageId());
+                            CacheBucket bucket = pageMap[pageHash];
+                            try {
+                                bucket.bucketLock.lock();
+                                //readjust the next pointers to remove this page from the pagemap
+                                CachedPage curr = bucket.cachedPage;
+                                CachedPage prev = null;
+                                while (curr != null) {
+                                    if (curr == cPage) { //we found where the victim resides in the hash table
+                                        //if this is the first page in the bucket
+                                        if (prev == null) {
+                                            bucket.cachedPage = bucket.cachedPage.next;
+                                            //if it isn't we need to make the previous node point to where it should
+                                        } else {
+                                            prev.next = curr.next;
+                                            curr.next = null;
+                                        }
+                                    }
+                                    //go to the next entry
+                                    prev = curr;
+                                    curr = curr.next;
+                                }
+                                returnPage = cPage;
+                                cachedPages.remove(returnPage);
+                                ((CachedPage) returnPage).dpid = dpid;
+                                break;
+                            } finally {
+                                bucket.bucketLock.unlock();
+                            }
                         }
                     }
                 }
-                //no page available to confiscate. TODO:throw exception?
-                synchronized (cleanerThread) {
-                    pageCleanerPolicy.notifyVictimNotFound(cleanerThread);
+                //if we found a page after all that, go ahead and finish
+                if (returnPage != null) {
+                    pageReplacementStrategy.subtractPage();
+                    cachedPages.remove(returnPage);
+                    return returnPage;
                 }
-                // Heuristic optimization. Check whether the cleaner thread has
-                // cleaned pages since we did our last pin attempt.
-                if (cleanerThread.cleanedCount - startCleanedCount > MIN_CLEANED_COUNT_DIFF) {
-                    // Don't go to sleep and wait for notification from the cleaner,
-                    // just try to pin again immediately.
-                    continue;
-                }
+            }
+            //no page available to confiscate. TODO:throw exception?
+            synchronized (cleanerThread) {
+                pageCleanerPolicy.notifyVictimNotFound(cleanerThread);
+            }
+            // Heuristic optimization. Check whether the cleaner thread has
+            // cleaned pages since we did our last pin attempt.
+            if (cleanerThread.cleanedCount - startCleanedCount > MIN_CLEANED_COUNT_DIFF) {
+                // Don't go to sleep and wait for notification from the cleaner,
+                // just try to pin again immediately.
+                continue;
             }
         }
     }
@@ -955,15 +966,25 @@ public class BufferCache implements IBufferCacheInternal, ILifeCycleComponent {
         CachedPage cPage = (CachedPage) page;
         cPage.virtual = false;
         cPage.dirty.set(false);
-        cPage.valid = false;
+        cPage.valid = true;
         cPage.pinCount.set(0);
-        cPage.dpid = -1;
 
         synchronized (cachedPages) {
             cachedPages.add(cPage);
             pageReplacementStrategy.adviseWontNeed(cPage);
             pageReplacementStrategy.returnPage();
         }
+        //now reinsert this into the hash table, basically like case 1 sans concurrency issues
+        int hash = hash(cPage.dpid);
+        CacheBucket bucket = pageMap[hash];
+        bucket.bucketLock.lock();
+        try {
+            cPage.next = bucket.cachedPage;
+            bucket.cachedPage = cPage;
+        } finally {
+            bucket.bucketLock.unlock();
+        }
+
     }
 
     @Override
