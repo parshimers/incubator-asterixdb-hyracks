@@ -588,7 +588,9 @@ public class LSMBTree extends AbstractLSMIndex implements ITreeIndex {
             component.getBloomFilter().create();
         }
         // BTree will be closed during cleanup of merge().
-        //component.getBTree().activate();
+        if(!createComponent){
+            component.getBTree().activate();
+        }
         component.getBloomFilter().activate();
         if (component.getLSMComponentFilter() != null) {
             filterManager.readFilterInfo(component.getLSMComponentFilter(), component.getBTree());

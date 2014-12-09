@@ -27,15 +27,18 @@ public class ClockPageReplacementStrategy implements IPageReplacementStrategy {
     private IBufferCacheInternal bufferCache;
     private AtomicInteger clockPtr;
     private ICacheMemoryAllocator allocator;
-    private AtomicInteger numPages = new AtomicInteger(0);
+    private AtomicInteger numPages;
     private final int pageSize;
     private AtomicInteger maxAllowedNumPages;
+    private AtomicInteger cpIdCounter;
 
     public ClockPageReplacementStrategy(ICacheMemoryAllocator allocator, int pageSize, int maxAllowedNumPages) {
         this.allocator = allocator;
         this.pageSize = pageSize;
         this.maxAllowedNumPages = new AtomicInteger(maxAllowedNumPages);
-        clockPtr = new AtomicInteger(0);
+        this.clockPtr = new AtomicInteger(0);
+        this.numPages = new AtomicInteger(0);
+        cpIdCounter = new AtomicInteger(0);
     }
 
     @Override
@@ -108,7 +111,7 @@ public class ClockPageReplacementStrategy implements IPageReplacementStrategy {
         if (clockPtr.get() == numPages.get() - 1) {
             clockPtr.set(0);
         }
-        maxAllowedNumPages.decrementAndGet();
+        int nextMax  = maxAllowedNumPages.decrementAndGet();
         return numPages.decrementAndGet();
     }
 
@@ -118,12 +121,12 @@ public class ClockPageReplacementStrategy implements IPageReplacementStrategy {
 
     @Override
     public void returnPage() {
-        addPage();
+        numPages.incrementAndGet();
         maxAllowedNumPages.incrementAndGet();
     }
 
     private ICachedPageInternal allocatePage() {
-        CachedPage cPage = new CachedPage(numPages.get(), allocator.allocate(pageSize, 1)[0], this);
+        CachedPage cPage = new CachedPage(cpIdCounter.getAndIncrement(), allocator.allocate(pageSize, 1)[0], this);
         bufferCache.addPage(cPage);
         numPages.incrementAndGet();
         AtomicBoolean accessedFlag = getPerPageObject(cPage);
@@ -136,9 +139,9 @@ public class ClockPageReplacementStrategy implements IPageReplacementStrategy {
     }
 
     public ICachedPageInternal allocateAndConfiscate() {
-        if (numPages.get() < maxAllowedNumPages.get()) {
+        if (numPages.get() < maxAllowedNumPages.get() && maxAllowedNumPages.get() > 0 ) {
             maxAllowedNumPages.decrementAndGet();
-            CachedPage cPage = new CachedPage(numPages.get(), allocator.allocate(pageSize, 1)[0], this);
+            CachedPage cPage = new CachedPage(cpIdCounter.getAndIncrement(), allocator.allocate(pageSize, 1)[0], this);
             return cPage;
         } else
             return null;

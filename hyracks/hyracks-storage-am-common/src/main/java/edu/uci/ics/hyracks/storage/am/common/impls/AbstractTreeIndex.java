@@ -305,6 +305,7 @@ public abstract class AbstractTreeIndex implements ITreeIndex {
             //Initialize the tree 
             if (appendOnly) {
                 create(appendOnly);
+                this.appendOnly = appendOnly;
                 activate();
             }
 

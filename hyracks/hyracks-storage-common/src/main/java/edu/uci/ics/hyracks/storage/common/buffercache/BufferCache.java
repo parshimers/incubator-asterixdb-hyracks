@@ -896,8 +896,8 @@ public class BufferCache implements IBufferCacheInternal, ILifeCycleComponent {
                 ((CachedPage) returnPage).dpid = dpid;
             }
 
-            synchronized (cachedPages) {
-                if (returnPage == null) {
+            if (returnPage == null) {
+                synchronized (cachedPages) {
                     for (ICachedPageInternal cPage : cachedPages) {
                         //find a page that would possibly be evicted anyway
                         if (cPage.pinIfGoodVictim()) {
@@ -940,12 +940,12 @@ public class BufferCache implements IBufferCacheInternal, ILifeCycleComponent {
                         }
                     }
                 }
-                //if we found a page after all that, go ahead and finish
-                if (returnPage != null) {
-                    pageReplacementStrategy.subtractPage();
-                    cachedPages.remove(returnPage);
-                    return returnPage;
-                }
+            }
+            //if we found a page after all that, go ahead and finish
+            if (returnPage != null) {
+                pageReplacementStrategy.subtractPage();
+                cachedPages.remove(returnPage);
+                return returnPage;
             }
             //no page available to confiscate. TODO:throw exception?
             synchronized (cleanerThread) {
@@ -964,19 +964,39 @@ public class BufferCache implements IBufferCacheInternal, ILifeCycleComponent {
     @Override
     public void returnPage(ICachedPage page) {
         CachedPage cPage = (CachedPage) page;
+        int hash = hash(cPage.dpid);
+        CacheBucket bucket = pageMap[hash];
+        bucket.bucketLock.lock();
+        //DEBUG
+        try {
+
+            CachedPage curr;
+            curr = bucket.cachedPage;
+            while (curr != null) {
+                if (cPage == curr) {
+                    throw new IllegalStateException();
+                }
+                curr = curr.next;
+            }
+        } finally {
+            bucket.bucketLock.unlock();
+        }
+        ///DEBUG
         cPage.virtual = false;
         cPage.dirty.set(false);
         cPage.valid = true;
         cPage.pinCount.set(0);
 
         synchronized (cachedPages) {
+            if (cachedPages.contains(cPage)) {
+                throw new IllegalStateException(
+                        "Attempted to confiscate page which was already returned or never confiscated");
+            }
             cachedPages.add(cPage);
             pageReplacementStrategy.adviseWontNeed(cPage);
             pageReplacementStrategy.returnPage();
         }
-        //now reinsert this into the hash table, basically like case 1 sans concurrency issues
-        int hash = hash(cPage.dpid);
-        CacheBucket bucket = pageMap[hash];
+        //now reinsert this into the hash table, basically like case 1 
         bucket.bucketLock.lock();
         try {
             cPage.next = bucket.cachedPage;
