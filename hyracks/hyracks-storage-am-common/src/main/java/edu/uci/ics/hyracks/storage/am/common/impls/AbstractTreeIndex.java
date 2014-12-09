@@ -315,7 +315,7 @@ public abstract class AbstractTreeIndex implements ITreeIndex {
 
             queue = bufferCache.createFIFOQueue();
 
-            if (!isEmptyTree(leafFrame)) {
+            if (!isEmptyTree(leafFrame) && !appendOnly) {
                 throw new TreeIndexException("Cannot bulk-load a non-empty tree.");
             }
 
