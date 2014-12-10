@@ -15,6 +15,7 @@
 package edu.uci.ics.hyracks.storage.common.buffercache;
 
 import java.util.concurrent.BlockingDeque;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -29,16 +30,24 @@ public class ClockPageReplacementStrategy implements IPageReplacementStrategy {
     private ICacheMemoryAllocator allocator;
     private AtomicInteger numPages;
     private final int pageSize;
+    private final int realMaxAllowedNumPages;
     private AtomicInteger maxAllowedNumPages;
     private AtomicInteger cpIdCounter;
+    private AtomicInteger numConfiscatedPages;
+    //DEBUG
 
     public ClockPageReplacementStrategy(ICacheMemoryAllocator allocator, int pageSize, int maxAllowedNumPages) {
         this.allocator = allocator;
         this.pageSize = pageSize;
         this.maxAllowedNumPages = new AtomicInteger(maxAllowedNumPages);
+        this.realMaxAllowedNumPages = maxAllowedNumPages;
         this.clockPtr = new AtomicInteger(0);
         this.numPages = new AtomicInteger(0);
-        cpIdCounter = new AtomicInteger(0);
+        this.cpIdCounter = new AtomicInteger(0);
+        this.numConfiscatedPages = new AtomicInteger(0);
+
+
+    
     }
 
     @Override
@@ -73,7 +82,9 @@ public class ClockPageReplacementStrategy implements IPageReplacementStrategy {
     }
 
     private ICachedPageInternal findVictimByEviction() {
-        //first, check if there is a hated page we can return.
+        //check if we're starved from confiscation
+        if (maxAllowedNumPages.get() == 0)
+            return null;
         int startClockPtr = clockPtr.get();
         int cycleCount = 0;
         do {
@@ -111,7 +122,8 @@ public class ClockPageReplacementStrategy implements IPageReplacementStrategy {
         if (clockPtr.get() == numPages.get() - 1) {
             clockPtr.set(0);
         }
-        int nextMax  = maxAllowedNumPages.decrementAndGet();
+        numConfiscatedPages.incrementAndGet();
+        maxAllowedNumPages.decrementAndGet();
         return numPages.decrementAndGet();
     }
 
@@ -123,6 +135,7 @@ public class ClockPageReplacementStrategy implements IPageReplacementStrategy {
     public void returnPage() {
         numPages.incrementAndGet();
         maxAllowedNumPages.incrementAndGet();
+        numConfiscatedPages.decrementAndGet();
     }
 
     private ICachedPageInternal allocatePage() {
@@ -139,9 +152,10 @@ public class ClockPageReplacementStrategy implements IPageReplacementStrategy {
     }
 
     public ICachedPageInternal allocateAndConfiscate() {
-        if (numPages.get() < maxAllowedNumPages.get() && maxAllowedNumPages.get() > 0 ) {
+        if (numPages.get() < maxAllowedNumPages.get() && maxAllowedNumPages.get() > 5) {
             maxAllowedNumPages.decrementAndGet();
             CachedPage cPage = new CachedPage(cpIdCounter.getAndIncrement(), allocator.allocate(pageSize, 1)[0], this);
+            numConfiscatedPages.incrementAndGet();
             return cPage;
         } else
             return null;
@@ -158,7 +172,7 @@ public class ClockPageReplacementStrategy implements IPageReplacementStrategy {
 
     @Override
     public int getMaxAllowedNumPages() {
-        return maxAllowedNumPages.get();
+        return realMaxAllowedNumPages;
     }
 
     @Override

@@ -23,10 +23,10 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 /**
  * @author yingyib
  */
-class CachedPage implements ICachedPageInternal {
+public class CachedPage implements ICachedPageInternal {
     final int cpid;
     final ByteBuffer buffer;
-    final AtomicInteger pinCount;
+    public final AtomicInteger pinCount;
     final AtomicBoolean dirty;
     final ReentrantReadWriteLock latch;
     private final Object replacementStrategyObject;

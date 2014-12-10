@@ -205,7 +205,7 @@ public abstract class AbstractTreeIndex implements ITreeIndex {
         if (fileId == -1) {
             return;
         }
-        bufferCache.deleteFile(fileId, false);
+        bufferCache.deleteFile(fileId, true);
         file.delete();
         fileId = -1;
     }

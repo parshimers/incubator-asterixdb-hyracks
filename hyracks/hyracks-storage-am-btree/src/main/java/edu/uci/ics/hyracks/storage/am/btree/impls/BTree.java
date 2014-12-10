@@ -1026,13 +1026,13 @@ public class BTree extends AbstractTreeIndex {
                 leafFrame.setPage(leafFrontier.page);
                 ((IBTreeLeafFrame) leafFrame).insertSorted(tuple);
             } catch (IndexException e) {
-                //handleException();
+                handleException();
                 throw e;
             } catch (HyracksDataException e) {
-                //handleException();
+                handleException();
                 throw e;
             } catch (RuntimeException e) {
-                //handleException();
+                handleException();
                 throw e;
             }
         }
@@ -1155,7 +1155,7 @@ public class BTree extends AbstractTreeIndex {
 
         @Override
         protected void handleException() throws HyracksDataException {
-            finalize(0, -1);
+            end();
             releasedLatches = true;
         }
 

@@ -17,6 +17,7 @@ package edu.uci.ics.hyracks.storage.am.btree;
 
 import static org.junit.Assert.fail;
 
+import java.util.List;
 import java.util.Random;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -49,6 +50,9 @@ import edu.uci.ics.hyracks.storage.am.common.api.UnsortedInputException;
 import edu.uci.ics.hyracks.storage.am.common.exceptions.TreeIndexDuplicateKeyException;
 import edu.uci.ics.hyracks.storage.am.common.impls.TreeIndexDiskOrderScanCursor;
 import edu.uci.ics.hyracks.storage.am.common.ophelpers.MultiComparator;
+import edu.uci.ics.hyracks.storage.common.buffercache.BufferCache;
+import edu.uci.ics.hyracks.storage.common.buffercache.CachedPage;
+import edu.uci.ics.hyracks.storage.common.buffercache.ICachedPageInternal;
 
 @SuppressWarnings("rawtypes")
 public abstract class OrderedIndexExamplesTest {
@@ -679,6 +683,7 @@ public abstract class OrderedIndexExamplesTest {
         cmpFactories[0] = PointableBinaryComparatorFactory.of(IntegerPointable.FACTORY);
 
         Random rnd = new Random();
+        BufferCache bc;
         ArrayTupleBuilder tb = new ArrayTupleBuilder(fieldCount);
         ArrayTupleReference tuple = new ArrayTupleReference();
 
@@ -688,8 +693,10 @@ public abstract class OrderedIndexExamplesTest {
 
         int ins = 1000;
         for (int i = 1; i < ins; i++) {
+
             ITreeIndex treeIndex = createTreeIndex(typeTraits, cmpFactories, bloomFilterKeyFields, null, null, null,
                     null);
+            bc = ((BufferCache) treeIndex.getBufferCache());
             treeIndex.create();
             treeIndex.activate();
 
@@ -731,6 +738,17 @@ public abstract class OrderedIndexExamplesTest {
             treeIndex.deactivate();
             treeIndex.destroy();
         }
+/*
+            for (ICachedPageInternal c : bc.cachedPages) {
+                CachedPage cp = (CachedPage) c;
+                if (cp.pinCount.get() != 0) {
+                   // Thread.sleep(1000);
+                    if (cp.pinCount.get() != 0) {
+                //        throw new IllegalStateException();
+                    }
+                }
+            }
+        */
     }
 
     protected void orderedScan(IIndexAccessor indexAccessor, ISerializerDeserializer[] fieldSerdes) throws Exception {

@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
@@ -59,8 +60,9 @@ public class BufferCache implements IBufferCacheInternal, ILifeCycleComponent {
     private final AsyncFIFOPageQueueManager fifoWriter;
 
     private final Set<Long> DEBUG_writtenPages;
+    private CopyOnWriteArrayList<CachedPage> confiscatedPages = new CopyOnWriteArrayList<CachedPage>();
 
-    private List<ICachedPageInternal> cachedPages = new ArrayList<ICachedPageInternal>();
+    public List<ICachedPageInternal> cachedPages = new ArrayList<ICachedPageInternal>();
 
     private boolean closed;
 
@@ -888,6 +890,7 @@ public class BufferCache implements IBufferCacheInternal, ILifeCycleComponent {
     @Override
     public ICachedPage confiscatePage(long dpid) throws HyracksDataException {
         while (true) {
+            boolean subtract = false;
             int startCleanedCount = cleanerThread.cleanedCount;
             ICachedPage returnPage = null;
             returnPage = pageReplacementStrategy.allocateAndConfiscate();
@@ -897,6 +900,7 @@ public class BufferCache implements IBufferCacheInternal, ILifeCycleComponent {
             }
 
             if (returnPage == null) {
+                subtract = true;
                 synchronized (cachedPages) {
                     for (ICachedPageInternal cPage : cachedPages) {
                         //find a page that would possibly be evicted anyway
@@ -943,9 +947,14 @@ public class BufferCache implements IBufferCacheInternal, ILifeCycleComponent {
             }
             //if we found a page after all that, go ahead and finish
             if (returnPage != null) {
-                pageReplacementStrategy.subtractPage();
-                cachedPages.remove(returnPage);
-                return returnPage;
+                synchronized (cachedPages) {
+                    if (subtract) {
+                        pageReplacementStrategy.subtractPage();
+                    }
+                    cachedPages.remove(returnPage);
+                    confiscatedPages.add((CachedPage) returnPage);
+                    return returnPage;
+                }
             }
             //no page available to confiscate. TODO:throw exception?
             synchronized (cleanerThread) {
@@ -957,6 +966,13 @@ public class BufferCache implements IBufferCacheInternal, ILifeCycleComponent {
                 // Don't go to sleep and wait for notification from the cleaner,
                 // just try to pin again immediately.
                 continue;
+            }
+            synchronized (cleanerThread.cleanNotification) {
+                try {
+                    cleanerThread.cleanNotification.wait(PIN_MAX_WAIT_TIME);
+                } catch (InterruptedException e) {
+                    // Do nothing
+                }
             }
         }
     }
@@ -993,6 +1009,7 @@ public class BufferCache implements IBufferCacheInternal, ILifeCycleComponent {
                         "Attempted to confiscate page which was already returned or never confiscated");
             }
             cachedPages.add(cPage);
+            confiscatedPages.remove(cPage);
             pageReplacementStrategy.adviseWontNeed(cPage);
             pageReplacementStrategy.returnPage();
         }
