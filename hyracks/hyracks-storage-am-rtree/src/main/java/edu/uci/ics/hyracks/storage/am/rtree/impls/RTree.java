@@ -941,10 +941,10 @@ public class RTree extends AbstractTreeIndex {
                 leafFrame.setPage(leafFrontier.page);
                 leafFrame.insert(tuple, AbstractSlotManager.GREATEST_KEY_INDICATOR);
             } catch (HyracksDataException e) {
-                //handleException();
+                handleException();
                 throw e;
             } catch (RuntimeException e) {
-                //handleException();
+                handleException();
                 throw e;
             }
 
@@ -957,50 +957,45 @@ public class RTree extends AbstractTreeIndex {
         }
 
         protected void finalize() throws HyracksDataException {
-            NodeFrontier prev = null;
+            int prevPageId = -1;
             //here we assign physical identifiers to everything we can
-            if(fifo){
-                
-            }
-            else{
-                
-            }
             for (NodeFrontier n : nodeFrontiers) {
                 if (nodeFrontiers.indexOf(n)!=0) {
                     interiorFrame.setPage(n.page);
-                    ((RTreeNSMFrame) lowerFrame).adjustMBR();
-                    tupleWriter.writeTupleFields(((RTreeNSMFrame) lowerFrame).getMBRTuples(), 0, mbr, 0);
                     mbrTuple.resetByTupleOffset(mbr, 0);
                     interiorFrame.insert(mbrTuple, -1);
                     interiorFrame.getBuffer().putInt(
                             interiorFrame.getTupleOffset(interiorFrame.getTupleCount() - 1) + mbrTuple.getTupleSize(),
-                            prev.pageId);
+                            prevPageId);
 
                     int finalPageId = freePageManager.getFreePage(metaFrame);
                     n.page.releaseWriteLatch(true);
                     if (fifo) {
                         AsyncFIFOPageQueueManager.setDpid(n.page, BufferedFileHandle.getDiskPageId(fileId, finalPageId));
                         queue.offer(n.page);
+                        n.page = null;
                     } else {
 
                         ICachedPage finalPage = bufferCache.unpinVirtual(n.page,
                                 BufferedFileHandle.getDiskPageId(fileId, finalPageId));
                         n.page = finalPage;
-                        bufferCache.unpin(prev.page);
+                        //bufferCache.unpin(prev.page);
                     }
                     n.pageId = finalPageId;
-                    prev = n;
-                    lowerFrame.setPage(prev.page);
+                    prevPageId = n.pageId;
                 } else {
                     n.page.releaseWriteLatch(true);
                     if (fifo) {
                         queue.offer(n.page);
+                        n.page = null;
                     } else {
                         bufferCache.unpin(n.page);
                     }
-                    prev = n;
-                    lowerFrame.setPage(prev.page);
+                    prevPageId = n.pageId;
                 }
+                //set next guide MBR 
+                ((RTreeNSMFrame) interiorFrame).adjustMBR();
+               tupleWriter.writeTupleFields(((RTreeNSMFrame) interiorFrame).getMBRTuples(), 0, mbr, 0);
             }
         }
 

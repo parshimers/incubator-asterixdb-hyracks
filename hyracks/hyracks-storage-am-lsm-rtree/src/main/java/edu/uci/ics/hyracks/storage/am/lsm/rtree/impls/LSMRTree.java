@@ -294,7 +294,7 @@ public class LSMRTree extends AbstractLSMRTree {
             BTree diskBTree = component.getBTree();
 
             // BulkLoad the tuples from the in-memory tree into the new disk BTree.
-            IIndexBulkLoader bTreeBulkloader = diskBTree.createBulkLoader(1.0f, false, numBTreeTuples, false);
+            IIndexBulkLoader bTreeBulkloader = diskBTree.createBulkLoader(1.0f, false, numBTreeTuples, false, true);
             IIndexBulkLoader builder = component.getBloomFilter().createBuilder(numBTreeTuples,
                     bloomFilterSpec.getNumHashes(), bloomFilterSpec.getNumBucketsPerElements());
             // scan the memory BTree
@@ -613,10 +613,10 @@ public class LSMRTree extends AbstractLSMRTree {
         int startPage = 0;
         int maxPage = component.getBloomFilter().getNumPages();
         forceFlushDirtyPages(bufferCache, fileId, startPage, maxPage);
-        forceFlushDirtyPages(component.getRTree());
-        markAsValidInternal(component.getRTree());
-        forceFlushDirtyPages(component.getBTree());
-        markAsValidInternal(component.getBTree());
+        //forceFlushDirtyPages(component.getRTree());
+        //markAsValidInternal(component.getRTree());
+        //forceFlushDirtyPages(component.getBTree());
+        //markAsValidInternal(component.getBTree());
     }
 
     @Override

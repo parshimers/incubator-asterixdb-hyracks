@@ -592,7 +592,7 @@ public class LSMBTree extends AbstractLSMIndex implements ITreeIndex {
             component.getBTree().activate();
         }
         component.getBloomFilter().activate();
-        if (component.getLSMComponentFilter() != null) {
+        if (component.getLSMComponentFilter() != null && !createComponent) {
             filterManager.readFilterInfo(component.getLSMComponentFilter(), component.getBTree());
         }
         return component;

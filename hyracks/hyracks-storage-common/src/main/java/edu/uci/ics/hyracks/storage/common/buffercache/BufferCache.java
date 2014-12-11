@@ -805,9 +805,9 @@ public class BufferCache implements IBufferCacheInternal, ILifeCycleComponent {
         if (LOGGER.isLoggable(Level.INFO)) {
             LOGGER.info("Deleting file: " + fileId + " in cache: " + this);
         }
-        if (flushDirtyPages) {
+        if (true) {
             synchronized (fileInfoMap) {
-                sweepAndFlush(fileId, flushDirtyPages);
+                sweepAndFlush(fileId, true);
             }
         }
         synchronized (fileInfoMap) {

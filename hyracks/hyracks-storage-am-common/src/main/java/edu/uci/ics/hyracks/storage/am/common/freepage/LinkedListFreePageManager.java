@@ -171,7 +171,9 @@ public class LinkedListFreePageManager implements IFreePageManager {
             maxPage = metaFrame.getMaxPage();
         } finally {
             metaNode.releaseWriteLatch(true);
-            bufferCache.unpin(metaNode);
+            if (!appendOnly) {
+                bufferCache.unpin(metaNode);
+            }
         }
         return maxPage;
     }
@@ -242,7 +244,9 @@ public class LinkedListFreePageManager implements IFreePageManager {
         if (appendOnly) {
             ITreeIndexMetaDataFrame metaFrame = metaDataFrameFactory.createFrame();
             metaFrame.setPage(confiscatedMetaNode);
-            ICachedPage finalMeta = bufferCache.pin(BufferedFileHandle.getDiskPageId(fileId, getMaxPage(metaFrame)+1), true);
+            metaFrame.setValid(true);
+            ICachedPage finalMeta = bufferCache.pin(
+                    BufferedFileHandle.getDiskPageId(fileId, getMaxPage(metaFrame) + 1), true);
             try {
                 confiscatedMetaNode.acquireReadLatch();
                 finalMeta.acquireWriteLatch();

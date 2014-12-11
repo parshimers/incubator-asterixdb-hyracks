@@ -317,12 +317,16 @@ public abstract class AbstractLSMRTree extends AbstractLSMIndex implements ITree
             }
         }
         // Tree will be closed during cleanup of merge().
-        component.getRTree().activate();
+        if (!createComponent) {
+            component.getRTree().activate();
+        }
         if (component.getBTree() != null) {
-            component.getBTree().activate();
+            if(!createComponent){
+                component.getBTree().activate();
+            }
             component.getBloomFilter().activate();
         }
-        if (component.getLSMComponentFilter() != null) {
+        if (component.getLSMComponentFilter() != null && !createComponent) {
             filterManager.readFilterInfo(component.getLSMComponentFilter(), component.getRTree());
         }
         return component;
