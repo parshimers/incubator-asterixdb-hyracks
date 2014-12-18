@@ -196,7 +196,7 @@ public class LinkedListFreePageManager implements IFreePageManager {
 
     @Override
     public void init(ITreeIndexMetaDataFrame metaFrame) throws HyracksDataException {
-        ICachedPage metaNode = bufferCache.confiscatePage(0);
+        ICachedPage metaNode = bufferCache.confiscatePage(BufferedFileHandle.getDiskPageId(fileId, 0));
         metaNode.acquireWriteLatch();
         try {
             metaFrame.setPage(metaNode);
