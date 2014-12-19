@@ -284,7 +284,7 @@ public class LSMRTree extends AbstractLSMRTree {
             btreeCountingCursor.close();
         }
 
-        if (numBTreeTuples > 0) {
+        //if (numBTreeTuples > 0) {
             int maxBucketsPerElement = BloomCalculations.maxBucketsPerElement(numBTreeTuples);
             BloomFilterSpecification bloomFilterSpec = BloomCalculations.computeBloomSpec(maxBucketsPerElement,
                     bloomFilterFalsePositiveRate);
@@ -310,7 +310,7 @@ public class LSMRTree extends AbstractLSMRTree {
                 builder.end();
             }
             bTreeBulkloader.end();
-        }
+        //}
 
         if (component.getLSMComponentFilter() != null) {
             List<ITupleReference> filterTuples = new ArrayList<ITupleReference>();

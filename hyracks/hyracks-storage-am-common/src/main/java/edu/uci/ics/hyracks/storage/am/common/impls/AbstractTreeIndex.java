@@ -432,6 +432,9 @@ public abstract class AbstractTreeIndex implements ITreeIndex {
                     }
                 }
             }
+            else{
+                freePageManager.close();
+            }
         }
 
         protected void addLevel() throws HyracksDataException {
