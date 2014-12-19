@@ -98,9 +98,12 @@ public class IOManager implements IIOManager {
             //*************************DEBUG - REMOVE ME*****************************************
             //disable it right now
             if (true) {
-                if (offset > ((FileHandle) fHandle).DEBUG_highOffset)
-                    System.out.println("Wrote offset " + offset + " before " + ((FileHandle) fHandle).DEBUG_highOffset);
-                ((FileHandle) fHandle).DEBUG_highOffset = offset;
+                if (offset > ((FileHandle) fHandle).DEBUG_highOffset && ((FileHandle) fHandle).DEBUG_highOffset != 0) {
+                    System.out.println("In file" + ((FileHandle) fHandle).getRandomAccessFile().toString()
+                            + "Wrote offset " + offset + " before " + ((FileHandle) fHandle).DEBUG_highOffset);
+                    //throw new IllegalStateException();
+                }
+                ((FileHandle) fHandle).DEBUG_highOffset = offset + n;
             }
             //*************************DEBUG - REMOVE ME*****************************************
             return n;

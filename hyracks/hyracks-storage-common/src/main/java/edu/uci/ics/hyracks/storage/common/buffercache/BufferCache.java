@@ -46,6 +46,7 @@ public class BufferCache implements IBufferCacheInternal, ILifeCycleComponent {
 
     private static final int MIN_CLEANED_COUNT_DIFF = 3;
     private static final int PIN_MAX_WAIT_TIME = 50;
+    public static final int INVALID_DPID = -1;
 
     private final int pageSize;
     private final int maxOpenFiles;
@@ -979,29 +980,46 @@ public class BufferCache implements IBufferCacheInternal, ILifeCycleComponent {
 
     @Override
     public void returnPage(ICachedPage page) {
-        CachedPage cPage = (CachedPage) page;
-        int hash = hash(cPage.dpid);
-        CacheBucket bucket = pageMap[hash];
-        bucket.bucketLock.lock();
-        //DEBUG
-        try {
+        returnPage(page, true);
+    }
 
-            CachedPage curr;
-            curr = bucket.cachedPage;
-            while (curr != null) {
-                if (cPage == curr) {
-                    throw new IllegalStateException();
+    @Override
+    //TODO: not 100% on reinsert. need to look at older commits when default behavior was different.
+    public void returnPage(ICachedPage page, boolean reinsert) {
+        CachedPage cPage = (CachedPage) page;
+        CacheBucket bucket = null;
+        if (reinsert) {
+            int hash = hash(cPage.dpid);
+            bucket = pageMap[hash];
+            bucket.bucketLock.lock();
+            //DEBUG
+            try {
+
+                CachedPage curr;
+                curr = bucket.cachedPage;
+                while (curr != null) {
+                    if (cPage == curr) {
+                        throw new IllegalStateException();
+                    }
+                    curr = curr.next;
                 }
-                curr = curr.next;
+            } finally {
+                bucket.bucketLock.unlock();
             }
-        } finally {
-            bucket.bucketLock.unlock();
         }
         ///DEBUG
-        cPage.virtual = false;
-        cPage.dirty.set(false);
-        cPage.valid = true;
-        cPage.pinCount.set(0);
+        if (reinsert) {
+            cPage.virtual = false;
+            cPage.dirty.set(false);
+            cPage.valid = true;
+            cPage.pinCount.set(0);
+        } else {
+            cPage.dpid = INVALID_DPID;
+            cPage.virtual = false;
+            cPage.dirty.set(false);
+            cPage.valid = false;
+            cPage.pinCount.set(0);
+        }
 
         synchronized (cachedPages) {
             if (cachedPages.contains(cPage)) {
@@ -1014,12 +1032,14 @@ public class BufferCache implements IBufferCacheInternal, ILifeCycleComponent {
             pageReplacementStrategy.returnPage();
         }
         //now reinsert this into the hash table, basically like case 1 
-        bucket.bucketLock.lock();
-        try {
-            cPage.next = bucket.cachedPage;
-            bucket.cachedPage = cPage;
-        } finally {
-            bucket.bucketLock.unlock();
+        if (reinsert) {
+            bucket.bucketLock.lock();
+            try {
+                cPage.next = bucket.cachedPage;
+                bucket.cachedPage = cPage;
+            } finally {
+                bucket.bucketLock.unlock();
+            }
         }
 
     }

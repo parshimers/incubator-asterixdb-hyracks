@@ -114,7 +114,8 @@ public abstract class AbstractTreeIndex implements ITreeIndex {
             BULKLOAD_LEAF_START = 2;
         } else {
             // bulkload-only tree (used e.g. for HDFS). -1 is meta page, -2 is root page
-            rootPage = bufferCache.getNumPagesOfFile(fileId) - 2;
+            int numPages = bufferCache.getNumPagesOfFile(fileId);
+            rootPage = numPages > 2 ? numPages - 2 : 0;
             BULKLOAD_LEAF_START = 0;
         }
         if (!appendOnly) {
@@ -178,6 +179,16 @@ public abstract class AbstractTreeIndex implements ITreeIndex {
         }
         if (!fileOpen) {
             freePageManager.open(fileId);
+            if (freePageManager.getFirstMetadataPage() < 1) {
+                // regular or empty tree
+                rootPage = 1;
+                BULKLOAD_LEAF_START = 2;
+            } else {
+                // bulkload-only tree (used e.g. for HDFS). -1 is meta page, -2 is root page
+                int numPages = bufferCache.getNumPagesOfFile(fileId);
+                rootPage = numPages > 2 ? numPages - 2 : 0;
+                BULKLOAD_LEAF_START = 0;
+            }
             fileOpen = true;
         }
 
@@ -382,47 +393,45 @@ public abstract class AbstractTreeIndex implements ITreeIndex {
 
         @Override
         public void end() throws HyracksDataException {
-            // copy the root generated from the bulk-load to *the* root page location
+            //move the root page to the first data page if necessary
+            if (fifo) {
+                bufferCache.finishQueue(queue);
+            }
             if (!appendOnly) {
-                rootPage = freePageManager.getFreePage(metaFrame);
                 ICachedPage newRoot = bufferCache.pin(BufferedFileHandle.getDiskPageId(fileId, rootPage), true);
                 newRoot.acquireWriteLatch();
+                //root will be the highest frontier
                 NodeFrontier lastNodeFrontier = nodeFrontiers.get(nodeFrontiers.size() - 1);
+                ICachedPage oldRoot = bufferCache.pin(
+                        BufferedFileHandle.getDiskPageId(fileId, lastNodeFrontier.pageId), false);
+                oldRoot.acquireReadLatch();
+                lastNodeFrontier.page = oldRoot;
                 try {
                     System.arraycopy(lastNodeFrontier.page.getBuffer().array(), 0, newRoot.getBuffer().array(), 0,
                             lastNodeFrontier.page.getBuffer().capacity());
                 } finally {
                     newRoot.releaseWriteLatch(true);
                     bufferCache.unpin(newRoot);
+                    oldRoot.releaseReadLatch();
+                    bufferCache.unpin(oldRoot);
+
                     // register old root as a free page
-                    //freePageManager.addFreePage(metaFrame, lastNodeFrontier.pageId);
+                    freePageManager.addFreePage(metaFrame, lastNodeFrontier.pageId);
+
                     if (!releasedLatches) {
-                        for (int i = 0; i < nodeFrontiers.size() - 1; i++) {
+                        for (int i = 0; i < nodeFrontiers.size(); i++) {
                             try {
                                 nodeFrontiers.get(i).page.releaseWriteLatch(true);
                             } catch (Exception e) {
                                 //ignore illegal monitor state exception
                             }
-                            bufferCache.unpin(nodeFrontiers.get(i).page);
-                        }
-                    }
-                }
-            } else {
-                rootPage = freePageManager.getMaxPage(metaFrame);
-                if (!releasedLatches) {
-                    for (int i = 0; i < nodeFrontiers.size(); i++) {
-                        try {
-                            nodeFrontiers.get(i).page.releaseWriteLatch(true);
-                        } catch (Exception e) {
-                            //ignore illegal monitor state exception
-                        }
-                        if (!fifo) {
-                            bufferCache.unpin(nodeFrontiers.get(i).page);
+                            if (!fifo) {
+                                bufferCache.unpin(nodeFrontiers.get(i).page);
+                            }
                         }
                     }
                 }
             }
-            bufferCache.finishQueue(queue);
         }
 
         protected void addLevel() throws HyracksDataException {

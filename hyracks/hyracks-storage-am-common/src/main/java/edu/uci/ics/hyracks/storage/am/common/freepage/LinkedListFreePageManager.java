@@ -20,6 +20,7 @@ import edu.uci.ics.hyracks.api.exceptions.HyracksDataException;
 import edu.uci.ics.hyracks.storage.am.common.api.IFreePageManager;
 import edu.uci.ics.hyracks.storage.am.common.api.ITreeIndexMetaDataFrame;
 import edu.uci.ics.hyracks.storage.am.common.api.ITreeIndexMetaDataFrameFactory;
+import edu.uci.ics.hyracks.storage.common.buffercache.BufferCache;
 import edu.uci.ics.hyracks.storage.common.buffercache.IBufferCache;
 import edu.uci.ics.hyracks.storage.common.buffercache.ICachedPage;
 import edu.uci.ics.hyracks.storage.common.file.BufferedFileHandle;
@@ -142,8 +143,12 @@ public class LinkedListFreePageManager implements IFreePageManager {
                     }
                 } else {
                     freePage = metaFrame.getMaxPage();
-                    freePage++;
-                    metaFrame.setMaxPage(freePage);
+                    if (!appendOnly) {
+                        freePage++;
+                        metaFrame.setMaxPage(freePage);
+                    } else {
+                        metaFrame.setMaxPage(freePage + 1);
+                    }
                 }
             }
         } finally {
@@ -196,7 +201,7 @@ public class LinkedListFreePageManager implements IFreePageManager {
 
     @Override
     public void init(ITreeIndexMetaDataFrame metaFrame) throws HyracksDataException {
-        ICachedPage metaNode = bufferCache.confiscatePage(BufferedFileHandle.getDiskPageId(fileId, 0));
+        ICachedPage metaNode = bufferCache.confiscatePage(BufferCache.INVALID_DPID);
         metaNode.acquireWriteLatch();
         try {
             metaFrame.setPage(metaNode);
@@ -241,25 +246,34 @@ public class LinkedListFreePageManager implements IFreePageManager {
 
     @Override
     public void close() throws HyracksDataException {
-        if (appendOnly) {
+        closeGivePageId();
+    }
+
+    public int closeGivePageId() throws HyracksDataException {
+        int finalPageId = 0;
+        if (appendOnly && fileId > 0) {
             ITreeIndexMetaDataFrame metaFrame = metaDataFrameFactory.createFrame();
             metaFrame.setPage(confiscatedMetaNode);
             metaFrame.setValid(true);
-            ICachedPage finalMeta = bufferCache.pin(
-                    BufferedFileHandle.getDiskPageId(fileId, getMaxPage(metaFrame) + 1), true);
+            int finalMetaPage = getMaxPage(metaFrame);
+            ICachedPage finalMeta = bufferCache.pin(BufferedFileHandle.getDiskPageId(fileId, finalMetaPage), true);
             try {
                 confiscatedMetaNode.acquireReadLatch();
                 finalMeta.acquireWriteLatch();
                 bufferCache.copyPage(confiscatedMetaNode, finalMeta);
+                finalPageId = finalMetaPage;
             } finally {
                 finalMeta.releaseWriteLatch(true);
-                bufferCache.unpin(finalMeta); //should be in finally but I don't want to change method signature
+                bufferCache.flushDirtyPage(finalMeta);
+                bufferCache.unpin(finalMeta);
                 confiscatedMetaNode.releaseReadLatch();
-                bufferCache.returnPage(confiscatedMetaNode);
+                bufferCache.returnPage(confiscatedMetaNode, false);
+
             }
 
         }
         fileId = -1;
+        return finalPageId;
     }
 
     /**

@@ -20,6 +20,8 @@ public interface IFreePageManager {
     public void open(int fileId);
 
     public void close() throws HyracksDataException;
+    
+    public int closeGivePageId() throws HyracksDataException;
 
     public int getFreePage(ITreeIndexMetaDataFrame metaFrame) throws HyracksDataException;
 

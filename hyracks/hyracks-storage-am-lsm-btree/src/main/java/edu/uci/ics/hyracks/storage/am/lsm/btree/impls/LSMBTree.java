@@ -626,7 +626,8 @@ public class LSMBTree extends AbstractLSMIndex implements ITreeIndex {
         int maxPage = component.getBloomFilter().getNumPages();
         forceFlushDirtyPages(bufferCache, fileId, startPage, maxPage);
         forceFlushDirtyPages(component.getBTree());
-        markAsValidInternal(component.getBTree());
+        //TODO:************************DEBUG**********************
+        //markAsValidInternal(component.getBTree());
     }
 
     public class LSMBTreeBulkLoader implements IIndexBulkLoader {
@@ -852,7 +853,10 @@ public class LSMBTree extends AbstractLSMIndex implements ITreeIndex {
     @Override
     public IIndexBulkLoader createBulkLoader(float fillFactor, boolean verifyInput, long numElementsHint,
             boolean checkIfEmptyIndex, boolean appendOnly) throws IndexException {
-        // TODO Auto-generated method stub
-        return null;
+        try {
+            return new LSMBTreeBulkLoader(fillFactor, verifyInput, numElementsHint, checkIfEmptyIndex);
+        } catch (HyracksDataException e) {
+            throw new TreeIndexException(e);
+        }
     }
 }

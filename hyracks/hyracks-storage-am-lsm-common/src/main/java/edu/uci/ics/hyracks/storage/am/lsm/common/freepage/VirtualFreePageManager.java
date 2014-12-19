@@ -120,4 +120,10 @@ public class VirtualFreePageManager implements IVirtualFreePageManager {
         
     }
 
+    @Override
+    public int closeGivePageId() throws HyracksDataException {
+        // TODO Auto-generated method stub
+        return 0;
+    }
+
 }

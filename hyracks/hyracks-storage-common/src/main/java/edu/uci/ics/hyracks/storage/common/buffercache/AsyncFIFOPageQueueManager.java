@@ -105,6 +105,7 @@ public class AsyncFIFOPageQueueManager implements Runnable {
     @Override
     public void run() {
         System.out.println("[FIFO] Writer started");
+        long lastDpid = 0;
         while (!haltWriter) {
             //System.out.println("[FIFO] Poll");
             boolean success = false;
@@ -120,6 +121,7 @@ public class AsyncFIFOPageQueueManager implements Runnable {
                     queue.setFileId(BufferedFileHandle.getFileId(((CachedPage) page).dpid));
                     try {
                         queue.getWriter().write(page, queue.getBufferCache());
+                        lastDpid = ((CachedPage)page).dpid;
                     } catch (HyracksDataException e) {
                         // TODO Auto-generated catch block
                         e.printStackTrace();

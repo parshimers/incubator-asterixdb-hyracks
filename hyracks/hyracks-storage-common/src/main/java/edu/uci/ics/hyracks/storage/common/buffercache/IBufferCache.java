@@ -57,6 +57,8 @@ public interface IBufferCache {
 
     public void returnPage(ICachedPage page);
 
+    public void returnPage(ICachedPage page, boolean reinsert);
+
     public void force(int fileId, boolean metadata) throws HyracksDataException;
 
     public int getPageSize();

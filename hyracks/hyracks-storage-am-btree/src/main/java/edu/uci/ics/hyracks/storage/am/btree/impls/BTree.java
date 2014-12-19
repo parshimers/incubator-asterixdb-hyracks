@@ -994,18 +994,23 @@ public class BTree extends AbstractTreeIndex {
                             .getBuffer().array(), 0);
                     splitKey.getTuple().resetByTupleOffset(splitKey.getBuffer(), 0);
                     splitKey.setLeftPage(leafFrontier.pageId);
+
+                    List<ICachedPage> pagesToWrite = new ArrayList<ICachedPage>();
+                    propagateBulk(1,pagesToWrite);
                     leafFrontier.pageId = freePageManager.getFreePage(metaFrame);
 
                     ((IBTreeLeafFrame) leafFrame).setNextLeaf(leafFrontier.pageId);
                     leafFrontier.page.releaseWriteLatch(true);
                     if (fifo) {
                         queue.offer(leafFrontier.page);
+                        for(ICachedPage c : pagesToWrite){
+                            queue.offer(c);
+                        }
                     } else {
                         bufferCache.unpin(leafFrontier.page);
                     }
 
                     splitKey.setRightPage(leafFrontier.pageId);
-                    propagateBulk(1);
                     if (fifo) {
                         leafFrontier.page = bufferCache.confiscatePage(BufferedFileHandle.getDiskPageId(fileId,
                                 leafFrontier.pageId));
@@ -1049,7 +1054,7 @@ public class BTree extends AbstractTreeIndex {
             }
         }
 
-        protected void propagateBulk(int level) throws HyracksDataException {
+        protected void propagateBulk(int level, List<ICachedPage> pagesToWrite) throws HyracksDataException {
             if (splitKey.getBuffer() == null)
                 return;
 
@@ -1075,22 +1080,22 @@ public class BTree extends AbstractTreeIndex {
                 splitKey.getTuple().resetByTupleOffset(splitKey.getBuffer(), 0);
 
                 ((IBTreeInteriorFrame) interiorFrame).deleteGreatest();
-
                 frontier.page.releaseWriteLatch(true);
                 int finalPageId = freePageManager.getFreePage(metaFrame);
                 if (fifo) {
                     AsyncFIFOPageQueueManager.setDpid(frontier.page,
                             BufferedFileHandle.getDiskPageId(fileId, finalPageId));
-                    queue.offer(frontier.page);
+                //    queue.offer(frontier.page);
+                    pagesToWrite.add(frontier.page);
                 } else {
-                    ICachedPage realPage = bufferCache.unpinVirtual(frontier.page,
-                            BufferedFileHandle.getDiskPageId(fileId, finalPageId));
-                    bufferCache.unpin(realPage);
+                //    ICachedPage realPage = bufferCache.unpinVirtual(frontier.page,
+                //            BufferedFileHandle.getDiskPageId(fileId, finalPageId));
+                //    bufferCache.unpin(realPage);
                 }
                 //splitKey.setRightPage();
                 splitKey.setLeftPage(finalPageId);
 
-                propagateBulk(level + 1);
+                propagateBulk(level + 1, pagesToWrite);
                 if (fifo) {
                     frontier.page = bufferCache.confiscatePage(-1);
                 } else {
@@ -1105,7 +1110,7 @@ public class BTree extends AbstractTreeIndex {
             ((IBTreeInteriorFrame) interiorFrame).insertSorted(tuple);
         }
 
-        protected void finalize(int level, int rightPage) throws HyracksDataException {
+        protected void finish(int level, int rightPage) throws HyracksDataException {
             if (level >= nodeFrontiers.size()) {
                 //at root
                 if (appendOnly) {
@@ -1122,10 +1127,10 @@ public class BTree extends AbstractTreeIndex {
                     AsyncFIFOPageQueueManager.setDpid(lastLeaf, BufferedFileHandle.getDiskPageId(fileId, lastLeafPage));
                     queue.offer(lastLeaf);
                     nodeFrontiers.get(level).page = null;
-                    finalize(level + 1, lastLeafPage);
+                    finish(level + 1, lastLeafPage);
                 } else {
                     bufferCache.unpin(lastLeaf);
-                    finalize(level + 1, -1);
+                    finish(level + 1, -1);
                 }
                 return;
             }
@@ -1150,7 +1155,7 @@ public class BTree extends AbstractTreeIndex {
             }
             frontier.pageId = finalPageId;
 
-            finalize(level + 1, finalPageId);
+            finish(level + 1, finalPageId);
         }
 
         @Override
@@ -1161,46 +1166,8 @@ public class BTree extends AbstractTreeIndex {
 
         @Override
         public void end() throws HyracksDataException {
-            finalize(0, -1);
-            //move the root page to the first data page if necessary
-            if (fifo) {
-                bufferCache.finishQueue(queue);
-            }
-            if (!appendOnly) {
-                ICachedPage newRoot = bufferCache.pin(BufferedFileHandle.getDiskPageId(fileId, rootPage), true);
-                newRoot.acquireWriteLatch();
-                //root will be the highest frontier
-                NodeFrontier lastNodeFrontier = nodeFrontiers.get(nodeFrontiers.size() - 1);
-                ICachedPage oldRoot = bufferCache.pin(
-                        BufferedFileHandle.getDiskPageId(fileId, lastNodeFrontier.pageId), false);
-                oldRoot.acquireReadLatch();
-                lastNodeFrontier.page = oldRoot;
-                try {
-                    System.arraycopy(lastNodeFrontier.page.getBuffer().array(), 0, newRoot.getBuffer().array(), 0,
-                            lastNodeFrontier.page.getBuffer().capacity());
-                } finally {
-                    newRoot.releaseWriteLatch(true);
-                    bufferCache.unpin(newRoot);
-                    oldRoot.releaseReadLatch();
-                    bufferCache.unpin(oldRoot);
-
-                    // register old root as a free page
-                    freePageManager.addFreePage(metaFrame, lastNodeFrontier.pageId);
-
-                    if (!releasedLatches) {
-                        for (int i = 0; i < nodeFrontiers.size(); i++) {
-                            try {
-                                nodeFrontiers.get(i).page.releaseWriteLatch(true);
-                            } catch (Exception e) {
-                                //ignore illegal monitor state exception
-                            }
-                            if (!fifo) {
-                                bufferCache.unpin(nodeFrontiers.get(i).page);
-                            }
-                        }
-                    }
-                }
-            }
+            finish(0, -1);
+            super.end();
         }
     }
 
