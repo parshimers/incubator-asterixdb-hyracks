@@ -490,7 +490,6 @@ public class LSMBTree extends AbstractLSMIndex implements ITreeIndex {
             scanCursor.close();
             builder.end();
         }
-        bulkLoader.end();
 
         if (component.getLSMComponentFilter() != null) {
             List<ITupleReference> filterTuples = new ArrayList<ITupleReference>();
@@ -499,6 +498,9 @@ public class LSMBTree extends AbstractLSMIndex implements ITreeIndex {
             filterManager.updateFilterInfo(component.getLSMComponentFilter(), filterTuples);
             filterManager.writeFilterInfo(component.getLSMComponentFilter(), component.getBTree());
         }
+
+        bulkLoader.end();
+
         return component;
     }
 

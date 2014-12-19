@@ -108,7 +108,7 @@ public abstract class AbstractTreeIndex implements ITreeIndex {
         }
 
         freePageManager.open(fileId);
-        if (freePageManager.getFirstMetadataPage() < 1 && !appendOnly) {
+        if (/*freePageManager.getFirstMetadataPage() < 1*/ !appendOnly) {
             // regular or empty tree
             rootPage = 1;
             BULKLOAD_LEAF_START = 2;
