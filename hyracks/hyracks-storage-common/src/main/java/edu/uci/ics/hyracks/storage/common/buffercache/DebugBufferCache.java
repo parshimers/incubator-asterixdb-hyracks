@@ -247,4 +247,10 @@ public class DebugBufferCache implements IBufferCache {
         
     }
 
+    @Override
+    public void returnPage(ICachedPage page, boolean reinsert) {
+        // TODO Auto-generated method stub
+        
+    }
+
 }

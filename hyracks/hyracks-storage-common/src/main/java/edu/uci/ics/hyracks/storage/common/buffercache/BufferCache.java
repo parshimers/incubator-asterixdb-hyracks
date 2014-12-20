@@ -808,7 +808,7 @@ public class BufferCache implements IBufferCacheInternal, ILifeCycleComponent {
         }
         if (true) {
             synchronized (fileInfoMap) {
-                sweepAndFlush(fileId, true);
+                sweepAndFlush(fileId, flushDirtyPages);
             }
         }
         synchronized (fileInfoMap) {
@@ -896,7 +896,7 @@ public class BufferCache implements IBufferCacheInternal, ILifeCycleComponent {
             ICachedPage returnPage = null;
             returnPage = pageReplacementStrategy.allocateAndConfiscate();
             if (returnPage != null) {
-                System.out.println("[FIFO] Confiscated and Allocated Page");
+                //System.out.println("[FIFO] Confiscated and Allocated Page");
                 ((CachedPage) returnPage).dpid = dpid;
             }
 

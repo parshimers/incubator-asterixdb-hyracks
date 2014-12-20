@@ -126,4 +126,16 @@ public class VirtualFreePageManager implements IVirtualFreePageManager {
         return 0;
     }
 
+    @Override
+    public int getFilterPageId() throws HyracksDataException {
+        // TODO Auto-generated method stub
+        return 0;
+    }
+
+    @Override
+    public void setFilterPageId(int filterPageId) throws HyracksDataException {
+        // TODO Auto-generated method stub
+        
+    }
+
 }

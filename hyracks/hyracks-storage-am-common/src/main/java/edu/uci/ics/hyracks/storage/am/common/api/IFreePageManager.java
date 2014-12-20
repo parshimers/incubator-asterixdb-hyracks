@@ -46,4 +46,8 @@ public interface IFreePageManager {
     public int getFirstMetadataPage() throws HyracksDataException;
 
     void init(ITreeIndexMetaDataFrame metaFrame) throws HyracksDataException;
+
+    int getFilterPageId() throws HyracksDataException;
+
+    void setFilterPageId(int filterPageId) throws HyracksDataException;
 }

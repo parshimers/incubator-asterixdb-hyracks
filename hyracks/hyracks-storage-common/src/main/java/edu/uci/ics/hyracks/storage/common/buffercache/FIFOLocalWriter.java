@@ -5,6 +5,7 @@ import edu.uci.ics.hyracks.storage.common.file.BufferedFileHandle;
 
 public class FIFOLocalWriter implements IFIFOPageWriter {
     private static FIFOLocalWriter instance;
+    private static boolean DEBUG = false;
 
     public static FIFOLocalWriter instance() {
         if(instance == null) {
@@ -26,7 +27,7 @@ public class FIFOLocalWriter implements IFIFOPageWriter {
         bufferCache.ioManager.syncWrite(fInfo.getFileHandle(), (long) BufferedFileHandle.getPageId(cPage.dpid) * bufferCache.getPageSize(),
                 cPage.buffer);
         bufferCache.returnPage(cPage);
-        System.out.println("[FIFO] Return page");
+        if(DEBUG) System.out.println("[FIFO] Return page");
     }
     
     @Override

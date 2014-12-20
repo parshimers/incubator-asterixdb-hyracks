@@ -202,4 +202,10 @@ public class MultitenantVirtualBufferCache implements IVirtualBufferCache {
         // TODO Auto-generated method stub
         
     }
+
+    @Override
+    public void returnPage(ICachedPage page, boolean reinsert) {
+        // TODO Auto-generated method stub
+        
+    }
 }

@@ -8,6 +8,7 @@ import edu.uci.ics.hyracks.api.io.IFileHandle;
 import edu.uci.ics.hyracks.storage.common.file.BufferedFileHandle;
 
 public class AsyncFIFOPageQueueManager implements Runnable {
+    private static boolean DEBUG = false;
     protected class Queue {
         final ConcurrentLinkedQueue<ICachedPage> pageQueue;
         final IBufferCache bufferCache;
@@ -15,7 +16,7 @@ public class AsyncFIFOPageQueueManager implements Runnable {
         int fileid = -1;
 
         protected Queue(IBufferCache bufferCache, IFIFOPageWriter writer) {
-            System.out.println("[FIFO] New Queue");
+           if(DEBUG) System.out.println("[FIFO] New Queue");
             this.pageQueue = new ConcurrentLinkedQueue<ICachedPage>();
             this.bufferCache = bufferCache;
             this.writer = writer;
@@ -68,10 +69,10 @@ public class AsyncFIFOPageQueueManager implements Runnable {
     }
 
     public void finishQueue(ConcurrentLinkedQueue<ICachedPage> pageQueue) {
-        System.out.println("[FIFO] Finishing Queue");
+       if(DEBUG)  System.out.println("[FIFO] Finishing Queue");
         try {
             synchronized (pageQueue) {
-                System.out.println("Waiting for " + pageQueue);
+               if(DEBUG)  System.out.println("Waiting for " + pageQueue);
                 pageQueue.wait();
             }
             for (Queue queue : queues) {
@@ -80,7 +81,7 @@ public class AsyncFIFOPageQueueManager implements Runnable {
                     removed = queues.remove(queue);
                     if (queue.getFileId() != -1)
                         queue.getWriter().sync(queue.getFileId(), queue.getBufferCache());
-                    System.out.println("[FIFO] Removed? " + removed);
+                   if(DEBUG)  System.out.println("[FIFO] Removed? " + removed);
                     break;
                 }
                 assert (removed);
@@ -90,7 +91,7 @@ public class AsyncFIFOPageQueueManager implements Runnable {
                     if (queues.size() == 0) {
                         haltWriter = true;
                         writerThread.join();
-                        System.out.println("[FIFO] Writer stopped");
+                       if(DEBUG)  System.out.println("[FIFO] Writer stopped");
                         writerThread = null;
                     }
                 }
@@ -99,12 +100,12 @@ public class AsyncFIFOPageQueueManager implements Runnable {
             // TODO what do we do here?
             e.printStackTrace();
         }
-        System.out.println("[FIFO] Queue finished");
+        if(DEBUG) System.out.println("[FIFO] Queue finished");
     }
 
     @Override
     public void run() {
-        System.out.println("[FIFO] Writer started");
+        if(DEBUG) System.out.println("[FIFO] Writer started");
         long lastDpid = 0;
         while (!haltWriter) {
             //System.out.println("[FIFO] Poll");
@@ -116,7 +117,7 @@ public class AsyncFIFOPageQueueManager implements Runnable {
                         queue.getPageQueue().notifyAll();
                     }
                 } else {
-                    System.out.println("[FIFO] Write " + (((CachedPage) page).dpid >> 32) + ":"
+                  if(DEBUG)   System.out.println("[FIFO] Write " + (((CachedPage) page).dpid >> 32) + ":"
                             + (((((CachedPage) page).dpid) << 32) >> 32));
                     queue.setFileId(BufferedFileHandle.getFileId(((CachedPage) page).dpid));
                     try {
