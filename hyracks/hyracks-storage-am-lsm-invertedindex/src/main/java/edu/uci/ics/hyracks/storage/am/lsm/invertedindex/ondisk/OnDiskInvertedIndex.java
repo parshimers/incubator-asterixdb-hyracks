@@ -135,7 +135,7 @@ public class OnDiskInvertedIndex implements IInvertedIndex {
         if (isOpen) {
             throw new HyracksDataException("Failed to create since index is already open.");
         }
-        btree.create();
+        //btree.create();
 
         boolean fileIsMapped = false;
         synchronized (fileMapProvider) {
@@ -164,7 +164,7 @@ public class OnDiskInvertedIndex implements IInvertedIndex {
             throw new HyracksDataException("Failed to activate the index since it is already activated.");
         }
 
-        btree.activate();
+        //btree.activate();
         boolean fileIsMapped = false;
         synchronized (fileMapProvider) {
             fileIsMapped = fileMapProvider.isMapped(invListsFile);
@@ -317,7 +317,7 @@ public class OnDiskInvertedIndex implements IInvertedIndex {
             this.lastTupleBuilder = new ArrayTupleBuilder(numTokenFields + numInvListKeys);
             this.lastTuple = new ArrayTupleReference();
             this.btreeBulkloader = btree.createBulkLoader(btreeFillFactor, verifyInput, numElementsHint,
-                    checkIfEmptyIndex);
+                    checkIfEmptyIndex, true);
             currentPageId = startPageId;
             currentPage = bufferCache.pin(BufferedFileHandle.getDiskPageId(fileId, currentPageId), true);
             currentPage.acquireWriteLatch();
@@ -586,6 +586,19 @@ public class OnDiskInvertedIndex implements IInvertedIndex {
     }
 
     @Override
+    public IIndexBulkLoader createBulkLoader(float fillFactor, boolean verifyInput, long numElementsHint,
+            boolean checkIfEmptyIndex, boolean appendOnly) throws IndexException {
+        try {
+            return new OnDiskInvertedIndexBulkLoader(fillFactor, verifyInput, numElementsHint, checkIfEmptyIndex,
+                    rootPageId, fileId);
+
+        } catch (HyracksDataException e) {
+            throw new InvertedIndexException(e);
+        }
+
+    }
+
+    @Override
     public void validate() throws HyracksDataException {
         btree.validate();
         // Scan the btree and validate the order of elements in each inverted-list.
@@ -673,16 +686,10 @@ public class OnDiskInvertedIndex implements IInvertedIndex {
     public IBinaryComparatorFactory[] getTokenCmpFactories() {
         return tokenCmpFactories;
     }
-    
+
     @Override
     public boolean hasMemoryComponents() {
         return true;
     }
 
-    @Override
-    public IIndexBulkLoader createBulkLoader(float fillFactor, boolean verifyInput, long numElementsHint,
-            boolean checkIfEmptyIndex, boolean appendOnly) throws IndexException {
-        // TODO Auto-generated method stub
-        return null;
-    }
 }
