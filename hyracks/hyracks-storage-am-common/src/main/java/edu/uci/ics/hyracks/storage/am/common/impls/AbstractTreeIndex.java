@@ -108,7 +108,7 @@ public abstract class AbstractTreeIndex implements ITreeIndex {
         }
 
         freePageManager.open(fileId);
-        if (/*freePageManager.getFirstMetadataPage() < 1*/ !appendOnly) {
+        if (/*freePageManager.getFirstMetadataPage() < 1*/!appendOnly) {
             // regular or empty tree
             rootPage = 1;
             BULKLOAD_LEAF_START = 2;
@@ -316,6 +316,8 @@ public abstract class AbstractTreeIndex implements ITreeIndex {
         protected int virtualPageIncrement = 0;
         protected final ConcurrentLinkedQueue<ICachedPage> queue;
         public boolean appendOnly = false;
+        //TODO: this seems ugly architecture-wise
+        private ICachedPage filterPage = null;
 
         public AbstractTreeIndexBulkLoader(float fillFactor, boolean appendOnly) throws TreeIndexException,
                 HyracksDataException {
@@ -395,6 +397,10 @@ public abstract class AbstractTreeIndex implements ITreeIndex {
         public void end() throws HyracksDataException {
             //move the root page to the first data page if necessary
             if (fifo) {
+                //write the filter page right after the metadata page
+                bufferCache.setPageDiskId(filterPage,
+                        BufferedFileHandle.getDiskPageId(fileId, freePageManager.getFreePage(metaFrame)));
+                queue.offer(filterPage);
                 bufferCache.finishQueue(queue);
             }
             if (!appendOnly) {
@@ -431,8 +437,7 @@ public abstract class AbstractTreeIndex implements ITreeIndex {
                         }
                     }
                 }
-            }
-            else{
+            } else {
                 freePageManager.close();
             }
         }
@@ -462,6 +467,10 @@ public abstract class AbstractTreeIndex implements ITreeIndex {
 
         public void setLeafFrame(ITreeIndexFrame leafFrame) {
             this.leafFrame = leafFrame;
+        }
+
+        public void insertFilterPage(ICachedPage page) {
+            filterPage = page;
         }
     }
 

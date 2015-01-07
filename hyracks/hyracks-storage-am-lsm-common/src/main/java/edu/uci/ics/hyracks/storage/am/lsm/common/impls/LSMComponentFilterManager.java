@@ -20,8 +20,10 @@ import java.util.List;
 import edu.uci.ics.hyracks.api.exceptions.HyracksDataException;
 import edu.uci.ics.hyracks.dataflow.common.data.accessors.ITupleReference;
 import edu.uci.ics.hyracks.storage.am.common.api.IFreePageManager;
+import edu.uci.ics.hyracks.storage.am.common.api.IIndexBulkLoader;
 import edu.uci.ics.hyracks.storage.am.common.api.ITreeIndex;
 import edu.uci.ics.hyracks.storage.am.common.api.ITreeIndexMetaDataFrame;
+import edu.uci.ics.hyracks.storage.am.common.impls.AbstractTreeIndex.AbstractTreeIndexBulkLoader;
 import edu.uci.ics.hyracks.storage.am.common.ophelpers.MultiComparator;
 import edu.uci.ics.hyracks.storage.am.lsm.common.api.ILSMComponentFilter;
 import edu.uci.ics.hyracks.storage.am.lsm.common.api.ILSMComponentFilterFrame;
@@ -51,7 +53,7 @@ public class LSMComponentFilterManager implements ILSMComponentFilterManager {
     }
 
     @Override
-    public void writeFilterInfo(ILSMComponentFilter filter, ITreeIndex treeIndex) throws HyracksDataException {
+    public void writeFilterInfo(ILSMComponentFilter filter, ITreeIndex treeIndex, AbstractTreeIndexBulkLoader bulkLoader) throws HyracksDataException {
         int fileId = treeIndex.getFileId();
 
         ITreeIndexMetaDataFrame metaFrame = treeIndex.getFreePageManager().getMetaDataFrameFactory().createFrame();
@@ -60,12 +62,8 @@ public class LSMComponentFilterManager implements ILSMComponentFilterManager {
         IFreePageManager treeMetaManager = treeIndex.getFreePageManager();
 
         int componentFilterPageId = treeMetaManager.getFilterPageId();
-        if (componentFilterPageId == -1) {
-            componentFilterPageId = treeIndex.getFreePageManager().getFreePage(metaFrame);
-            treeMetaManager.setFilterPageId(componentFilterPageId);
-        }
 
-        ICachedPage filterPage = bufferCache.pin(BufferedFileHandle.getDiskPageId(fileId, componentFilterPageId), true);
+        ICachedPage filterPage = bufferCache.confiscatePage(BufferedFileHandle.getDiskPageId(fileId, componentFilterPageId));
         filterPage.acquireWriteLatch();
         try {
             ILSMComponentFilterFrame filterFrame = filterFrameFactory.createFrame();
@@ -80,7 +78,7 @@ public class LSMComponentFilterManager implements ILSMComponentFilterManager {
 
         } finally {
             filterPage.releaseWriteLatch(true);
-            bufferCache.unpin(filterPage);
+            bulkLoader.insertFilterPage(filterPage);
         }
     }
 
@@ -115,4 +113,5 @@ public class LSMComponentFilterManager implements ILSMComponentFilterManager {
         }
         return true;
     }
+
 }

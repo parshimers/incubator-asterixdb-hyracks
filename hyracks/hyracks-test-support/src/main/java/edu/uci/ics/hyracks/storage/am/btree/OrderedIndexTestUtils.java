@@ -58,11 +58,10 @@ public class OrderedIndexTestUtils extends TreeIndexTestUtils {
                     actual.getFieldLength(i));
             DataInput dataIn = new DataInputStream(inStream);
             Object actualObj = fieldSerdes[i].deserialize(dataIn);
-            System.out.println(expected.getField(i) + " " + actualObj);
-            // if (!actualObj.equals(expected.getField(i))) {
-            //     fail("Actual and expected fields do not match on field " + i + ".\nExpected: " + expected.getField(i)
-            //             + "\nActual  : " + actualObj);
-            //  }
+            if (!actualObj.equals(expected.getField(i))) {
+                 fail("Actual and expected fields do not match on field " + i + ".\nExpected: " + expected.getField(i)
+                         + "\nActual  : " + actualObj);
+            }
         }
     }
 
