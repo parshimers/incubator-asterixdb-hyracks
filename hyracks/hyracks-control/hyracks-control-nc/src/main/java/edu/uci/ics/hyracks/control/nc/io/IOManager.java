@@ -97,14 +97,14 @@ public class IOManager implements IIOManager {
             }
             //*************************DEBUG - REMOVE ME*****************************************
             //disable it right now
-            if (true) {
-                if (offset > ((FileHandle) fHandle).DEBUG_highOffset && ((FileHandle) fHandle).DEBUG_highOffset != 0) {
-                    System.out.println("In file" + ((FileHandle) fHandle).getRandomAccessFile().toString()
-                            + "Wrote offset " + offset + " before " + ((FileHandle) fHandle).DEBUG_highOffset);
-                    System.exit(1);
-                }
-                ((FileHandle) fHandle).DEBUG_highOffset = offset + n;
-            }
+            //if (true) {
+             //   if (offset > ((FileHandle) fHandle).DEBUG_highOffset && ((FileHandle) fHandle).DEBUG_highOffset != 0) {
+            //        System.out.println("In file" + ((FileHandle) fHandle).getRandomAccessFile().toString()
+            //                + "Wrote offset " + offset + " before " + ((FileHandle) fHandle).DEBUG_highOffset);
+            //        System.exit(1);
+            //    }
+            //    ((FileHandle) fHandle).DEBUG_highOffset = offset + n;
+            //}
             //*************************DEBUG - REMOVE ME*****************************************
             return n;
         } catch (HyracksDataException e) {

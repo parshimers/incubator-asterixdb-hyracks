@@ -738,17 +738,6 @@ public abstract class OrderedIndexExamplesTest {
             treeIndex.deactivate();
             treeIndex.destroy();
         }
-/*
-            for (ICachedPageInternal c : bc.cachedPages) {
-                CachedPage cp = (CachedPage) c;
-                if (cp.pinCount.get() != 0) {
-                   // Thread.sleep(1000);
-                    if (cp.pinCount.get() != 0) {
-                //        throw new IllegalStateException();
-                    }
-                }
-            }
-        */
     }
 
     protected void orderedScan(IIndexAccessor indexAccessor, ISerializerDeserializer[] fieldSerdes) throws Exception {
