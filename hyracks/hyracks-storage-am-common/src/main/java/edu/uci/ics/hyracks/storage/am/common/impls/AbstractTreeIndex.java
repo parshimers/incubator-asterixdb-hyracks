@@ -17,6 +17,7 @@ package edu.uci.ics.hyracks.storage.am.common.impls;
 
 import java.util.ArrayList;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import edu.uci.ics.hyracks.api.dataflow.value.IBinaryComparatorFactory;
 import edu.uci.ics.hyracks.api.exceptions.HyracksDataException;
@@ -57,6 +58,12 @@ public abstract class AbstractTreeIndex implements ITreeIndex {
     protected int fileId = -1;
 
     private boolean isActivated = false;
+    private boolean initted = false;
+    private boolean fileOpen = false;
+
+    protected boolean fifo = true; //DEBUG
+
+    protected int BULKLOAD_LEAF_START = 0;
 
     public AbstractTreeIndex(IBufferCache bufferCache, IFileMapProvider fileMapProvider,
             IFreePageManager freePageManager, ITreeIndexFrameFactory interiorFrameFactory,
@@ -73,6 +80,10 @@ public abstract class AbstractTreeIndex implements ITreeIndex {
     }
 
     public synchronized void create() throws HyracksDataException {
+        create(false);
+    }
+
+    private synchronized void create(boolean appendOnly) throws HyracksDataException {
         if (isActivated) {
             throw new HyracksDataException("Failed to create the index since it is activated.");
         }
@@ -97,16 +108,26 @@ public abstract class AbstractTreeIndex implements ITreeIndex {
         }
 
         freePageManager.open(fileId);
-        if (freePageManager.getFirstMetadataPage() < 1) {
+        if (/*freePageManager.getFirstMetadataPage() < 1*/ !appendOnly) {
             // regular or empty tree
             rootPage = 1;
+            BULKLOAD_LEAF_START = 2;
         } else {
             // bulkload-only tree (used e.g. for HDFS). -1 is meta page, -2 is root page
-            rootPage = bufferCache.getNumPagesOfFile(fileId) - 2;
+            int numPages = bufferCache.getNumPagesOfFile(fileId);
+            rootPage = numPages > 2 ? numPages - 2 : 0;
+            BULKLOAD_LEAF_START = 0;
         }
-        initEmptyTree();
-        freePageManager.close();
-        bufferCache.closeFile(fileId);
+        if (!appendOnly) {
+            initEmptyTree();
+            freePageManager.close();
+            bufferCache.closeFile(fileId);
+        } else {
+            initVirtualMetaDataFrame();
+            fileOpen = true;
+            //initEmptyTree();
+        }
+        initted = true;
     }
 
     private void initEmptyTree() throws HyracksDataException {
@@ -125,6 +146,12 @@ public abstract class AbstractTreeIndex implements ITreeIndex {
         }
     }
 
+    private void initVirtualMetaDataFrame() throws HyracksDataException {
+        ITreeIndexFrame frame = leafFrameFactory.createFrame();
+        ITreeIndexMetaDataFrame metaFrame = freePageManager.getMetaDataFrameFactory().createFrame();
+        freePageManager.init(metaFrame);
+    }
+
     public synchronized void activate() throws HyracksDataException {
         if (isActivated) {
             throw new HyracksDataException("Failed to activate the index since it is already activated.");
@@ -139,7 +166,9 @@ public abstract class AbstractTreeIndex implements ITreeIndex {
             fileId = fileMapProvider.lookupFileId(file);
             try {
                 // Also creates the file if it doesn't exist yet.
-                bufferCache.openFile(fileId);
+                if (!fileOpen) {
+                    bufferCache.openFile(fileId);
+                }
             } catch (HyracksDataException e) {
                 // Revert state of buffer cache since file failed to open.
                 if (!fileIsMapped) {
@@ -148,21 +177,37 @@ public abstract class AbstractTreeIndex implements ITreeIndex {
                 throw e;
             }
         }
-        freePageManager.open(fileId);
+        if (!fileOpen) {
+            freePageManager.open(fileId);
+            if (freePageManager.getFirstMetadataPage() < 1) {
+                // regular or empty tree
+                rootPage = 1;
+                BULKLOAD_LEAF_START = 2;
+            } else {
+                // bulkload-only tree (used e.g. for HDFS). -1 is meta page, -2 is root page
+                int numPages = bufferCache.getNumPagesOfFile(fileId);
+                rootPage = numPages > 2 ? numPages - 2 : 0;
+                BULKLOAD_LEAF_START = 0;
+            }
+            fileOpen = true;
+        }
 
         // TODO: Should probably have some way to check that the tree is physically consistent
         // or that the file we just opened actually is a tree
 
         isActivated = true;
+        initted = true;
     }
 
     public synchronized void deactivate() throws HyracksDataException {
-        if (!isActivated) {
+        if (!isActivated && initted) {
             throw new HyracksDataException("Failed to deactivate the index since it is already deactivated.");
         }
-
-        bufferCache.closeFile(fileId);
-        freePageManager.close();
+        if (isActivated) {
+            freePageManager.close();
+            bufferCache.closeFile(fileId);
+            fileOpen = false;
+        }
 
         isActivated = false;
     }
@@ -175,7 +220,7 @@ public abstract class AbstractTreeIndex implements ITreeIndex {
         if (fileId == -1) {
             return;
         }
-        bufferCache.deleteFile(fileId, false);
+        bufferCache.deleteFile(fileId, true);
         file.delete();
         fileId = -1;
     }
@@ -188,6 +233,8 @@ public abstract class AbstractTreeIndex implements ITreeIndex {
     }
 
     public boolean isEmptyTree(ITreeIndexFrame frame) throws HyracksDataException {
+        if (rootPage == -1)
+            return true;
         ICachedPage rootNode = bufferCache.pin(BufferedFileHandle.getDiskPageId(fileId, rootPage), false);
         rootNode.acquireReadLatch();
         try {
@@ -261,25 +308,31 @@ public abstract class AbstractTreeIndex implements ITreeIndex {
         protected final ITreeIndexTupleWriter tupleWriter;
         protected ITreeIndexFrame leafFrame;
         protected ITreeIndexFrame interiorFrame;
-        protected boolean makeImmutable = true;//DEBUG;
         // Immutable bulk loaders write their root page at page -2, as needed e.g. by append-only file systems such as HDFS. 
         // Since loading this tree relies on the root page actually being at that point, no further inserts into that tree are allowed.
         // Currently, this is not enforced.
-        private boolean fifo = true;
         protected boolean releasedLatches;
         protected int virtualFileId = bufferCache.createMemFile();
         protected int virtualPageIncrement = 0;
         protected final ConcurrentLinkedQueue<ICachedPage> queue;
+        public boolean appendOnly = false;
 
-        public AbstractTreeIndexBulkLoader(float fillFactor, boolean makeImmutable) throws TreeIndexException,
+        public AbstractTreeIndexBulkLoader(float fillFactor, boolean appendOnly) throws TreeIndexException,
                 HyracksDataException {
+            //Initialize the tree 
+            if (appendOnly) {
+                create(appendOnly);
+                this.appendOnly = appendOnly;
+                activate();
+            }
+
             leafFrame = leafFrameFactory.createFrame();
             interiorFrame = interiorFrameFactory.createFrame();
             metaFrame = freePageManager.getMetaDataFrameFactory().createFrame();
 
             queue = bufferCache.createFIFOQueue();
 
-            if (!isEmptyTree(leafFrame)) {
+            if (!appendOnly && !isEmptyTree(leafFrame)) {
                 throw new TreeIndexException("Cannot bulk-load a non-empty tree.");
             }
 
@@ -340,20 +393,31 @@ public abstract class AbstractTreeIndex implements ITreeIndex {
 
         @Override
         public void end() throws HyracksDataException {
-            // copy the root generated from the bulk-load to *the* root page location
-            if (!makeImmutable) {
-                rootPage = freePageManager.getFreePage(metaFrame);
+            //move the root page to the first data page if necessary
+            if (fifo) {
+                bufferCache.finishQueue(queue);
+            }
+            if (!appendOnly) {
                 ICachedPage newRoot = bufferCache.pin(BufferedFileHandle.getDiskPageId(fileId, rootPage), true);
                 newRoot.acquireWriteLatch();
+                //root will be the highest frontier
                 NodeFrontier lastNodeFrontier = nodeFrontiers.get(nodeFrontiers.size() - 1);
+                ICachedPage oldRoot = bufferCache.pin(
+                        BufferedFileHandle.getDiskPageId(fileId, lastNodeFrontier.pageId), false);
+                oldRoot.acquireReadLatch();
+                lastNodeFrontier.page = oldRoot;
                 try {
                     System.arraycopy(lastNodeFrontier.page.getBuffer().array(), 0, newRoot.getBuffer().array(), 0,
                             lastNodeFrontier.page.getBuffer().capacity());
                 } finally {
                     newRoot.releaseWriteLatch(true);
                     bufferCache.unpin(newRoot);
+                    oldRoot.releaseReadLatch();
+                    bufferCache.unpin(oldRoot);
+
                     // register old root as a free page
                     freePageManager.addFreePage(metaFrame, lastNodeFrontier.pageId);
+
                     if (!releasedLatches) {
                         for (int i = 0; i < nodeFrontiers.size(); i++) {
                             try {
@@ -361,28 +425,16 @@ public abstract class AbstractTreeIndex implements ITreeIndex {
                             } catch (Exception e) {
                                 //ignore illegal monitor state exception
                             }
-                            bufferCache.unpin(nodeFrontiers.get(i).page);
-                        }
-                    }
-                }
-            } else {
-                rootPage = freePageManager.getMaxPage(metaFrame);
-                if (!releasedLatches) {
-                    for (int i = 0; i < nodeFrontiers.size(); i++) {
-                        try {
-                            nodeFrontiers.get(i).page.releaseWriteLatch(true);
-                        } catch (Exception e) {
-                            //ignore illegal monitor state exception
-                        }
-                        if (fifo) {
-                            queue.offer(nodeFrontiers.get(i).page);
-                        } else {
-                            bufferCache.unpin(nodeFrontiers.get(i).page);
+                            if (!fifo) {
+                                bufferCache.unpin(nodeFrontiers.get(i).page);
+                            }
                         }
                     }
                 }
             }
-            bufferCache.finishQueue(queue);
+            else{
+                freePageManager.close();
+            }
         }
 
         protected void addLevel() throws HyracksDataException {
@@ -390,6 +442,7 @@ public abstract class AbstractTreeIndex implements ITreeIndex {
             //frontier.pageId = freePageManager.getFreePage(metaFrame);
             if (fifo) {
                 frontier.page = bufferCache.confiscatePage(-1);
+                frontier.pageId = -1;
             } else {
 
                 frontier.pageId = ++virtualPageIncrement;

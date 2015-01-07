@@ -63,10 +63,8 @@ public class RTree extends AbstractTreeIndex {
 
     // Global node sequence number used for the concurrency control protocol
     private final AtomicLong globalNsn;
-    private final static int BULKLOAD_LEAF_START = 2;
 
     private final int maxTupleSize;
-    private final boolean fifo = true;
 
     public RTree(IBufferCache bufferCache, IFileMapProvider fileMapProvider, IFreePageManager freePageManager,
             ITreeIndexFrameFactory interiorFrameFactory, ITreeIndexFrameFactory leafFrameFactory,
@@ -872,10 +870,10 @@ public class RTree extends AbstractTreeIndex {
     }
 
     public IIndexBulkLoader createBulkLoader(float fillFactor, boolean verifyInput, long numElementsHint,
-            boolean checkIfEmptyIndex, boolean makeImmutable) throws TreeIndexException {
+            boolean checkIfEmptyIndex, boolean appendOnly) throws TreeIndexException {
         // TODO: verifyInput currently does nothing.
         try {
-            return new RTreeBulkLoader(fillFactor, makeImmutable);
+            return new RTreeBulkLoader(fillFactor, appendOnly);
         } catch (HyracksDataException e) {
             throw new TreeIndexException(e);
         }
@@ -888,8 +886,8 @@ public class RTree extends AbstractTreeIndex {
         ByteBuffer mbr;
         List<Integer> prevNodeFrontierPages = new ArrayList<Integer>();
 
-        public RTreeBulkLoader(float fillFactor, boolean makeImmutable) throws TreeIndexException, HyracksDataException {
-            super(fillFactor, makeImmutable);
+        public RTreeBulkLoader(float fillFactor, boolean appendOnly) throws TreeIndexException, HyracksDataException {
+            super(fillFactor, appendOnly);
             prevInteriorFrame = interiorFrameFactory.createFrame();
         }
 
@@ -921,12 +919,16 @@ public class RTree extends AbstractTreeIndex {
                     } else {
                         prevNodeFrontierPages.set(0, leafFrontier.pageId);
                     }
-                    propagateBulk(1, false);
+                    List<ICachedPage> pagesToWrite = new ArrayList<ICachedPage>();
+                    propagateBulk(1, false, pagesToWrite);
 
                     leafFrontier.pageId = freePageManager.getFreePage(metaFrame);
                     leafFrontier.page.releaseWriteLatch(true);
                     if (fifo) {
                         queue.offer(leafFrontier.page);
+                        for (ICachedPage c : pagesToWrite) {
+                            queue.offer(c);
+                        }
                         leafFrontier.page = bufferCache.confiscatePage(BufferedFileHandle.getDiskPageId(fileId,
                                 leafFrontier.pageId));
                     } else {
@@ -943,64 +945,75 @@ public class RTree extends AbstractTreeIndex {
                 leafFrame.setPage(leafFrontier.page);
                 leafFrame.insert(tuple, AbstractSlotManager.GREATEST_KEY_INDICATOR);
             } catch (HyracksDataException e) {
-                //handleException();
+                handleException();
                 throw e;
             } catch (RuntimeException e) {
-                //handleException();
+                handleException();
                 throw e;
             }
 
         }
 
         public void end() throws HyracksDataException {
-            propagateBulk(1, true);
-            finalize();
+            List<ICachedPage> pagesToWrite = new ArrayList<ICachedPage>();
+            propagateBulk(1, true, pagesToWrite);
+            for(ICachedPage c: pagesToWrite){
+                queue.offer(c);
+            }
+            finish();
             super.end();
         }
 
-        protected void finalize() throws HyracksDataException {
-            NodeFrontier prev = null;
+        protected void finish() throws HyracksDataException {
+            int prevPageId = -1;
             //here we assign physical identifiers to everything we can
             for (NodeFrontier n : nodeFrontiers) {
-                if (bufferCache.isVirtual(n.page)) {
+                //not a leaf
+                if (nodeFrontiers.indexOf(n) != 0) {
                     interiorFrame.setPage(n.page);
-                    ((RTreeNSMFrame) lowerFrame).adjustMBR();
-                    tupleWriter.writeTupleFields(((RTreeNSMFrame) lowerFrame).getMBRTuples(), 0, mbr, 0);
                     mbrTuple.resetByTupleOffset(mbr, 0);
                     interiorFrame.insert(mbrTuple, -1);
                     interiorFrame.getBuffer().putInt(
                             interiorFrame.getTupleOffset(interiorFrame.getTupleCount() - 1) + mbrTuple.getTupleSize(),
-                            prev.pageId);
+                            prevPageId);
 
                     int finalPageId = freePageManager.getFreePage(metaFrame);
                     n.page.releaseWriteLatch(true);
                     if (fifo) {
-                        AsyncFIFOPageQueueManager.setDpid(n.page, BufferedFileHandle.getDiskPageId(fileId, finalPageId));
+                        AsyncFIFOPageQueueManager
+                                .setDpid(n.page, BufferedFileHandle.getDiskPageId(fileId, finalPageId));
                         queue.offer(n.page);
+                        n.page = null;
                     } else {
 
                         ICachedPage finalPage = bufferCache.unpinVirtual(n.page,
                                 BufferedFileHandle.getDiskPageId(fileId, finalPageId));
                         n.page = finalPage;
-                        bufferCache.unpin(prev.page);
+                        //bufferCache.unpin(prev.page);
                     }
                     n.pageId = finalPageId;
-                    prev = n;
-                    lowerFrame.setPage(prev.page);
+                    prevPageId = n.pageId;
+                    //else we are looking at a leaf
                 } else {
                     n.page.releaseWriteLatch(true);
                     if (fifo) {
                         queue.offer(n.page);
+                        n.page = null;
                     } else {
                         bufferCache.unpin(n.page);
                     }
-                    prev = n;
-                    lowerFrame.setPage(prev.page);
+                    prevPageId = n.pageId;
                 }
+                //set next guide MBR 
+                ((RTreeNSMFrame) interiorFrame).adjustMBR();
+                tupleWriter.writeTupleFields(((RTreeNSMFrame) interiorFrame).getMBRTuples(), 0, mbr, 0);
             }
+            rootPage = nodeFrontiers.get(nodeFrontiers.size() - 1).pageId;
+            releasedLatches = true;
         }
 
-        protected void propagateBulk(int level, boolean toRoot) throws HyracksDataException {
+        protected void propagateBulk(int level, boolean toRoot, List<ICachedPage> pagesToWrite)
+                throws HyracksDataException {
             boolean propagated = false;
 
             if (level == 1)
@@ -1043,8 +1056,10 @@ public class RTree extends AbstractTreeIndex {
                 }
                 frontier.page.releaseWriteLatch(true);
                 if (fifo) {
-                    AsyncFIFOPageQueueManager.setDpid(frontier.page, BufferedFileHandle.getDiskPageId(fileId,finalPageId));
-                    queue.offer(frontier.page);
+                    AsyncFIFOPageQueueManager.setDpid(frontier.page,
+                            BufferedFileHandle.getDiskPageId(fileId, finalPageId));
+                    //queue.offer(frontier.page);
+                    pagesToWrite.add(frontier.page);
                 } else {
                     ICachedPage finalPage = bufferCache.unpinVirtual(frontier.page,
                             BufferedFileHandle.getDiskPageId(fileId, finalPageId));
@@ -1072,7 +1087,7 @@ public class RTree extends AbstractTreeIndex {
                         interiorFrame.getTupleOffset(interiorFrame.getTupleCount() - 1) + mbrTuple.getTupleSize(),
                         prevNodeFrontierPages.get(level - 1));
 
-                propagateBulk(level + 1, toRoot);
+                propagateBulk(level + 1, toRoot, pagesToWrite);
                 propagated = true;
             } else if (interiorFrame.hasSpaceInsert(mbrTuple) == FrameOpSpaceStatus.SUFFICIENT_CONTIGUOUS_SPACE
                     && !toRoot) {
@@ -1087,7 +1102,7 @@ public class RTree extends AbstractTreeIndex {
             if (toRoot && !propagated && level < nodeFrontiers.size() - 1) {
                 lowerFrame = prevInteriorFrame;
                 lowerFrame.setPage(frontier.page);
-                propagateBulk(level + 1, true);
+                propagateBulk(level + 1, true, pagesToWrite);
             }
 
             leafFrame.setPage(nodeFrontiers.get(0).page);

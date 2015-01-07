@@ -226,7 +226,7 @@ public class LSMRTreeWithAntiMatterTuples extends AbstractLSMRTree {
             bTreeTupleSorter.sort();
         }
 
-        IIndexBulkLoader rTreeBulkloader = diskRTree.createBulkLoader(1.0f, false, 0L, false);
+        IIndexBulkLoader rTreeBulkloader = diskRTree.createBulkLoader(1.0f, false, 0L, false, true);
         LSMRTreeWithAntiMatterTuplesFlushCursor cursor = new LSMRTreeWithAntiMatterTuplesFlushCursor(rTreeTupleSorter,
                 bTreeTupleSorter, comparatorFields, linearizerArray);
         cursor.open(null, null);
@@ -286,7 +286,7 @@ public class LSMRTreeWithAntiMatterTuples extends AbstractLSMRTree {
         LSMRTreeDiskComponent component = createDiskComponent(componentFactory, mergeOp.getRTreeMergeTarget(), null,
                 null, true);
         RTree mergedRTree = component.getRTree();
-        IIndexBulkLoader bulkloader = mergedRTree.createBulkLoader(1.0f, false, 0L, false);
+        IIndexBulkLoader bulkloader = mergedRTree.createBulkLoader(1.0f, false, 0L, false, true);
         try {
             while (cursor.hasNext()) {
                 cursor.next();
@@ -372,7 +372,7 @@ public class LSMRTreeWithAntiMatterTuples extends AbstractLSMRTree {
                 throw new TreeIndexException(e);
             }
             bulkLoader = ((LSMRTreeDiskComponent) component).getRTree().createBulkLoader(fillFactor, verifyInput,
-                    numElementsHint, false);
+                    numElementsHint, false, true);
 
             if (filterFields != null) {
                 indexTuple = new PermutingTupleReference(rtreeFields);
@@ -445,5 +445,12 @@ public class LSMRTreeWithAntiMatterTuples extends AbstractLSMRTree {
         RTree rtree = ((LSMRTreeDiskComponent) lsmComponent).getRTree();
         forceFlushDirtyPages(rtree);
         markAsValidInternal(rtree);
+    }
+
+    @Override
+    public IIndexBulkLoader createBulkLoader(float fillFactor, boolean verifyInput, long numElementsHint,
+            boolean checkIfEmptyIndex, boolean appendOnly) throws IndexException {
+        // TODO Auto-generated method stub
+        return null;
     }
 }

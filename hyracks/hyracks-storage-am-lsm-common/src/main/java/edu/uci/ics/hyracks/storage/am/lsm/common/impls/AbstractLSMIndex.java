@@ -148,6 +148,7 @@ public abstract class AbstractLSMIndex implements ILSMIndexInternal {
     protected void markAsValidInternal(ITreeIndex treeIndex) throws HyracksDataException {
         int fileId = treeIndex.getFileId();
         IBufferCache bufferCache = treeIndex.getBufferCache();
+        /*
         ITreeIndexMetaDataFrame metadataFrame = treeIndex.getFreePageManager().getMetaDataFrameFactory().createFrame();
         // Mark the component as a valid component by flushing the metadata page to disk
         int metadataPageId = treeIndex.getFreePageManager().getFirstMetadataPage();
@@ -161,9 +162,11 @@ public abstract class AbstractLSMIndex implements ILSMIndexInternal {
             bufferCache.unpin(metadataPage);
         }
 
+        */
+        int metaPageId = treeIndex.getFreePageManager().closeGivePageId();
         // WARNING: flushing the metadata page should be done after releasing the write latch; otherwise, the page 
         // won't be flushed to disk because it won't be dirty until the write latch has been released.
-        metadataPage = bufferCache.tryPin(BufferedFileHandle.getDiskPageId(fileId, metadataPageId));
+        ICachedPage metadataPage = bufferCache.tryPin(BufferedFileHandle.getDiskPageId(fileId, metaPageId));
         if (metadataPage != null) {
             try {
                 // Flush the single modified page to disk.
@@ -172,7 +175,6 @@ public abstract class AbstractLSMIndex implements ILSMIndexInternal {
                 bufferCache.unpin(metadataPage);
             }
         }
-
         // Force modified metadata page to disk.
         bufferCache.force(fileId, true);
     }
@@ -251,5 +253,11 @@ public abstract class AbstractLSMIndex implements ILSMIndexInternal {
     @Override
     public boolean hasMemoryComponents() {
         return true;
+    }
+    
+    @Override
+    public boolean isCurrentMutableComponentEmpty() throws HyracksDataException {
+        //check if the current memory component has been modified
+        return !((AbstractMemoryLSMComponent) memoryComponents.get(currentMutableComponentId.get())).isModified();
     }
 }

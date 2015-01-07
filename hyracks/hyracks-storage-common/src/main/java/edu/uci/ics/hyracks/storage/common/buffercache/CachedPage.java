@@ -23,12 +23,12 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 /**
  * @author yingyib
  */
-class CachedPage implements ICachedPageInternal {
+public class CachedPage implements ICachedPageInternal {
     final int cpid;
     final ByteBuffer buffer;
-    final AtomicInteger pinCount;
+    public final AtomicInteger pinCount;
     final AtomicBoolean dirty;
-    final ReadWriteLock latch;
+    final ReentrantReadWriteLock latch;
     private final Object replacementStrategyObject;
     private final IPageReplacementStrategy pageReplacementStrategy;
     volatile long dpid; // disk page id (composed of file id and page id)
@@ -48,6 +48,7 @@ class CachedPage implements ICachedPageInternal {
         valid = false;
         virtual = false;
     }
+
     public void reset(long dpid) {
         this.dpid = dpid;
         dirty.set(false);
@@ -99,12 +100,15 @@ class CachedPage implements ICachedPageInternal {
 
     @Override
     public void releaseWriteLatch(boolean markDirty) {
-        if (markDirty) {
-            if (dirty.compareAndSet(false, true)) {
-                pinCount.incrementAndGet();
+        try {
+            if (markDirty) {
+                if (dirty.compareAndSet(false, true)) {
+                    pinCount.incrementAndGet();
+                }
             }
+        } finally {
+            latch.writeLock().unlock();
         }
-        latch.writeLock().unlock();
     }
 
     @Override

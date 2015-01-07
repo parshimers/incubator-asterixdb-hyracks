@@ -53,9 +53,11 @@ public interface IBufferCache {
 
     public void adviseWontNeed(ICachedPage page);
 
-    public ICachedPage confiscatePage(long dpid);
+    public ICachedPage confiscatePage(long dpid) throws HyracksDataException;
 
     public void returnPage(ICachedPage page);
+
+    public void returnPage(ICachedPage page, boolean reinsert);
 
     public void force(int fileId, boolean metadata) throws HyracksDataException;
 
@@ -70,5 +72,9 @@ public interface IBufferCache {
     public ConcurrentLinkedQueue<ICachedPage> createFIFOQueue();
 
     public void finishQueue(ConcurrentLinkedQueue<ICachedPage> queue);
+
+    void copyPage(ICachedPage src, ICachedPage dst);
+
+    void setPageDiskId(ICachedPage page, long dpid);
 
 }

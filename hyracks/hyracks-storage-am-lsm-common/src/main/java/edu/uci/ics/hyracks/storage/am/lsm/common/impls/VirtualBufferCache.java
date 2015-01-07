@@ -425,4 +425,22 @@ public class VirtualBufferCache implements IVirtualBufferCache {
         return null;
     }
 
+    @Override
+    public void copyPage(ICachedPage src, ICachedPage dst) {
+        // TODO Auto-generated method stub
+        
+    }
+
+    @Override
+    public void setPageDiskId(ICachedPage page, long dpid) {
+        // TODO Auto-generated method stub
+        
+    }
+
+    @Override
+    public void returnPage(ICachedPage page, boolean reinsert) {
+        // TODO Auto-generated method stub
+        
+    }
+
 }

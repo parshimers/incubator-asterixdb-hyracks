@@ -504,7 +504,7 @@ public class LSMInvertedIndex extends AbstractLSMIndex implements IInvertedIndex
         memBTreeAccessor.search(scanCursor, nullPred);
 
         // Bulk load the disk inverted index from the in-memory inverted index.
-        IIndexBulkLoader invIndexBulkLoader = diskInvertedIndex.createBulkLoader(1.0f, false, 0L, false);
+        IIndexBulkLoader invIndexBulkLoader = diskInvertedIndex.createBulkLoader(1.0f, false, 0L, false, true);
         try {
             while (scanCursor.hasNext()) {
                 scanCursor.next();
@@ -626,7 +626,7 @@ public class LSMInvertedIndex extends AbstractLSMIndex implements IInvertedIndex
             search(opCtx, btreeCursor, mergePred);
 
             BTree btree = component.getDeletedKeysBTree();
-            IIndexBulkLoader btreeBulkLoader = btree.createBulkLoader(1.0f, true, 0L, false);
+            IIndexBulkLoader btreeBulkLoader = btree.createBulkLoader(1.0f, true, 0L, false, true);
 
             long numElements = 0L;
             for (int i = 0; i < mergeOp.getMergingComponents().size(); ++i) {
@@ -653,7 +653,7 @@ public class LSMInvertedIndex extends AbstractLSMIndex implements IInvertedIndex
             btreeBulkLoader.end();
         }
 
-        IIndexBulkLoader invIndexBulkLoader = mergedDiskInvertedIndex.createBulkLoader(1.0f, true, 0L, false);
+        IIndexBulkLoader invIndexBulkLoader = mergedDiskInvertedIndex.createBulkLoader(1.0f, true, 0L, false, true);
         try {
             while (cursor.hasNext()) {
                 cursor.next();
@@ -695,6 +695,16 @@ public class LSMInvertedIndex extends AbstractLSMIndex implements IInvertedIndex
         }
     }
 
+    @Override
+    public IIndexBulkLoader createBulkLoader(float fillFactor, boolean verifyInput, long numElementsHint,
+            boolean checkIfEmptyIndex, boolean appendOnly) throws IndexException {
+        try {
+            return new LSMInvertedIndexBulkLoader(fillFactor, verifyInput, numElementsHint, checkIfEmptyIndex);
+        } catch (HyracksDataException e) {
+            throw new IndexException(e);
+        }
+    }
+
     public class LSMInvertedIndexBulkLoader implements IIndexBulkLoader {
         private final ILSMComponent component;
         private final IIndexBulkLoader invIndexBulkLoader;
@@ -717,7 +727,7 @@ public class LSMInvertedIndex extends AbstractLSMIndex implements IInvertedIndex
                 throw new IndexException(e);
             }
             invIndexBulkLoader = ((LSMInvertedIndexDiskComponent) component).getInvIndex().createBulkLoader(fillFactor,
-                    verifyInput, numElementsHint, false);
+                    verifyInput, numElementsHint, false, true);
 
             if (filterFields != null) {
                 indexTuple = new PermutingTupleReference(invertedIndexFields);
@@ -934,4 +944,5 @@ public class LSMInvertedIndex extends AbstractLSMIndex implements IInvertedIndex
     public boolean isPrimaryIndex() {
         return false;
     }
+
 }

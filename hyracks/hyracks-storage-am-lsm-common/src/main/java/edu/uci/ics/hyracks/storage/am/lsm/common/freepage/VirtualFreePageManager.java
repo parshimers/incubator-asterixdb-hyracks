@@ -114,4 +114,28 @@ public class VirtualFreePageManager implements IVirtualFreePageManager {
 
     }
 
+    @Override
+    public void init(ITreeIndexMetaDataFrame metaFrame) throws HyracksDataException {
+        // TODO Auto-generated method stub
+        
+    }
+
+    @Override
+    public int closeGivePageId() throws HyracksDataException {
+        // TODO Auto-generated method stub
+        return 0;
+    }
+
+    @Override
+    public int getFilterPageId() throws HyracksDataException {
+        // TODO Auto-generated method stub
+        return 0;
+    }
+
+    @Override
+    public void setFilterPageId(int filterPageId) throws HyracksDataException {
+        // TODO Auto-generated method stub
+        
+    }
+
 }

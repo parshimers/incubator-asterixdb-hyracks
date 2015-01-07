@@ -501,7 +501,7 @@ public class ExternalBTree extends LSMBTree implements ITwoPCIndex {
             frameTupleWriterFactory = ((LSMBTreeDiskComponent) component).getBTree().getLeafFrameFactory()
                     .getTupleWriterFactory();
             bulkLoader = (BTreeBulkLoader) ((LSMBTreeDiskComponent) component).getBTree().createBulkLoader(fillFactor,
-                    verifyInput, numElementsHint, false);
+                    verifyInput, numElementsHint, false, true);
 
             int maxBucketsPerElement = BloomCalculations.maxBucketsPerElement(numElementsHint);
             BloomFilterSpecification bloomFilterSpec = BloomCalculations.computeBloomSpec(maxBucketsPerElement,

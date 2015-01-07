@@ -216,7 +216,7 @@ public class DebugBufferCache implements IBufferCache {
     }
 
     @Override
-    public ICachedPage confiscatePage(long dpid) {
+    public ICachedPage confiscatePage(long dpid) throws HyracksDataException {
         return bufferCache.confiscatePage(dpid);
     }
 
@@ -233,6 +233,24 @@ public class DebugBufferCache implements IBufferCache {
     @Override
     public void finishQueue(ConcurrentLinkedQueue<ICachedPage> queue) {
         bufferCache.finishQueue(queue);
+    }
+
+    @Override
+    public void copyPage(ICachedPage src, ICachedPage dst) {
+        // TODO Auto-generated method stub
+        
+    }
+
+    @Override
+    public void setPageDiskId(ICachedPage page, long dpid) {
+        // TODO Auto-generated method stub
+        
+    }
+
+    @Override
+    public void returnPage(ICachedPage page, boolean reinsert) {
+        // TODO Auto-generated method stub
+        
     }
 
 }
