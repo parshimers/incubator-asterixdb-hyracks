@@ -84,7 +84,7 @@ public class AsyncFIFOPageQueueManager implements Runnable {
                    if(DEBUG)  System.out.println("[FIFO] Removed? " + removed);
                     break;
                 }
-                assert (removed);
+                //assert (removed);
             }
             if (queues.size() == 0) {
                 synchronized (this) {

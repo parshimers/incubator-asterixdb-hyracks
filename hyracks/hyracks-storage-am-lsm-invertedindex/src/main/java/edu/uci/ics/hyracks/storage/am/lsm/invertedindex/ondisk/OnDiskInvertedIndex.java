@@ -18,6 +18,7 @@ package edu.uci.ics.hyracks.storage.am.lsm.invertedindex.ondisk;
 import java.io.DataOutput;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.concurrent.ConcurrentLinkedQueue;
 
 import edu.uci.ics.hyracks.api.context.IHyracksCommonContext;
 import edu.uci.ics.hyracks.api.dataflow.value.IBinaryComparatorFactory;
@@ -301,6 +302,8 @@ public class OnDiskInvertedIndex implements IInvertedIndex {
 
         private final boolean verifyInput;
         private final MultiComparator allCmp;
+        
+        private ConcurrentLinkedQueue<ICachedPage>queue;
 
         public OnDiskInvertedIndexBulkLoader(float btreeFillFactor, boolean verifyInput, long numElementsHint,
                 boolean checkIfEmptyIndex, int startPageId, int fileId) throws IndexException, HyracksDataException {
@@ -319,16 +322,17 @@ public class OnDiskInvertedIndex implements IInvertedIndex {
             this.btreeBulkloader = btree.createBulkLoader(btreeFillFactor, verifyInput, numElementsHint,
                     checkIfEmptyIndex, true);
             currentPageId = startPageId;
-            currentPage = bufferCache.pin(BufferedFileHandle.getDiskPageId(fileId, currentPageId), true);
+            currentPage = bufferCache.confiscatePage(BufferedFileHandle.getDiskPageId(fileId, currentPageId));
             currentPage.acquireWriteLatch();
             invListBuilder.setTargetBuffer(currentPage.getBuffer().array(), 0);
+            queue = bufferCache.createFIFOQueue();
         }
 
         public void pinNextPage() throws HyracksDataException {
             currentPage.releaseWriteLatch(true);
-            bufferCache.unpin(currentPage);
+            queue.offer(currentPage);
             currentPageId++;
-            currentPage = bufferCache.pin(BufferedFileHandle.getDiskPageId(fileId, currentPageId), true);
+            currentPage = bufferCache.confiscatePage(BufferedFileHandle.getDiskPageId(fileId, currentPageId));
             currentPage.acquireWriteLatch();
         }
 
@@ -433,9 +437,10 @@ public class OnDiskInvertedIndex implements IInvertedIndex {
 
             if (currentPage != null) {
                 currentPage.releaseWriteLatch(true);
-                bufferCache.unpin(currentPage);
+                queue.offer(currentPage);
             }
             invListsMaxPageId = currentPageId;
+            bufferCache.finishQueue(queue);
         }
     }
 

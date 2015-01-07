@@ -101,7 +101,7 @@ public class IOManager implements IIOManager {
                 if (offset > ((FileHandle) fHandle).DEBUG_highOffset && ((FileHandle) fHandle).DEBUG_highOffset != 0) {
                     System.out.println("In file" + ((FileHandle) fHandle).getRandomAccessFile().toString()
                             + "Wrote offset " + offset + " before " + ((FileHandle) fHandle).DEBUG_highOffset);
-                    //throw new IllegalStateException();
+                    System.exit(1);
                 }
                 ((FileHandle) fHandle).DEBUG_highOffset = offset + n;
             }
