@@ -541,35 +541,33 @@ public class LSMInvertedIndex extends AbstractLSMIndex implements IInvertedIndex
             btreeCountingCursor.close();
         }
 
-        if (numBTreeTuples > 0) {
-            int maxBucketsPerElement = BloomCalculations.maxBucketsPerElement(numBTreeTuples);
-            BloomFilterSpecification bloomFilterSpec = BloomCalculations.computeBloomSpec(maxBucketsPerElement,
-                    bloomFilterFalsePositiveRate);
+        int maxBucketsPerElement = BloomCalculations.maxBucketsPerElement(numBTreeTuples);
+        BloomFilterSpecification bloomFilterSpec = BloomCalculations.computeBloomSpec(maxBucketsPerElement,
+                bloomFilterFalsePositiveRate);
 
-            // Create an BTree instance for the deleted keys.
-            BTree diskDeletedKeysBTree = component.getDeletedKeysBTree();
+        // Create an BTree instance for the deleted keys.
+        BTree diskDeletedKeysBTree = component.getDeletedKeysBTree();
 
-            // Create a scan cursor on the deleted keys BTree underlying the in-memory inverted index.
-            IIndexCursor deletedKeysScanCursor = deletedKeysBTreeAccessor.createSearchCursor(false);
-            deletedKeysBTreeAccessor.search(deletedKeysScanCursor, nullPred);
+        // Create a scan cursor on the deleted keys BTree underlying the in-memory inverted index.
+        IIndexCursor deletedKeysScanCursor = deletedKeysBTreeAccessor.createSearchCursor(false);
+        deletedKeysBTreeAccessor.search(deletedKeysScanCursor, nullPred);
 
-            // Bulk load the deleted-keys BTree.
-            IIndexBulkLoader deletedKeysBTreeBulkLoader = diskDeletedKeysBTree.createBulkLoader(1.0f, false, 0L, false);
-            IIndexBulkLoader builder = component.getBloomFilter().createBuilder(numBTreeTuples,
-                    bloomFilterSpec.getNumHashes(), bloomFilterSpec.getNumBucketsPerElements());
+        // Bulk load the deleted-keys BTree.
+        IIndexBulkLoader deletedKeysBTreeBulkLoader = diskDeletedKeysBTree.createBulkLoader(1.0f, false, 0L, false);
+        IIndexBulkLoader builder = component.getBloomFilter().createBuilder(numBTreeTuples,
+                bloomFilterSpec.getNumHashes(), bloomFilterSpec.getNumBucketsPerElements());
 
-            try {
-                while (deletedKeysScanCursor.hasNext()) {
-                    deletedKeysScanCursor.next();
-                    deletedKeysBTreeBulkLoader.add(deletedKeysScanCursor.getTuple());
-                    builder.add(deletedKeysScanCursor.getTuple());
-                }
-            } finally {
-                deletedKeysScanCursor.close();
-                builder.end();
+        try {
+            while (deletedKeysScanCursor.hasNext()) {
+                deletedKeysScanCursor.next();
+                deletedKeysBTreeBulkLoader.add(deletedKeysScanCursor.getTuple());
+                builder.add(deletedKeysScanCursor.getTuple());
             }
-            deletedKeysBTreeBulkLoader.end();
+        } finally {
+            deletedKeysScanCursor.close();
+            builder.end();
         }
+        deletedKeysBTreeBulkLoader.end();
 
         return component;
     }

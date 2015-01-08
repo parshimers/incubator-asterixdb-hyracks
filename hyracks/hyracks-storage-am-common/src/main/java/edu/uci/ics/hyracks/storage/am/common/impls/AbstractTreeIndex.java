@@ -397,12 +397,12 @@ public abstract class AbstractTreeIndex implements ITreeIndex {
         public void end() throws HyracksDataException {
             //move the root page to the first data page if necessary
             if (fifo) {
-            	if(filterPage!=null){
                 //write the filter page right after the metadata page
-            		bufferCache.setPageDiskId(filterPage,
-            				BufferedFileHandle.getDiskPageId(fileId, freePageManager.getFreePage(metaFrame)));
-                	queue.offer(filterPage);
-            	}
+                if (filterPage != null) {
+                    bufferCache.setPageDiskId(filterPage,
+                            BufferedFileHandle.getDiskPageId(fileId, freePageManager.getFreePage(metaFrame)));
+                    queue.offer(filterPage);
+                }
                 bufferCache.finishQueue(queue);
             }
             if (!appendOnly) {
