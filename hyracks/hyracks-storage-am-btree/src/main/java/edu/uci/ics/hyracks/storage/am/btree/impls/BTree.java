@@ -953,6 +953,7 @@ public class BTree extends AbstractTreeIndex {
     public class BTreeBulkLoader extends AbstractTreeIndex.AbstractTreeIndexBulkLoader {
         protected final ISplitKey splitKey;
         protected final boolean verifyInput;
+        protected List<ICachedPage> pagesToWrite;
 
         public BTreeBulkLoader(float fillFactor, boolean verifyInput, boolean appendOnly) throws TreeIndexException,
                 HyracksDataException {
@@ -960,6 +961,7 @@ public class BTree extends AbstractTreeIndex {
             this.verifyInput = verifyInput;
             splitKey = new BTreeSplitKey(leafFrame.getTupleWriter().createTupleReference());
             splitKey.getTuple().setFieldCount(cmp.getKeyFieldCount());
+            pagesToWrite = new ArrayList<ICachedPage>();
         }
 
         @Override
@@ -994,8 +996,8 @@ public class BTree extends AbstractTreeIndex {
                             .getBuffer().array(), 0);
                     splitKey.getTuple().resetByTupleOffset(splitKey.getBuffer(), 0);
                     splitKey.setLeftPage(leafFrontier.pageId);
-
-                    List<ICachedPage> pagesToWrite = new ArrayList<ICachedPage>();
+                   
+                    pagesToWrite.clear();
                     propagateBulk(1,pagesToWrite);
                     leafFrontier.pageId = freePageManager.getFreePage(metaFrame);
 
