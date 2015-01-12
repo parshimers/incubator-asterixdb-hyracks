@@ -119,7 +119,6 @@ public class CachedPage implements ICachedPageInternal {
         return next;
     }
     void setNext(CachedPage next) {
-        if(next == this) throw new IllegalStateException("Cannot create cycle");
         this.next = next;
     }
 }

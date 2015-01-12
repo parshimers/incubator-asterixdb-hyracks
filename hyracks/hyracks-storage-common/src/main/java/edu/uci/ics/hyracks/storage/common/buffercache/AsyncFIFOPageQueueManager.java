@@ -7,7 +7,8 @@ import edu.uci.ics.hyracks.api.exceptions.HyracksDataException;
 import edu.uci.ics.hyracks.storage.common.file.BufferedFileHandle;
 
 public class AsyncFIFOPageQueueManager implements Runnable {
-    private static boolean DEBUG = false;
+    private final static boolean DEBUG = false;
+
     protected class PageQueue implements IFIFOPageQueue {
         final ConcurrentLinkedQueue<ICachedPage> pageQueue;
         final IBufferCache bufferCache;
@@ -83,13 +84,15 @@ public class AsyncFIFOPageQueueManager implements Runnable {
                 boolean removed = false;
                 if (queue.getPageQueue() == pageQueue) {
                     removed = queues.remove(queue);
-                    if (queue.getFileId() != -1)
-                        queue.getWriter().sync(queue.getFileId(), queue.getBufferCache());
+                    //if (queue.getFileId() != -1){
+                        //queue.getWriter().sync(queue.getFileId(), queue.getBufferCache());
+                    //}
                    if(DEBUG)  System.out.println("[FIFO] Removed? " + removed);
                     break;
                 }
-                assert (removed);
+                //assert (removed);
             }
+            /*
             if (queues.size() == 0) {
                 synchronized (this) {
                     if (queues.size() == 0) {
@@ -100,7 +103,9 @@ public class AsyncFIFOPageQueueManager implements Runnable {
                     }
                 }
             }
-        } catch (InterruptedException | HyracksDataException e) {
+            */
+
+        } catch (InterruptedException e) {
             // TODO what do we do here?
             e.printStackTrace();
         }
@@ -117,8 +122,8 @@ public class AsyncFIFOPageQueueManager implements Runnable {
             for(PageQueue queue : queues) {
                 ICachedPage page = queue.getPageQueue().poll();
                 if (page == null) {
-                    synchronized (queue.getPageQueue()) {
-                        queue.getPageQueue().notifyAll();
+                    synchronized (queue) {
+                        queue.notifyAll();
                     }
                 } else {
                     if(DEBUG) System.out.println("[FIFO] Write " + ((CachedPage)page).dpid);
@@ -133,6 +138,7 @@ public class AsyncFIFOPageQueueManager implements Runnable {
                     success = true;
                 }
             }
+            /*
             if (!success) {
                 try {
                     //System.out.println("[FIFO] Sleep");
@@ -142,6 +148,7 @@ public class AsyncFIFOPageQueueManager implements Runnable {
                     e.printStackTrace();
                 }
             }
+            */
         }
     }
 }

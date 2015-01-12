@@ -18,6 +18,7 @@ package edu.uci.ics.hyracks.storage.am.lsm.invertedindex.ondisk;
 import java.io.DataOutput;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.concurrent.ConcurrentLinkedQueue;
 
 import edu.uci.ics.hyracks.api.context.IHyracksCommonContext;
 import edu.uci.ics.hyracks.api.dataflow.value.IBinaryComparatorFactory;
@@ -58,6 +59,7 @@ import edu.uci.ics.hyracks.storage.am.lsm.invertedindex.search.InvertedIndexSear
 import edu.uci.ics.hyracks.storage.am.lsm.invertedindex.search.TOccurrenceSearcher;
 import edu.uci.ics.hyracks.storage.common.buffercache.IBufferCache;
 import edu.uci.ics.hyracks.storage.common.buffercache.ICachedPage;
+import edu.uci.ics.hyracks.storage.common.buffercache.IFIFOPageQueue;
 import edu.uci.ics.hyracks.storage.common.file.BufferedFileHandle;
 import edu.uci.ics.hyracks.storage.common.file.IFileMapProvider;
 
@@ -301,6 +303,8 @@ public class OnDiskInvertedIndex implements IInvertedIndex {
 
         private final boolean verifyInput;
         private final MultiComparator allCmp;
+        
+        private IFIFOPageQueue queue;
 
         public OnDiskInvertedIndexBulkLoader(float btreeFillFactor, boolean verifyInput, long numElementsHint,
                 boolean checkIfEmptyIndex, int startPageId, int fileId) throws IndexException, HyracksDataException {
@@ -319,16 +323,17 @@ public class OnDiskInvertedIndex implements IInvertedIndex {
             this.btreeBulkloader = btree.createBulkLoader(btreeFillFactor, verifyInput, numElementsHint,
                     checkIfEmptyIndex, true);
             currentPageId = startPageId;
-            currentPage = bufferCache.pin(BufferedFileHandle.getDiskPageId(fileId, currentPageId), true);
+            currentPage = bufferCache.confiscatePage(BufferedFileHandle.getDiskPageId(fileId, currentPageId));
             currentPage.acquireWriteLatch();
             invListBuilder.setTargetBuffer(currentPage.getBuffer().array(), 0);
+            queue = bufferCache.createFIFOQueue();
         }
 
         public void pinNextPage() throws HyracksDataException {
             currentPage.releaseWriteLatch(true);
-            bufferCache.unpin(currentPage);
+            queue.put(currentPage);
             currentPageId++;
-            currentPage = bufferCache.pin(BufferedFileHandle.getDiskPageId(fileId, currentPageId), true);
+            currentPage = bufferCache.confiscatePage(BufferedFileHandle.getDiskPageId(fileId, currentPageId));
             currentPage.acquireWriteLatch();
         }
 
@@ -433,9 +438,10 @@ public class OnDiskInvertedIndex implements IInvertedIndex {
 
             if (currentPage != null) {
                 currentPage.releaseWriteLatch(true);
-                bufferCache.unpin(currentPage);
+                queue.put(currentPage);
             }
             invListsMaxPageId = currentPageId;
+            bufferCache.finishQueue(queue);
         }
     }
 

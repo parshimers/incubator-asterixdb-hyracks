@@ -885,6 +885,7 @@ public class RTree extends AbstractTreeIndex {
         ITreeIndexTupleReference mbrTuple = interiorFrame.createTupleReference();
         ByteBuffer mbr;
         List<Integer> prevNodeFrontierPages = new ArrayList<Integer>();
+        List<ICachedPage> pagesToWrite = new ArrayList<ICachedPage>();
 
         public RTreeBulkLoader(float fillFactor, boolean appendOnly) throws TreeIndexException, HyracksDataException {
             super(fillFactor, appendOnly);
@@ -919,7 +920,7 @@ public class RTree extends AbstractTreeIndex {
                     } else {
                         prevNodeFrontierPages.set(0, leafFrontier.pageId);
                     }
-                    List<ICachedPage> pagesToWrite = new ArrayList<ICachedPage>();
+                    pagesToWrite.clear();
                     propagateBulk(1, false, pagesToWrite);
 
                     leafFrontier.pageId = freePageManager.getFreePage(metaFrame);
@@ -955,7 +956,7 @@ public class RTree extends AbstractTreeIndex {
         }
 
         public void end() throws HyracksDataException {
-            List<ICachedPage> pagesToWrite = new ArrayList<ICachedPage>();
+        	pagesToWrite.clear();
             propagateBulk(1, true, pagesToWrite);
             for(ICachedPage c: pagesToWrite){
                 queue.put(c);

@@ -18,7 +18,9 @@ import java.util.List;
 
 import edu.uci.ics.hyracks.api.exceptions.HyracksDataException;
 import edu.uci.ics.hyracks.dataflow.common.data.accessors.ITupleReference;
+import edu.uci.ics.hyracks.storage.am.common.api.IIndexBulkLoader;
 import edu.uci.ics.hyracks.storage.am.common.api.ITreeIndex;
+import edu.uci.ics.hyracks.storage.am.common.impls.AbstractTreeIndex.AbstractTreeIndexBulkLoader;
 
 public interface ILSMComponentFilterManager {
 
@@ -27,6 +29,7 @@ public interface ILSMComponentFilterManager {
 
     public boolean readFilterInfo(ILSMComponentFilter filter, ITreeIndex treeIndex) throws HyracksDataException;
 
-    public void writeFilterInfo(ILSMComponentFilter filter, ITreeIndex treeIndex) throws HyracksDataException;
+    public void writeFilterInfo(ILSMComponentFilter filter, ITreeIndex treeIndex, AbstractTreeIndexBulkLoader bulkLoader)
+            throws HyracksDataException;
 
 }

@@ -48,6 +48,7 @@ import edu.uci.ics.hyracks.storage.am.common.api.IndexException;
 import edu.uci.ics.hyracks.storage.am.common.api.TreeIndexException;
 import edu.uci.ics.hyracks.storage.am.common.exceptions.TreeIndexDuplicateKeyException;
 import edu.uci.ics.hyracks.storage.am.common.impls.AbstractSearchPredicate;
+import edu.uci.ics.hyracks.storage.am.common.impls.AbstractTreeIndex.AbstractTreeIndexBulkLoader;
 import edu.uci.ics.hyracks.storage.am.common.impls.NoOpOperationCallback;
 import edu.uci.ics.hyracks.storage.am.common.ophelpers.IndexOperation;
 import edu.uci.ics.hyracks.storage.am.common.ophelpers.MultiComparator;
@@ -496,7 +497,8 @@ public class LSMBTree extends AbstractLSMIndex implements ITreeIndex {
             filterTuples.add(flushingComponent.getLSMComponentFilter().getMinTuple());
             filterTuples.add(flushingComponent.getLSMComponentFilter().getMaxTuple());
             filterManager.updateFilterInfo(component.getLSMComponentFilter(), filterTuples);
-            filterManager.writeFilterInfo(component.getLSMComponentFilter(), component.getBTree());
+            filterManager.writeFilterInfo(component.getLSMComponentFilter(), component.getBTree(),
+                    (AbstractTreeIndexBulkLoader) bulkLoader);
         }
 
         bulkLoader.end();
@@ -550,7 +552,8 @@ public class LSMBTree extends AbstractLSMIndex implements ITreeIndex {
         LSMBTreeDiskComponent mergedComponent = createDiskComponent(componentFactory, mergeOp.getBTreeMergeTarget(),
                 mergeOp.getBloomFilterMergeTarget(), true);
 
-        IIndexBulkLoader bulkLoader = mergedComponent.getBTree().createBulkLoader(1.0f, false, numElements, false, true);
+        IIndexBulkLoader bulkLoader = mergedComponent.getBTree()
+                .createBulkLoader(1.0f, false, numElements, false, true);
         IIndexBulkLoader builder = mergedComponent.getBloomFilter().createBuilder(numElements,
                 bloomFilterSpec.getNumHashes(), bloomFilterSpec.getNumBucketsPerElements());
         try {
@@ -564,8 +567,6 @@ public class LSMBTree extends AbstractLSMIndex implements ITreeIndex {
             cursor.close();
             builder.end();
         }
-        bulkLoader.end();
-
         if (mergedComponent.getLSMComponentFilter() != null) {
             List<ITupleReference> filterTuples = new ArrayList<ITupleReference>();
             for (int i = 0; i < mergeOp.getMergingComponents().size(); ++i) {
@@ -573,8 +574,11 @@ public class LSMBTree extends AbstractLSMIndex implements ITreeIndex {
                 filterTuples.add(mergeOp.getMergingComponents().get(i).getLSMComponentFilter().getMaxTuple());
             }
             filterManager.updateFilterInfo(mergedComponent.getLSMComponentFilter(), filterTuples);
-            filterManager.writeFilterInfo(mergedComponent.getLSMComponentFilter(), mergedComponent.getBTree());
+            filterManager.writeFilterInfo(mergedComponent.getLSMComponentFilter(), mergedComponent.getBTree(),
+                    (AbstractTreeIndexBulkLoader) bulkLoader);
         }
+
+        bulkLoader.end();
 
         return mergedComponent;
     }
@@ -590,7 +594,7 @@ public class LSMBTree extends AbstractLSMIndex implements ITreeIndex {
             component.getBloomFilter().create();
         }
         // BTree will be closed during cleanup of merge().
-        if(!createComponent){
+        if (!createComponent) {
             component.getBTree().activate();
         }
         component.getBloomFilter().activate();
@@ -722,12 +726,13 @@ public class LSMBTree extends AbstractLSMIndex implements ITreeIndex {
                     builder.end();
                     endedBloomFilterLoad = true;
                 }
-                bulkLoader.end();
 
                 if (component.getLSMComponentFilter() != null) {
                     filterManager.writeFilterInfo(component.getLSMComponentFilter(),
-                            ((LSMBTreeDiskComponent) component).getBTree());
+                            ((LSMBTreeDiskComponent) component).getBTree(), bulkLoader);
                 }
+
+                bulkLoader.end();
 
                 if (isEmptyComponent) {
                     cleanupArtifacts();
