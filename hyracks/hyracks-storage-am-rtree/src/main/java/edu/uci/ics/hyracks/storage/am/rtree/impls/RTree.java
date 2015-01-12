@@ -925,9 +925,9 @@ public class RTree extends AbstractTreeIndex {
                     leafFrontier.pageId = freePageManager.getFreePage(metaFrame);
                     leafFrontier.page.releaseWriteLatch(true);
                     if (fifo) {
-                        queue.offer(leafFrontier.page);
+                        queue.put(leafFrontier.page);
                         for (ICachedPage c : pagesToWrite) {
-                            queue.offer(c);
+                            queue.put(c);
                         }
                         leafFrontier.page = bufferCache.confiscatePage(BufferedFileHandle.getDiskPageId(fileId,
                                 leafFrontier.pageId));
@@ -958,7 +958,7 @@ public class RTree extends AbstractTreeIndex {
             List<ICachedPage> pagesToWrite = new ArrayList<ICachedPage>();
             propagateBulk(1, true, pagesToWrite);
             for(ICachedPage c: pagesToWrite){
-                queue.offer(c);
+                queue.put(c);
             }
             finish();
             super.end();
@@ -982,7 +982,7 @@ public class RTree extends AbstractTreeIndex {
                     if (fifo) {
                         AsyncFIFOPageQueueManager
                                 .setDpid(n.page, BufferedFileHandle.getDiskPageId(fileId, finalPageId));
-                        queue.offer(n.page);
+                        queue.put(n.page);
                         n.page = null;
                     } else {
 
@@ -997,7 +997,7 @@ public class RTree extends AbstractTreeIndex {
                 } else {
                     n.page.releaseWriteLatch(true);
                     if (fifo) {
-                        queue.offer(n.page);
+                        queue.put(n.page);
                         n.page = null;
                     } else {
                         bufferCache.unpin(n.page);

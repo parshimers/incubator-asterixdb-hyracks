@@ -115,4 +115,11 @@ public class CachedPage implements ICachedPageInternal {
     public long getDiskPageId() {
         return dpid;
     }
+    CachedPage getNext() {
+        return next;
+    }
+    void setNext(CachedPage next) {
+        if(next == this) throw new IllegalStateException("Cannot create cycle");
+        this.next = next;
+    }
 }

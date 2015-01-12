@@ -226,12 +226,12 @@ public class DebugBufferCache implements IBufferCache {
     }
 
     @Override
-    public ConcurrentLinkedQueue<ICachedPage> createFIFOQueue() {
+    public IFIFOPageQueue createFIFOQueue() {
         return bufferCache.createFIFOQueue();
     }
 
     @Override
-    public void finishQueue(ConcurrentLinkedQueue<ICachedPage> queue) {
+    public void finishQueue(IFIFOPageQueue queue) {
         bufferCache.finishQueue(queue);
     }
 
