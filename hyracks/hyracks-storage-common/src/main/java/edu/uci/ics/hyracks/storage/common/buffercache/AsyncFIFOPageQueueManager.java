@@ -114,7 +114,8 @@ public class AsyncFIFOPageQueueManager implements Runnable {
         while (!haltWriter) {
             //System.out.println("[FIFO] Poll");
             boolean success = false;
-            for (Queue queue : queues) {
+            for (int i=0;i<queues.size();i++) {
+            	Queue queue = queues.get(i);
                 ICachedPage page = queue.getPageQueue().poll();
                 if (page == null) {
                     synchronized (queue.getPageQueue()) {
