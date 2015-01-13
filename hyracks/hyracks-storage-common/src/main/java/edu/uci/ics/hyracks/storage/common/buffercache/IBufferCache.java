@@ -69,9 +69,9 @@ public interface IBufferCache {
 
     public void close() throws HyracksDataException;
 
-    public ConcurrentLinkedQueue<ICachedPage> createFIFOQueue();
+    public IFIFOPageQueue createFIFOQueue();
 
-    public void finishQueue(ConcurrentLinkedQueue<ICachedPage> queue);
+    public void finishQueue(IFIFOPageQueue queue);
 
     void copyPage(ICachedPage src, ICachedPage dst);
 

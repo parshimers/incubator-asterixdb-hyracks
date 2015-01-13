@@ -4,19 +4,19 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 import edu.uci.ics.hyracks.api.exceptions.HyracksDataException;
-import edu.uci.ics.hyracks.api.io.IFileHandle;
 import edu.uci.ics.hyracks.storage.common.file.BufferedFileHandle;
 
 public class AsyncFIFOPageQueueManager implements Runnable {
     private final static boolean DEBUG = false;
-    protected class Queue {
+
+    protected class PageQueue implements IFIFOPageQueue {
         final ConcurrentLinkedQueue<ICachedPage> pageQueue;
         final IBufferCache bufferCache;
         final IFIFOPageWriter writer;
         int fileid = -1;
-
-        protected Queue(IBufferCache bufferCache, IFIFOPageWriter writer) {
-           if(DEBUG) System.out.println("[FIFO] New Queue");
+        
+        protected PageQueue(IBufferCache bufferCache, IFIFOPageWriter writer) {
+            if(DEBUG) System.out.println("[FIFO] New Queue");
             this.pageQueue = new ConcurrentLinkedQueue<ICachedPage>();
             this.bufferCache = bufferCache;
             this.writer = writer;
@@ -41,14 +41,19 @@ public class AsyncFIFOPageQueueManager implements Runnable {
         public int getFileId() {
             return fileid;
         }
+
+        @Override
+        public void put(ICachedPage page) {
+            pageQueue.offer(page);
+        }
     }
 
-    protected CopyOnWriteArrayList<Queue> queues = new CopyOnWriteArrayList<Queue>();
+    protected CopyOnWriteArrayList<PageQueue> queues = new CopyOnWriteArrayList<PageQueue>();
     Thread writerThread;
     boolean haltWriter = true;
-
-    public ConcurrentLinkedQueue<ICachedPage> createQueue(IBufferCache bufferCache, IFIFOPageWriter writer) {
-        Queue queue = new Queue(bufferCache, writer);
+    
+    public PageQueue createQueue(IBufferCache bufferCache, IFIFOPageWriter writer) {
+        PageQueue queue = new PageQueue(bufferCache, writer);
         queues.add(queue);
 
         if (writerThread == null) {
@@ -60,22 +65,22 @@ public class AsyncFIFOPageQueueManager implements Runnable {
                 }
             }
         }
-
-        return queue.getPageQueue();
+        
+        return queue;
     }
 
     public static void setDpid(ICachedPage page, long dpid) {
         ((CachedPage) page).dpid = dpid;
     }
 
-    public void finishQueue(ConcurrentLinkedQueue<ICachedPage> pageQueue) {
-       if(DEBUG)  System.out.println("[FIFO] Finishing Queue");
+    public void finishQueue(IFIFOPageQueue pageQueue) {
+        if(DEBUG) System.out.println("[FIFO] Finishing Queue");
         try {
             synchronized (pageQueue) {
                if(DEBUG)  System.out.println("Waiting for " + pageQueue);
                 pageQueue.wait();
             }
-            for (Queue queue : queues) {
+            for(PageQueue queue : queues) {
                 boolean removed = false;
                 if (queue.getPageQueue() == pageQueue) {
                     removed = queues.remove(queue);
@@ -114,17 +119,15 @@ public class AsyncFIFOPageQueueManager implements Runnable {
         while (!haltWriter) {
             //System.out.println("[FIFO] Poll");
             boolean success = false;
-            for (int i=0;i<queues.size();i++) {
-            	Queue queue = queues.get(i);
+            for(PageQueue queue : queues) {
                 ICachedPage page = queue.getPageQueue().poll();
                 if (page == null) {
-                    synchronized (queue.getPageQueue()) {
-                        queue.getPageQueue().notifyAll();
+                    synchronized (queue) {
+                        queue.notifyAll();
                     }
                 } else {
-                  if(DEBUG)   System.out.println("[FIFO] Write " + (((CachedPage) page).dpid >> 32) + ":"
-                            + (((((CachedPage) page).dpid) << 32) >> 32));
-                    queue.setFileId(BufferedFileHandle.getFileId(((CachedPage) page).dpid));
+                    if(DEBUG) System.out.println("[FIFO] Write " + ((CachedPage)page).dpid);
+                    queue.setFileId(BufferedFileHandle.getFileId(((CachedPage)page).dpid));
                     try {
                         queue.getWriter().write(page, queue.getBufferCache());
                         lastDpid = ((CachedPage)page).dpid;

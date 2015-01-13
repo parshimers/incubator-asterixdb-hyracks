@@ -37,6 +37,7 @@ import edu.uci.ics.hyracks.storage.am.common.api.TreeIndexException;
 import edu.uci.ics.hyracks.storage.am.common.ophelpers.MultiComparator;
 import edu.uci.ics.hyracks.storage.common.buffercache.IBufferCache;
 import edu.uci.ics.hyracks.storage.common.buffercache.ICachedPage;
+import edu.uci.ics.hyracks.storage.common.buffercache.IFIFOPageQueue;
 import edu.uci.ics.hyracks.storage.common.file.BufferedFileHandle;
 import edu.uci.ics.hyracks.storage.common.file.IFileMapProvider;
 
@@ -314,8 +315,8 @@ public abstract class AbstractTreeIndex implements ITreeIndex {
         protected boolean releasedLatches;
         protected int virtualFileId = bufferCache.createMemFile();
         protected int virtualPageIncrement = 0;
-        protected final ConcurrentLinkedQueue<ICachedPage> queue;
         public boolean appendOnly = false;
+        protected final IFIFOPageQueue queue;
         //TODO: this seems ugly architecture-wise
         private ICachedPage filterPage = null;
 
@@ -401,7 +402,7 @@ public abstract class AbstractTreeIndex implements ITreeIndex {
                 if (filterPage != null) {
                     bufferCache.setPageDiskId(filterPage,
                             BufferedFileHandle.getDiskPageId(fileId, freePageManager.getFreePage(metaFrame)));
-                    queue.offer(filterPage);
+                    queue.put(filterPage);
                 }
                 bufferCache.finishQueue(queue);
             }

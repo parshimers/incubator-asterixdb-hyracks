@@ -26,6 +26,7 @@ import edu.uci.ics.hyracks.storage.am.common.api.IIndexBulkLoader;
 import edu.uci.ics.hyracks.storage.am.common.api.IndexException;
 import edu.uci.ics.hyracks.storage.common.buffercache.IBufferCache;
 import edu.uci.ics.hyracks.storage.common.buffercache.ICachedPage;
+import edu.uci.ics.hyracks.storage.common.buffercache.IFIFOPageQueue;
 import edu.uci.ics.hyracks.storage.common.file.BufferedFileHandle;
 import edu.uci.ics.hyracks.storage.common.file.IFileMapProvider;
 
@@ -219,7 +220,7 @@ public class BloomFilter {
         private final int numHashes;
         private final long numBits;
         private final int numPages;
-        private ConcurrentLinkedQueue<ICachedPage> queue;
+        private IFIFOPageQueue queue;
         private ICachedPage[] pages;
         private ICachedPage metaDataPage;
 
@@ -310,9 +311,9 @@ public class BloomFilter {
 
         @Override
         public void end() throws HyracksDataException, IndexException {
-            queue.offer(metaDataPage);
+            queue.put(metaDataPage);
             for (ICachedPage p : pages) {
-                queue.offer(p);
+                queue.put(p);
             }
             bufferCache.finishQueue(queue);
         }

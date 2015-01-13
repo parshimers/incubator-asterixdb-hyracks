@@ -1054,12 +1054,12 @@ public class BufferCache implements IBufferCacheInternal, ILifeCycleComponent {
     }
 
     @Override
-    public ConcurrentLinkedQueue<ICachedPage> createFIFOQueue() {
+    public IFIFOPageQueue createFIFOQueue() {
         return fifoWriter.createQueue(this, FIFOLocalWriter.instance());
     }
 
     @Override
-    public void finishQueue(ConcurrentLinkedQueue<ICachedPage> queue) {
+    public void finishQueue(IFIFOPageQueue queue) {
         fifoWriter.finishQueue(queue);
     }
 

@@ -1004,9 +1004,9 @@ public class BTree extends AbstractTreeIndex {
                     ((IBTreeLeafFrame) leafFrame).setNextLeaf(leafFrontier.pageId);
                     leafFrontier.page.releaseWriteLatch(true);
                     if (fifo) {
-                        queue.offer(leafFrontier.page);
+                        queue.put(leafFrontier.page);
                         for(ICachedPage c : pagesToWrite){
-                            queue.offer(c);
+                            queue.put(c);
                         }
                     } else {
                         bufferCache.unpin(leafFrontier.page);
@@ -1127,7 +1127,7 @@ public class BTree extends AbstractTreeIndex {
                 lastLeaf.releaseWriteLatch(true);
                 if (fifo) {
                     AsyncFIFOPageQueueManager.setDpid(lastLeaf, BufferedFileHandle.getDiskPageId(fileId, lastLeafPage));
-                    queue.offer(lastLeaf);
+                    queue.put(lastLeaf);
                     nodeFrontiers.get(level).page = null;
                     finish(level + 1, lastLeafPage);
                 } else {
@@ -1147,7 +1147,7 @@ public class BTree extends AbstractTreeIndex {
             int finalPageId = freePageManager.getFreePage(metaFrame);
             if (fifo) {
                 AsyncFIFOPageQueueManager.setDpid(frontier.page, BufferedFileHandle.getDiskPageId(fileId, finalPageId));
-                queue.offer(frontier.page);
+                queue.put(frontier.page);
                 frontier.page = null;
             } else {
                 ICachedPage realPage = bufferCache.unpinVirtual(frontier.page,
