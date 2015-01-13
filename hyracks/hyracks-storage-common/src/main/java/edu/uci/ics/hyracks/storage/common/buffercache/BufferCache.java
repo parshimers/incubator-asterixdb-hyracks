@@ -1053,21 +1053,17 @@ public class BufferCache implements IBufferCacheInternal, ILifeCycleComponent {
         ((CachedPage) page).dpid = dpid;
     }
 
-    @Override
-    public IFIFOPageQueue createFIFOQueue() {
-        return fifoWriter.createQueue(this, FIFOLocalWriter.instance());
-    }
+	@Override
+	public void finishQueue(ConcurrentLinkedQueue<ICachedPage> queue) {
+		fifoWriter.finishQueue(queue);
+	}
 
-    @Override
-    public void finishQueue(IFIFOPageQueue queue) {
-        fifoWriter.finishQueue(queue);
-    }
-
-    @Override
-    public void copyPage(ICachedPage src, ICachedPage dst) {
-        CachedPage srcCast = (CachedPage) src;
-        CachedPage dstCast = (CachedPage) dst;
-        System.arraycopy(srcCast.buffer.array(), 0, dstCast.getBuffer().array(), 0, srcCast.buffer.capacity());
-    }
+	@Override
+	public void copyPage(ICachedPage src, ICachedPage dst) {
+		CachedPage srcCast = (CachedPage) src;
+		CachedPage dstCast = (CachedPage) dst;
+		System.arraycopy(srcCast.buffer.array(), 0,
+				dstCast.getBuffer().array(), 0, srcCast.buffer.capacity());
+	}
 
 }

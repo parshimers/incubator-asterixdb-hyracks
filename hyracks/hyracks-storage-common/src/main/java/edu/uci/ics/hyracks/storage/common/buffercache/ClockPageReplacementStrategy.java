@@ -117,26 +117,26 @@ public class ClockPageReplacementStrategy implements IPageReplacementStrategy {
         return numPages.get();
     }
 
-    public int subtractPage() {
-        //if we're at the edge, push the clock pointer forward
-        if (clockPtr.get() == numPages.get() - 1) {
-            clockPtr.set(0);
-        }
-        numConfiscatedPages.incrementAndGet();
-        maxAllowedNumPages.decrementAndGet();
-        return numPages.decrementAndGet();
-    }
+//    public int subtractPage() {
+//        //if we're at the edge, push the clock pointer forward
+//        if (clockPtr.get() == numPages.get() - 1) {
+//            clockPtr.set(0);
+//        }
+//        numConfiscatedPages.incrementAndGet();
+//        maxAllowedNumPages.decrementAndGet();
+//        return numPages.decrementAndGet();
+//    }
 
     public int addPage() {
         return numPages.incrementAndGet();
     }
 
-    @Override
-    public void returnPage() {
-        numPages.incrementAndGet();
-        maxAllowedNumPages.incrementAndGet();
-        numConfiscatedPages.decrementAndGet();
-    }
+//    @Override
+//    public void returnPage() {
+//        numPages.incrementAndGet();
+//        maxAllowedNumPages.incrementAndGet();
+//        numConfiscatedPages.decrementAndGet();
+//    }
 
     private ICachedPageInternal allocatePage() {
         CachedPage cPage = new CachedPage(cpIdCounter.getAndIncrement(), allocator.allocate(pageSize, 1)[0], this);
@@ -151,15 +151,15 @@ public class ClockPageReplacementStrategy implements IPageReplacementStrategy {
         return null;
     }
 
-    public ICachedPageInternal allocateAndConfiscate() {
-        if (numPages.get() < maxAllowedNumPages.get() && maxAllowedNumPages.get() > 5) {
-            maxAllowedNumPages.decrementAndGet();
-            CachedPage cPage = new CachedPage(cpIdCounter.getAndIncrement(), allocator.allocate(pageSize, 1)[0], this);
-            numConfiscatedPages.incrementAndGet();
-            return cPage;
-        } else
-            return null;
-    }
+//    public ICachedPageInternal allocateAndConfiscate() {
+//        if (numPages.get() < maxAllowedNumPages.get() && maxAllowedNumPages.get() > 5) {
+//            maxAllowedNumPages.decrementAndGet();
+//            CachedPage cPage = new CachedPage(cpIdCounter.getAndIncrement(), allocator.allocate(pageSize, 1)[0], this);
+//            numConfiscatedPages.incrementAndGet();
+//            return cPage;
+//        } else
+//            return null;
+//    }
 
     private AtomicBoolean getPerPageObject(ICachedPageInternal cPage) {
         return (AtomicBoolean) cPage.getReplacementStrategyObject();
