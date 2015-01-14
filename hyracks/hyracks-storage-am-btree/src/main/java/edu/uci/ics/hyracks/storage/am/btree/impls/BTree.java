@@ -1039,7 +1039,7 @@ public class BTree extends AbstractTreeIndex {
                 handleException();
                 throw e;
             } catch (RuntimeException e) {
-                handleException();
+                //handleException();
                 throw e;
             }
         }

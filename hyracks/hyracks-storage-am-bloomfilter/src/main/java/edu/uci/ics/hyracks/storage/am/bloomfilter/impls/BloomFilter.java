@@ -222,14 +222,13 @@ public class BloomFilter {
         private final int numPages;
         private IFIFOPageQueue queue;
         private ICachedPage[] pages;
-        private ICachedPage metaDataPage;
+        private ICachedPage metaDataPage = null;
 
         public BloomFilterBuilder(long numElements, int numHashes, int numBitsPerElement) throws HyracksDataException {
             if (!isActivated) {
                 throw new HyracksDataException("Failed to create the bloom filter builder since it is not activated.");
             }
             queue = bufferCache.createFIFOQueue();
-
             this.numElements = numElements;
             this.numHashes = numHashes;
             numBits = this.numElements * numBitsPerElement;
@@ -269,7 +268,9 @@ public class BloomFilter {
         }
 
         private void persistBloomFilterMetaData() throws HyracksDataException {
-            metaDataPage = bufferCache.confiscatePage(BufferedFileHandle.getDiskPageId(fileId, METADATA_PAGE_ID));
+            if(metaDataPage == null){
+            	metaDataPage = bufferCache.confiscatePage(BufferedFileHandle.getDiskPageId(fileId, METADATA_PAGE_ID));
+            }
             metaDataPage.acquireWriteLatch();
             try {
                 metaDataPage.getBuffer().putInt(NUM_PAGES_OFFSET, numPages);
@@ -311,11 +312,13 @@ public class BloomFilter {
 
         @Override
         public void end() throws HyracksDataException, IndexException {
+        	persistBloomFilterMetaData();
             queue.put(metaDataPage);
             for (ICachedPage p : pages) {
                 queue.put(p);
             }
             bufferCache.finishQueue(queue);
+            readBloomFilterMetaData();
         }
 
     }

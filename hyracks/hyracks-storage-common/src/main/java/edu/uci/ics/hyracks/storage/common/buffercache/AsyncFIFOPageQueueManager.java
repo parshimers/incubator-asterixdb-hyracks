@@ -1,14 +1,27 @@
 package edu.uci.ics.hyracks.storage.common.buffercache;
 
 import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.LinkedBlockingQueue;
 
 import edu.uci.ics.hyracks.api.exceptions.HyracksDataException;
 import edu.uci.ics.hyracks.storage.common.file.BufferedFileHandle;
 
 public class AsyncFIFOPageQueueManager implements Runnable {
     private final static boolean DEBUG = false;
-
+    
+    protected class QueueEntry {
+        ICachedPage page;
+        int fileid = -1;
+        IFIFOPageWriter writer;
+        IBufferCache bufferCache;
+        protected QueueEntry(ICachedPage page, int fileid, IFIFOPageWriter writer, IBufferCache bufferCache)  {
+            this.page = page;
+            this.fileid = fileid;
+            this.writer = writer;
+            this.bufferCache = bufferCache;
+        }
+    }
+    
     protected class PageQueue implements IFIFOPageQueue {
         final ConcurrentLinkedQueue<ICachedPage> pageQueue;
         final IBufferCache bufferCache;
@@ -44,18 +57,22 @@ public class AsyncFIFOPageQueueManager implements Runnable {
 
         @Override
         public void put(ICachedPage page) {
-            pageQueue.offer(page);
+            try {
+                queue.put(new QueueEntry(page, 
+                          BufferedFileHandle.getFileId(((CachedPage)page).dpid), 
+                          writer, bufferCache));
+            } catch (InterruptedException e) {
+                // TODO Auto-generated catch block
+                e.printStackTrace();
+            }
         }
     }
 
-    protected CopyOnWriteArrayList<PageQueue> queues = new CopyOnWriteArrayList<PageQueue>();
+    protected LinkedBlockingQueue<QueueEntry> queue = new LinkedBlockingQueue<QueueEntry>();
     Thread writerThread;
     boolean haltWriter = true;
     
     public PageQueue createQueue(IBufferCache bufferCache, IFIFOPageWriter writer) {
-        PageQueue queue = new PageQueue(bufferCache, writer);
-        queues.add(queue);
-
         if (writerThread == null) {
             synchronized (this) {
                 if (writerThread == null) {
@@ -66,7 +83,7 @@ public class AsyncFIFOPageQueueManager implements Runnable {
             }
         }
         
-        return queue;
+        return new PageQueue(bufferCache, writer);
     }
 
     public static void setDpid(ICachedPage page, long dpid) {
@@ -76,35 +93,12 @@ public class AsyncFIFOPageQueueManager implements Runnable {
     public void finishQueue(IFIFOPageQueue pageQueue) {
         if(DEBUG) System.out.println("[FIFO] Finishing Queue");
         try {
-            synchronized (pageQueue) {
+            synchronized (queue) {
                if(DEBUG)  System.out.println("Waiting for " + pageQueue);
-                pageQueue.wait();
+               if(!queue.isEmpty()){
+                  queue.wait();
+               }
             }
-            for(PageQueue queue : queues) {
-                boolean removed = false;
-                if (queue.getPageQueue() == pageQueue) {
-                    removed = queues.remove(queue);
-                    //if (queue.getFileId() != -1){
-                        //queue.getWriter().sync(queue.getFileId(), queue.getBufferCache());
-                    //}
-                   if(DEBUG)  System.out.println("[FIFO] Removed? " + removed);
-                    break;
-                }
-                //assert (removed);
-            }
-            /*
-            if (queues.size() == 0) {
-                synchronized (this) {
-                    if (queues.size() == 0) {
-                        haltWriter = true;
-                        writerThread.join();
-                       if(DEBUG)  System.out.println("[FIFO] Writer stopped");
-                        writerThread = null;
-                    }
-                }
-            }
-            */
-
         } catch (InterruptedException e) {
             // TODO what do we do here?
             e.printStackTrace();
@@ -115,40 +109,28 @@ public class AsyncFIFOPageQueueManager implements Runnable {
     @Override
     public void run() {
         if(DEBUG) System.out.println("[FIFO] Writer started");
-        long lastDpid = 0;
         while (!haltWriter) {
-            //System.out.println("[FIFO] Poll");
-            boolean success = false;
-            for(PageQueue queue : queues) {
-                ICachedPage page = queue.getPageQueue().poll();
-                if (page == null) {
-                    synchronized (queue) {
-                        queue.notifyAll();
-                    }
-                } else {
-                    if(DEBUG) System.out.println("[FIFO] Write " + ((CachedPage)page).dpid);
-                    queue.setFileId(BufferedFileHandle.getFileId(((CachedPage)page).dpid));
-                    try {
-                        queue.getWriter().write(page, queue.getBufferCache());
-                        lastDpid = ((CachedPage)page).dpid;
-                    } catch (HyracksDataException e) {
-                        // TODO Auto-generated catch block
-                        e.printStackTrace();
-                    }
-                    success = true;
-                }
-            }
-            /*
-            if (!success) {
+            try {
+                QueueEntry entry = queue.take();
+                ICachedPage page = entry.page;
+                
+                if(DEBUG) System.out.println("[FIFO] Write " + ((CachedPage)page).dpid);
+
                 try {
-                    //System.out.println("[FIFO] Sleep");
-                    Thread.sleep(100);
-                } catch (InterruptedException e) {
+                    entry.writer.write(page, entry.bufferCache);
+                } catch (HyracksDataException e) {
                     // TODO Auto-generated catch block
                     e.printStackTrace();
                 }
+                
+                if(queue.isEmpty()) {
+                    synchronized(queue) {
+                        queue.notifyAll(); // TODO not 100% threadsafe
+                    }
+                }
+            } catch(InterruptedException e) {
+                // TODO
             }
-            */
         }
     }
 }
