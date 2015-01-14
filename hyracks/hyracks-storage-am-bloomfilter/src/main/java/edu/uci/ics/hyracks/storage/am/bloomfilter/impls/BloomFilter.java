@@ -168,7 +168,7 @@ public class BloomFilter {
     }
 
     private void readBloomFilterMetaData() throws HyracksDataException {
-        if(bufferCache.getNumPagesOfFile(fileId) == 0){
+        if (bufferCache.getNumPagesOfFile(fileId) == 0) {
             numPages = 0;
             numHashes = 0;
             numElements = 0;
@@ -268,8 +268,8 @@ public class BloomFilter {
         }
 
         private void persistBloomFilterMetaData() throws HyracksDataException {
-            if(metaDataPage == null){
-            	metaDataPage = bufferCache.confiscatePage(BufferedFileHandle.getDiskPageId(fileId, METADATA_PAGE_ID));
+            if (metaDataPage == null) {
+                metaDataPage = bufferCache.confiscatePage(BufferedFileHandle.getDiskPageId(fileId, METADATA_PAGE_ID));
             }
             metaDataPage.acquireWriteLatch();
             try {
@@ -312,7 +312,7 @@ public class BloomFilter {
 
         @Override
         public void end() throws HyracksDataException, IndexException {
-        	persistBloomFilterMetaData();
+            persistBloomFilterMetaData();
             queue.put(metaDataPage);
             for (ICachedPage p : pages) {
                 queue.put(p);
