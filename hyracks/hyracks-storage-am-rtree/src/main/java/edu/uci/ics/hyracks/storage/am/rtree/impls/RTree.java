@@ -956,9 +956,9 @@ public class RTree extends AbstractTreeIndex {
         }
 
         public void end() throws HyracksDataException {
-        	pagesToWrite.clear();
+            pagesToWrite.clear();
             propagateBulk(1, true, pagesToWrite);
-            for(ICachedPage c: pagesToWrite){
+            for (ICachedPage c : pagesToWrite) {
                 queue.put(c);
             }
             finish();
@@ -1009,7 +1009,9 @@ public class RTree extends AbstractTreeIndex {
                 ((RTreeNSMFrame) interiorFrame).adjustMBR();
                 tupleWriter.writeTupleFields(((RTreeNSMFrame) interiorFrame).getMBRTuples(), 0, mbr, 0);
             }
-            rootPage = nodeFrontiers.get(nodeFrontiers.size() - 1).pageId;
+            if (appendOnly) {
+                rootPage = nodeFrontiers.get(nodeFrontiers.size() - 1).pageId;
+            }
             releasedLatches = true;
         }
 
