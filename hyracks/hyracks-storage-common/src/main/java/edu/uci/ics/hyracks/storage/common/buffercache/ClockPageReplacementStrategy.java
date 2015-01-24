@@ -104,7 +104,7 @@ public class ClockPageReplacementStrategy implements IPageReplacementStrategy {
                     return cPage;
                 }
             }
-            clockPtr.set(clockPtr.incrementAndGet() % numPages.get());
+            clockPtr.set(clockPtr.incrementAndGet() % (numPages.get()-1));
             if (clockPtr.get() == startClockPtr) {
                 ++cycleCount;
             }

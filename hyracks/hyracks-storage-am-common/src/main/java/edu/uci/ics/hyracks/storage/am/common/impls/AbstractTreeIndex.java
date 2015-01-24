@@ -202,7 +202,8 @@ public abstract class AbstractTreeIndex implements ITreeIndex {
 
     public synchronized void deactivate() throws HyracksDataException {
         if (!isActivated && initted) {
-            throw new HyracksDataException("Failed to deactivate the index since it is already deactivated.");
+            //DEBUG
+            //throw new HyracksDataException("Failed to deactivate the index since it is already deactivated.");
         }
         if (isActivated) {
             freePageManager.close();

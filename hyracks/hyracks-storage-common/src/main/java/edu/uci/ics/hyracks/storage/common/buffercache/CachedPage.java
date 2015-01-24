@@ -53,6 +53,7 @@ public class CachedPage implements ICachedPageInternal {
         this.dpid = dpid;
         dirty.set(false);
         valid = false;
+        this.virtual = false;
         pageReplacementStrategy.notifyCachePageReset(this);
     }
 

@@ -634,6 +634,7 @@ public class BufferCache implements IBufferCacheInternal, ILifeCycleComponent {
                     if (shutdownStart) {
                         break;
                     }
+                    System.out.println(dumpState());
                     pageCleanerPolicy.notifyCleanCycleFinish(this);
                 }
             } catch (Exception e) {
@@ -998,7 +999,7 @@ public class BufferCache implements IBufferCacheInternal, ILifeCycleComponent {
                 // pageReplacementStrategy.subtractPage();
                 // }
                 // cachedPages.remove(returnPage);
-                confiscatedPages.add((CachedPage) returnPage);
+                //confiscatedPages.add((CachedPage) returnPage);
                 // return returnPage;
                 // }
                 ((CachedPage) returnPage).virtual = true;
@@ -1027,7 +1028,7 @@ public class BufferCache implements IBufferCacheInternal, ILifeCycleComponent {
 
     @Override
     public void returnPage(ICachedPage page) {
-        returnPage(page, true);
+        returnPage(page, false);
     }
 
     @Override
@@ -1036,26 +1037,24 @@ public class BufferCache implements IBufferCacheInternal, ILifeCycleComponent {
     public void returnPage(ICachedPage page, boolean reinsert) {
         CachedPage cPage = (CachedPage) page;
         CacheBucket bucket = null;
-        if (reinsert) {
-            if (DEBUG) {
-                // try {
-                //
-                // CachedPage curr;
-                // curr = bucket.cachedPage;
-                // while (curr != null) {
-                // if (cPage == curr) {
-                // throw new IllegalStateException();
-                // }
-                // curr = curr.next;
-                // }
-                // } finally {
-                // bucket.bucketLock.unlock();
-                // }
-            }
-        }
+        //        if (reinsert) {
+        //            if (DEBUG) {
+        // try {
+        //
+        // CachedPage curr;
+        // curr = bucket.cachedPage;
+        // while (curr != null) {
+        // if (cPage == curr) {
+        // throw new IllegalStateException();
+        // }
+        // curr = curr.next;
+        // }
+        // } finally {
+        // bucket.bucketLock.unlock();
+        // }
+        //            }
+        //        }
 
-        confiscatedPages.remove(cPage);
-        pageReplacementStrategy.adviseWontNeed(cPage);
         // pageReplacementStrategy.returnPage();
         // now reinsert this into the hash table, basically like case 1
         if (reinsert) {
@@ -1064,31 +1063,34 @@ public class BufferCache implements IBufferCacheInternal, ILifeCycleComponent {
             bucket.bucketLock.lock();
             try {
                 CachedPage curr;
+                boolean present = false;
                 curr = bucket.cachedPage;
+                //ensure page isnt already in hash map. this can happen if someone read in the page.
                 while (curr != null) {
                     if (cPage == curr) {
-                        return;
+                        present = true;
                     }
                     curr = curr.next;
                 }
-                cPage.next = bucket.cachedPage;
-                bucket.cachedPage = cPage;
+                if (!present) {
+                    cPage.next = bucket.cachedPage;
+                    bucket.cachedPage = cPage;
+                }
             } finally {
                 bucket.bucketLock.unlock();
             }
-        }
-        if (reinsert) {
+            //        }
+
+            //confiscatedPages.remove(cPage);
             cPage.virtual = false;
             cPage.dirty.set(false);
             cPage.valid = true;
             cPage.pinCount.set(0);
         } else {
-            cPage.dpid = INVALID_DPID;
-            cPage.virtual = false;
-            cPage.dirty.set(false);
-            cPage.valid = false;
             cPage.pinCount.set(0);
+            cPage.invalidate();
         }
+        pageReplacementStrategy.adviseWontNeed(cPage);
 
     }
 
