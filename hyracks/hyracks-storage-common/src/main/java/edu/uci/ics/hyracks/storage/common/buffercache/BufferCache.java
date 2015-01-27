@@ -47,6 +47,7 @@ public class BufferCache implements IBufferCacheInternal, ILifeCycleComponent {
     private static final int MIN_CLEANED_COUNT_DIFF = 3;
     private static final int PIN_MAX_WAIT_TIME = 50;
     public static final int INVALID_DPID = -1;
+    public static final boolean DEBUG = false;
 
     private final int pageSize;
     private final int maxOpenFiles;
@@ -124,8 +125,11 @@ public class BufferCache implements IBufferCacheInternal, ILifeCycleComponent {
 
     @Override
     public ICachedPage tryPin(long dpid) throws HyracksDataException {
-        // Calling the pinSanityCheck should be used only for debugging, since the synchronized block over the fileInfoMap is a hot spot.
-        pinSanityCheck(dpid);
+        // Calling the pinSanityCheck should be used only for debugging, since
+        // the synchronized block over the fileInfoMap is a hot spot.
+        if (DEBUG) {
+            pinSanityCheck(dpid);
+        }
         CachedPage cPage = null;
         int hash = hash(dpid);
         CacheBucket bucket = pageMap[hash];
@@ -148,12 +152,21 @@ public class BufferCache implements IBufferCacheInternal, ILifeCycleComponent {
 
     @Override
     public ICachedPage pin(long dpid, boolean newPage) throws HyracksDataException {
-        // Calling the pinSanityCheck should be used only for debugging, since the synchronized block over the fileInfoMap is a hot spot.
-
-        pinSanityCheck(dpid);
+        // Calling the pinSanityCheck should be used only for debugging, since
+        // the synchronized block over the fileInfoMap is a hot spot.
+        if (DEBUG) {
+            pinSanityCheck(dpid);
+        }
 
         CachedPage cPage = findPage(dpid, false);
         if (!newPage) {
+            if (DEBUG) {
+                for (CachedPage c : confiscatedPages) {
+                    if (c.dpid == dpid) {
+                        throw new IllegalStateException();
+                    }
+                }
+            }
             // Resolve race of multiple threads trying to read the page from
             // disk.
             synchronized (cPage) {
@@ -184,18 +197,23 @@ public class BufferCache implements IBufferCacheInternal, ILifeCycleComponent {
     /**
      * Takes a virtual page, and copies it to a new page at the physical identifier. 
      */
-    //TODO: I should not have to copy the page. I should just append it to the end of the hash bucket, but this is 
-    //safer/easier for now. 
+    // TODO: I should not have to copy the page. I should just append it to the
+    // end of the hash bucket, but this is
+    // safer/easier for now.
     public ICachedPage unpinVirtual(long vpid, long dpid) throws HyracksDataException {
-        CachedPage virtPage = findPage(vpid, true); //should definitely succeed. 
+        CachedPage virtPage = findPage(vpid, true); // should definitely
+                                                    // succeed.
         if (!virtPage.virtual) {
-            //TODO: this should be a runtime exception, because it is not possible to incur outside of programmer error
+            // TODO: this should be a runtime exception, because it is not
+            // possible to incur outside of programmer error
             throw new HyracksDataException("First argument must be a virtual page");
         }
         if (virtPage.pinCount.get() <= 1) {
             throw new IllegalStateException("Unpin called on a page that isn't pinned");
         }
-        pinSanityCheck(dpid); //debug
+        if (DEBUG) {
+            pinSanityCheck(dpid); // debug
+        }
         ICachedPage realPage = pin(dpid, true);
         try {
             virtPage.acquireReadLatch();
@@ -261,28 +279,29 @@ public class BufferCache implements IBufferCacheInternal, ILifeCycleComponent {
                  * on the CachedPage may or may not be valid. 2. We have a pin
                  * on the CachedPage. We have to deal with three cases here.
                  * Case 1: The dpid on the CachedPage is invalid (-1). This
-                 * indicates that this buffer has never been used or is a virtual page. So we are the
-                 * only ones holding it. Get a lock on the required dpid's hash
-                 * bucket, check if someone inserted the page we want into the
-                 * table. If so, decrement the pincount on the victim and return
-                 * the winner page in the table. If such a winner does not
-                 * exist, insert the victim and return it. Case 2: The dpid on
-                 * the CachedPage is valid. Case 2a: The current dpid and
-                 * required dpid hash to the same bucket. Get the bucket lock,
-                 * check that the victim is still at pinCount == 1 If so check
-                 * if there is a winning CachedPage with the required dpid. If
-                 * so, decrement the pinCount on the victim and return the
-                 * winner. If not, update the contents of the CachedPage to hold
-                 * the required dpid and return it. If the picCount on the
-                 * victim was != 1 or CachedPage was dirty someone used the
-                 * victim for its old contents -- Decrement the pinCount and
-                 * retry. Case 2b: The current dpid and required dpid hash to
-                 * different buckets. Get the two bucket locks in the order of
-                 * the bucket indexes (Ordering prevents deadlocks). Check for
-                 * the existence of a winner in the new bucket and for potential
-                 * use of the victim (pinCount != 1). If everything looks good,
-                 * remove the CachedPage from the old bucket, and add it to the
-                 * new bucket and update its header with the new dpid.
+                 * indicates that this buffer has never been used or is a
+                 * virtual page. So we are the only ones holding it. Get a lock
+                 * on the required dpid's hash bucket, check if someone inserted
+                 * the page we want into the table. If so, decrement the
+                 * pincount on the victim and return the winner page in the
+                 * table. If such a winner does not exist, insert the victim and
+                 * return it. Case 2: The dpid on the CachedPage is valid. Case
+                 * 2a: The current dpid and required dpid hash to the same
+                 * bucket. Get the bucket lock, check that the victim is still
+                 * at pinCount == 1 If so check if there is a winning CachedPage
+                 * with the required dpid. If so, decrement the pinCount on the
+                 * victim and return the winner. If not, update the contents of
+                 * the CachedPage to hold the required dpid and return it. If
+                 * the picCount on the victim was != 1 or CachedPage was dirty
+                 * someone used the victim for its old contents -- Decrement the
+                 * pinCount and retry. Case 2b: The current dpid and required
+                 * dpid hash to different buckets. Get the two bucket locks in
+                 * the order of the bucket indexes (Ordering prevents
+                 * deadlocks). Check for the existence of a winner in the new
+                 * bucket and for potential use of the victim (pinCount != 1).
+                 * If everything looks good, remove the CachedPage from the old
+                 * bucket, and add it to the new bucket and update its header
+                 * with the new dpid.
                  */
                 if (victim.dpid < 0) {
                     /*
@@ -304,6 +323,11 @@ public class BufferCache implements IBufferCacheInternal, ILifeCycleComponent {
                         bucket.cachedPage = victim;
                     } finally {
                         bucket.bucketLock.unlock();
+                    }
+                    if (DEBUG) {
+                        if (confiscatedPages.contains(victim)) {
+                            throw new IllegalStateException();
+                        }
                     }
                     return victim;
                 }
@@ -330,6 +354,11 @@ public class BufferCache implements IBufferCacheInternal, ILifeCycleComponent {
                         victim.reset(dpid);
                     } finally {
                         bucket.bucketLock.unlock();
+                    }
+                    if (DEBUG) {
+                        if (confiscatedPages.contains(victim)) {
+                            throw new IllegalStateException();
+                        }
                     }
                     return victim;
                 } else {
@@ -374,6 +403,11 @@ public class BufferCache implements IBufferCacheInternal, ILifeCycleComponent {
                     } finally {
                         victimBucket.bucketLock.unlock();
                         bucket.bucketLock.unlock();
+                    }
+                    if (DEBUG) {
+                        if (confiscatedPages.contains(victim)) {
+                            throw new IllegalStateException();
+                        }
                     }
                     return victim;
                 }
@@ -467,31 +501,36 @@ public class BufferCache implements IBufferCacheInternal, ILifeCycleComponent {
 
     @Override
     public void unpin(ICachedPage page) throws HyracksDataException {
-        //        if (((CachedPage) page).dirty.get()
-        //                && !DEBUG_writtenPages.add(getFileInfo(((CachedPage) page)).getFileId() * 10000
-        //                        + ((CachedPage) page).dpid)) {
-        //            boolean ignore = false;
-        //            switch (((CachedPage) page).cpid) {
-        //                case 0: // metadata page
-        //                case 1: // root page of tree
-        //            }
-        //            StackTraceElement[] stackTraceElements = Thread.currentThread().getStackTrace();
-        //            for (StackTraceElement e : stackTraceElements) {
-        //                if (e.getMethodName().contains("markAsValid")
-        //                        || e.getClassName().contains("BloomFilter")
-        //                        || // pin the whole thing?
-        //                        e.getMethodName().contains("getFreePage" /*metadata*/)
-        //                       || e.getMethodName().contains("FilterInfo")
-        //                        || e.getMethodName().contains("isEmptyTree" /* working on root page */)
-        //                        || (e.getClassName().contains("BulkLoader") && e.getMethodName().contains("end") /* overwriting root node at end of bulkload */)) {
-        //                    ignore = true;
-        //                    break;
-        //                }
-        //            }
-        //            if (!ignore) {
-        //                System.out.println("Attempted to write page already flushed to disk");
-        //            }
-        //        }
+        // if (((CachedPage) page).dirty.get()
+        // && !DEBUG_writtenPages.add(getFileInfo(((CachedPage)
+        // page)).getFileId() * 10000
+        // + ((CachedPage) page).dpid)) {
+        // boolean ignore = false;
+        // switch (((CachedPage) page).cpid) {
+        // case 0: // metadata page
+        // case 1: // root page of tree
+        // }
+        // StackTraceElement[] stackTraceElements =
+        // Thread.currentThread().getStackTrace();
+        // for (StackTraceElement e : stackTraceElements) {
+        // if (e.getMethodName().contains("markAsValid")
+        // || e.getClassName().contains("BloomFilter")
+        // || // pin the whole thing?
+        // e.getMethodName().contains("getFreePage" /*metadata*/)
+        // || e.getMethodName().contains("FilterInfo")
+        // || e.getMethodName().contains("isEmptyTree" /* working on root page
+        // */)
+        // || (e.getClassName().contains("BulkLoader") &&
+        // e.getMethodName().contains("end") /* overwriting root node at end of
+        // bulkload */)) {
+        // ignore = true;
+        // break;
+        // }
+        // }
+        // if (!ignore) {
+        // System.out.println("Attempted to write page already flushed to disk");
+        // }
+        // }
         if (closed) {
             throw new HyracksDataException("unpin called on a closed cache");
         }
@@ -595,6 +634,7 @@ public class BufferCache implements IBufferCacheInternal, ILifeCycleComponent {
                     if (shutdownStart) {
                         break;
                     }
+                    System.out.println(dumpState());
                     pageCleanerPolicy.notifyCleanCycleFinish(this);
                 }
             } catch (Exception e) {
@@ -839,7 +879,7 @@ public class BufferCache implements IBufferCacheInternal, ILifeCycleComponent {
 
     @Override
     public synchronized void deleteMemFile(int fileId) throws HyracksDataException {
-        //TODO: possible sanity chcecking here like in above?
+        // TODO: possible sanity chcecking here like in above?
         if (LOGGER.isLoggable(Level.INFO)) {
             LOGGER.info("Deleting memory file: " + fileId + " in cache: " + this);
         }
@@ -895,73 +935,77 @@ public class BufferCache implements IBufferCacheInternal, ILifeCycleComponent {
     @Override
     public ICachedPage confiscatePage(long dpid) throws HyracksDataException {
         while (true) {
-            boolean subtract = false;
             int startCleanedCount = cleanerThread.cleanedCount;
             ICachedPage returnPage = null;
-            returnPage = pageReplacementStrategy.allocateAndConfiscate();
-            if (returnPage != null) {
-                //System.out.println("[FIFO] Confiscated and Allocated Page");
-                ((CachedPage) returnPage).dpid = dpid;
-            }
+            CachedPage victim = (CachedPage) pageReplacementStrategy.findVictim();
+            // returnPage = pageReplacementStrategy.allocateAndConfiscate();
+            // if (returnPage != null) {
+            // System.out.println("[FIFO] Confiscated and Allocated Page");
+            // ((CachedPage) returnPage).dpid = dpid;
+            // }
 
-            if (returnPage == null) {
-                subtract = true;
-                synchronized (cachedPages) {
-                    for (ICachedPageInternal cPage : cachedPages) {
-                        //find a page that would possibly be evicted anyway
-                        if (cPage.pinIfGoodVictim()) {
-                            //Case 1 from findPage()
-                            if (((CachedPage) cPage).dpid < 0) {
-                                returnPage = cPage;
-                                ((CachedPage) returnPage).dpid = dpid;
-                                break;
-                            }
-                            //Case 2a/b
-                            int pageHash = hash(cPage.getDiskPageId());
-                            CacheBucket bucket = pageMap[pageHash];
-                            try {
-                                bucket.bucketLock.lock();
-                                //readjust the next pointers to remove this page from the pagemap
-                                CachedPage curr = bucket.cachedPage;
-                                CachedPage prev = null;
-                                while (curr != null) {
-                                    if (curr == cPage) { //we found where the victim resides in the hash table
-                                        //if this is the first page in the bucket
-                                        if (prev == null) {
-                                            bucket.cachedPage = bucket.cachedPage.next;
-                                            //if it isn't we need to make the previous node point to where it should
-                                        } else {
-                                            prev.next = curr.next;
-                                            curr.next = null;
-                                        }
-                                    }
-                                    //go to the next entry
-                                    prev = curr;
-                                    curr = curr.next;
+            if (victim != null) {
+                // find a page that would possibly be evicted anyway
+                // Case 1 from findPage()
+                if (((CachedPage) victim).dpid < 0) { // new page
+                    returnPage = victim;
+                    ((CachedPage) returnPage).dpid = dpid;
+                } else {
+                    // Case 2a/b
+                    int pageHash = hash(victim.getDiskPageId());
+                    CacheBucket bucket = pageMap[pageHash];
+                    try {
+                        bucket.bucketLock.lock();
+                        // readjust the next pointers to remove this page from
+                        // the pagemap
+                        CachedPage curr = bucket.cachedPage;
+                        CachedPage prev = null;
+                        boolean found = false;
+                        while (curr != null) {
+                            if (curr == victim) { // we found where the victim
+                                                  // resides in the hash table
+                                // if this is the first page in the bucket
+                                if (prev == null) {
+                                    bucket.cachedPage = bucket.cachedPage.next;
+                                    found = true;
+                                    break;
+                                    // if it isn't we need to make the previous
+                                    // node point to where it should
+                                } else {
+                                    prev.next = curr.next;
+                                    curr.next = null;
+                                    found = true;
+                                    break;
                                 }
-                                returnPage = cPage;
-                                cachedPages.remove(returnPage);
-                                ((CachedPage) returnPage).dpid = dpid;
-                                break;
-                            } finally {
-                                bucket.bucketLock.unlock();
                             }
+                            // go to the next entry
+                            prev = curr;
+                            curr = curr.next;
                         }
+                        if (!found) {
+                            throw new IllegalStateException();
+                        }
+                        returnPage = victim;
+                        ((CachedPage) returnPage).dpid = dpid;
+                    } finally {
+                        bucket.bucketLock.unlock();
                     }
                 }
             }
-            //if we found a page after all that, go ahead and finish
+            // if we found a page after all that, go ahead and finish
             if (returnPage != null) {
-                synchronized (cachedPages) {
-                    if (subtract) {
-                        pageReplacementStrategy.subtractPage();
-                    }
-                    cachedPages.remove(returnPage);
-                    confiscatedPages.add((CachedPage) returnPage);
-                    return returnPage;
-                }
+                // synchronized (cachedPages) {
+                // if (subtract) {
+                // pageReplacementStrategy.subtractPage();
+                // }
+                // cachedPages.remove(returnPage);
+                //confiscatedPages.add((CachedPage) returnPage);
+                // return returnPage;
+                // }
+                ((CachedPage) returnPage).virtual = true;
+                return returnPage;
             }
-            //no page available to confiscate. TODO:throw exception?
+            // no page available to confiscate. TODO:throw exception?
             synchronized (cleanerThread) {
                 pageCleanerPolicy.notifyVictimNotFound(cleanerThread);
             }
@@ -984,67 +1028,69 @@ public class BufferCache implements IBufferCacheInternal, ILifeCycleComponent {
 
     @Override
     public void returnPage(ICachedPage page) {
-        returnPage(page, true);
+        returnPage(page, false);
     }
 
     @Override
-    //TODO: not 100% on reinsert. need to look at older commits when default behavior was different.
+    // TODO: not 100% on reinsert. need to look at older commits when default
+    // behavior was different.
     public void returnPage(ICachedPage page, boolean reinsert) {
         CachedPage cPage = (CachedPage) page;
         CacheBucket bucket = null;
+        //        if (reinsert) {
+        //            if (DEBUG) {
+        // try {
+        //
+        // CachedPage curr;
+        // curr = bucket.cachedPage;
+        // while (curr != null) {
+        // if (cPage == curr) {
+        // throw new IllegalStateException();
+        // }
+        // curr = curr.next;
+        // }
+        // } finally {
+        // bucket.bucketLock.unlock();
+        // }
+        //            }
+        //        }
+
+        // pageReplacementStrategy.returnPage();
+        // now reinsert this into the hash table, basically like case 1
         if (reinsert) {
             int hash = hash(cPage.dpid);
             bucket = pageMap[hash];
             bucket.bucketLock.lock();
-            //DEBUG
             try {
-
                 CachedPage curr;
+                boolean present = false;
                 curr = bucket.cachedPage;
+                //ensure page isnt already in hash map. this can happen if someone read in the page.
                 while (curr != null) {
                     if (cPage == curr) {
-                        throw new IllegalStateException();
+                        present = true;
                     }
                     curr = curr.next;
+                }
+                if (!present) {
+                    cPage.next = bucket.cachedPage;
+                    bucket.cachedPage = cPage;
                 }
             } finally {
                 bucket.bucketLock.unlock();
             }
-        }
-        ///DEBUG
-        if (reinsert) {
+            //        }
+
+            //confiscatedPages.remove(cPage);
             cPage.virtual = false;
             cPage.dirty.set(false);
             cPage.valid = true;
             cPage.pinCount.set(0);
         } else {
-            cPage.dpid = INVALID_DPID;
-            cPage.virtual = false;
-            cPage.dirty.set(false);
-            cPage.valid = false;
             cPage.pinCount.set(0);
+            cPage.invalidate();
         }
-
-        synchronized (cachedPages) {
-            if (cachedPages.contains(cPage)) {
-                throw new IllegalStateException(
-                        "Attempted to confiscate page which was already returned or never confiscated");
-            }
-            cachedPages.add(cPage);
-            confiscatedPages.remove(cPage);
-            pageReplacementStrategy.adviseWontNeed(cPage);
-            pageReplacementStrategy.returnPage();
-        }
-        //now reinsert this into the hash table, basically like case 1 
-        if (reinsert) {
-            bucket.bucketLock.lock();
-            try {
-                cPage.next = bucket.cachedPage;
-                bucket.cachedPage = cPage;
-            } finally {
-                bucket.bucketLock.unlock();
-            }
-        }
+        pageReplacementStrategy.adviseWontNeed(cPage);
 
     }
 
@@ -1054,12 +1100,12 @@ public class BufferCache implements IBufferCacheInternal, ILifeCycleComponent {
     }
 
     @Override
-    public ConcurrentLinkedQueue<ICachedPage> createFIFOQueue() {
+    public IFIFOPageQueue createFIFOQueue() {
         return fifoWriter.createQueue(this, FIFOLocalWriter.instance());
     }
 
     @Override
-    public void finishQueue(ConcurrentLinkedQueue<ICachedPage> queue) {
+    public void finishQueue(IFIFOPageQueue queue) {
         fifoWriter.finishQueue(queue);
     }
 

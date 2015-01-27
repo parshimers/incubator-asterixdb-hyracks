@@ -59,6 +59,7 @@ import edu.uci.ics.hyracks.storage.am.lsm.invertedindex.search.InvertedIndexSear
 import edu.uci.ics.hyracks.storage.am.lsm.invertedindex.search.TOccurrenceSearcher;
 import edu.uci.ics.hyracks.storage.common.buffercache.IBufferCache;
 import edu.uci.ics.hyracks.storage.common.buffercache.ICachedPage;
+import edu.uci.ics.hyracks.storage.common.buffercache.IFIFOPageQueue;
 import edu.uci.ics.hyracks.storage.common.file.BufferedFileHandle;
 import edu.uci.ics.hyracks.storage.common.file.IFileMapProvider;
 
@@ -303,7 +304,7 @@ public class OnDiskInvertedIndex implements IInvertedIndex {
         private final boolean verifyInput;
         private final MultiComparator allCmp;
         
-        private ConcurrentLinkedQueue<ICachedPage>queue;
+        private IFIFOPageQueue queue;
 
         public OnDiskInvertedIndexBulkLoader(float btreeFillFactor, boolean verifyInput, long numElementsHint,
                 boolean checkIfEmptyIndex, int startPageId, int fileId) throws IndexException, HyracksDataException {
@@ -330,7 +331,7 @@ public class OnDiskInvertedIndex implements IInvertedIndex {
 
         public void pinNextPage() throws HyracksDataException {
             currentPage.releaseWriteLatch(true);
-            queue.offer(currentPage);
+            queue.put(currentPage);
             currentPageId++;
             currentPage = bufferCache.confiscatePage(BufferedFileHandle.getDiskPageId(fileId, currentPageId));
             currentPage.acquireWriteLatch();
@@ -437,7 +438,7 @@ public class OnDiskInvertedIndex implements IInvertedIndex {
 
             if (currentPage != null) {
                 currentPage.releaseWriteLatch(true);
-                queue.offer(currentPage);
+                queue.put(currentPage);
             }
             invListsMaxPageId = currentPageId;
             bufferCache.finishQueue(queue);

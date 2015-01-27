@@ -26,6 +26,7 @@ import edu.uci.ics.hyracks.storage.am.common.api.IIndexBulkLoader;
 import edu.uci.ics.hyracks.storage.am.common.api.IndexException;
 import edu.uci.ics.hyracks.storage.common.buffercache.IBufferCache;
 import edu.uci.ics.hyracks.storage.common.buffercache.ICachedPage;
+import edu.uci.ics.hyracks.storage.common.buffercache.IFIFOPageQueue;
 import edu.uci.ics.hyracks.storage.common.file.BufferedFileHandle;
 import edu.uci.ics.hyracks.storage.common.file.IFileMapProvider;
 
@@ -167,7 +168,7 @@ public class BloomFilter {
     }
 
     private void readBloomFilterMetaData() throws HyracksDataException {
-        if(bufferCache.getNumPagesOfFile(fileId) == 0){
+        if (bufferCache.getNumPagesOfFile(fileId) == 0) {
             numPages = 0;
             numHashes = 0;
             numElements = 0;
@@ -219,16 +220,15 @@ public class BloomFilter {
         private final int numHashes;
         private final long numBits;
         private final int numPages;
-        private ConcurrentLinkedQueue<ICachedPage> queue;
+        private IFIFOPageQueue queue;
         private ICachedPage[] pages;
-        private ICachedPage metaDataPage;
+        private ICachedPage metaDataPage = null;
 
         public BloomFilterBuilder(long numElements, int numHashes, int numBitsPerElement) throws HyracksDataException {
             if (!isActivated) {
                 throw new HyracksDataException("Failed to create the bloom filter builder since it is not activated.");
             }
             queue = bufferCache.createFIFOQueue();
-
             this.numElements = numElements;
             this.numHashes = numHashes;
             numBits = this.numElements * numBitsPerElement;
@@ -268,7 +268,9 @@ public class BloomFilter {
         }
 
         private void persistBloomFilterMetaData() throws HyracksDataException {
-            metaDataPage = bufferCache.confiscatePage(BufferedFileHandle.getDiskPageId(fileId, METADATA_PAGE_ID));
+            if (metaDataPage == null) {
+                metaDataPage = bufferCache.confiscatePage(BufferedFileHandle.getDiskPageId(fileId, METADATA_PAGE_ID));
+            }
             metaDataPage.acquireWriteLatch();
             try {
                 metaDataPage.getBuffer().putInt(NUM_PAGES_OFFSET, numPages);
@@ -310,11 +312,13 @@ public class BloomFilter {
 
         @Override
         public void end() throws HyracksDataException, IndexException {
-            queue.offer(metaDataPage);
+            persistBloomFilterMetaData();
+            queue.put(metaDataPage);
             for (ICachedPage p : pages) {
-                queue.offer(p);
+                queue.put(p);
             }
             bufferCache.finishQueue(queue);
+            readBloomFilterMetaData();
         }
 
     }

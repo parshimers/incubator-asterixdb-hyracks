@@ -885,6 +885,7 @@ public class RTree extends AbstractTreeIndex {
         ITreeIndexTupleReference mbrTuple = interiorFrame.createTupleReference();
         ByteBuffer mbr;
         List<Integer> prevNodeFrontierPages = new ArrayList<Integer>();
+        List<ICachedPage> pagesToWrite = new ArrayList<ICachedPage>();
 
         public RTreeBulkLoader(float fillFactor, boolean appendOnly) throws TreeIndexException, HyracksDataException {
             super(fillFactor, appendOnly);
@@ -919,15 +920,15 @@ public class RTree extends AbstractTreeIndex {
                     } else {
                         prevNodeFrontierPages.set(0, leafFrontier.pageId);
                     }
-                    List<ICachedPage> pagesToWrite = new ArrayList<ICachedPage>();
+                    pagesToWrite.clear();
                     propagateBulk(1, false, pagesToWrite);
 
                     leafFrontier.pageId = freePageManager.getFreePage(metaFrame);
                     leafFrontier.page.releaseWriteLatch(true);
                     if (fifo) {
-                        queue.offer(leafFrontier.page);
+                        queue.put(leafFrontier.page);
                         for (ICachedPage c : pagesToWrite) {
-                            queue.offer(c);
+                            queue.put(c);
                         }
                         leafFrontier.page = bufferCache.confiscatePage(BufferedFileHandle.getDiskPageId(fileId,
                                 leafFrontier.pageId));
@@ -955,10 +956,10 @@ public class RTree extends AbstractTreeIndex {
         }
 
         public void end() throws HyracksDataException {
-            List<ICachedPage> pagesToWrite = new ArrayList<ICachedPage>();
+            pagesToWrite.clear();
             propagateBulk(1, true, pagesToWrite);
-            for(ICachedPage c: pagesToWrite){
-                queue.offer(c);
+            for (ICachedPage c : pagesToWrite) {
+                queue.put(c);
             }
             finish();
             super.end();
@@ -982,7 +983,7 @@ public class RTree extends AbstractTreeIndex {
                     if (fifo) {
                         AsyncFIFOPageQueueManager
                                 .setDpid(n.page, BufferedFileHandle.getDiskPageId(fileId, finalPageId));
-                        queue.offer(n.page);
+                        queue.put(n.page);
                         n.page = null;
                     } else {
 
@@ -997,7 +998,7 @@ public class RTree extends AbstractTreeIndex {
                 } else {
                     n.page.releaseWriteLatch(true);
                     if (fifo) {
-                        queue.offer(n.page);
+                        queue.put(n.page);
                         n.page = null;
                     } else {
                         bufferCache.unpin(n.page);
@@ -1008,7 +1009,9 @@ public class RTree extends AbstractTreeIndex {
                 ((RTreeNSMFrame) interiorFrame).adjustMBR();
                 tupleWriter.writeTupleFields(((RTreeNSMFrame) interiorFrame).getMBRTuples(), 0, mbr, 0);
             }
-            rootPage = nodeFrontiers.get(nodeFrontiers.size() - 1).pageId;
+            if (appendOnly) {
+                rootPage = nodeFrontiers.get(nodeFrontiers.size() - 1).pageId;
+            }
             releasedLatches = true;
         }
 

@@ -31,6 +31,7 @@ import edu.uci.ics.hyracks.api.io.IIOManager;
 import edu.uci.ics.hyracks.api.io.IODeviceHandle;
 
 public class IOManager implements IIOManager {
+	public static final boolean DEBUG = false;
     private final List<IODeviceHandle> ioDevices;
 
     private Executor executor;
@@ -95,17 +96,14 @@ public class IOManager implements IIOManager {
                 offset += len;
                 n += len;
             }
-            //*************************DEBUG - REMOVE ME*****************************************
-            //disable it right now
-            //if (true) {
-             //   if (offset > ((FileHandle) fHandle).DEBUG_highOffset && ((FileHandle) fHandle).DEBUG_highOffset != 0) {
-            //        System.out.println("In file" + ((FileHandle) fHandle).getRandomAccessFile().toString()
-            //                + "Wrote offset " + offset + " before " + ((FileHandle) fHandle).DEBUG_highOffset);
-            //        System.exit(1);
-            //    }
-            //    ((FileHandle) fHandle).DEBUG_highOffset = offset + n;
-            //}
-            //*************************DEBUG - REMOVE ME*****************************************
+            if (DEBUG) {
+                if (offset > ((FileHandle) fHandle).DEBUG_highOffset && ((FileHandle) fHandle).DEBUG_highOffset != 0) {
+                    System.out.println("In file" + ((FileHandle) fHandle).getRandomAccessFile().toString()
+                            + "Wrote offset " + offset + " before " + ((FileHandle) fHandle).DEBUG_highOffset);
+                    System.exit(1);
+                }
+                ((FileHandle) fHandle).DEBUG_highOffset = offset + n;
+            }
             return n;
         } catch (HyracksDataException e) {
             throw e;

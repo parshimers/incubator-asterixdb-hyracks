@@ -953,6 +953,7 @@ public class BTree extends AbstractTreeIndex {
     public class BTreeBulkLoader extends AbstractTreeIndex.AbstractTreeIndexBulkLoader {
         protected final ISplitKey splitKey;
         protected final boolean verifyInput;
+        protected List<ICachedPage> pagesToWrite;
 
         public BTreeBulkLoader(float fillFactor, boolean verifyInput, boolean appendOnly) throws TreeIndexException,
                 HyracksDataException {
@@ -960,6 +961,7 @@ public class BTree extends AbstractTreeIndex {
             this.verifyInput = verifyInput;
             splitKey = new BTreeSplitKey(leafFrame.getTupleWriter().createTupleReference());
             splitKey.getTuple().setFieldCount(cmp.getKeyFieldCount());
+            pagesToWrite = new ArrayList<ICachedPage>();
         }
 
         @Override
@@ -994,17 +996,17 @@ public class BTree extends AbstractTreeIndex {
                             .getBuffer().array(), 0);
                     splitKey.getTuple().resetByTupleOffset(splitKey.getBuffer(), 0);
                     splitKey.setLeftPage(leafFrontier.pageId);
-
-                    List<ICachedPage> pagesToWrite = new ArrayList<ICachedPage>();
+                   
+                    pagesToWrite.clear();
                     propagateBulk(1,pagesToWrite);
                     leafFrontier.pageId = freePageManager.getFreePage(metaFrame);
 
                     ((IBTreeLeafFrame) leafFrame).setNextLeaf(leafFrontier.pageId);
                     leafFrontier.page.releaseWriteLatch(true);
                     if (fifo) {
-                        queue.offer(leafFrontier.page);
+                        queue.put(leafFrontier.page);
                         for(ICachedPage c : pagesToWrite){
-                            queue.offer(c);
+                            queue.put(c);
                         }
                     } else {
                         bufferCache.unpin(leafFrontier.page);
@@ -1037,7 +1039,7 @@ public class BTree extends AbstractTreeIndex {
                 handleException();
                 throw e;
             } catch (RuntimeException e) {
-                handleException();
+                //handleException();
                 throw e;
             }
         }
@@ -1125,7 +1127,7 @@ public class BTree extends AbstractTreeIndex {
                 lastLeaf.releaseWriteLatch(true);
                 if (fifo) {
                     AsyncFIFOPageQueueManager.setDpid(lastLeaf, BufferedFileHandle.getDiskPageId(fileId, lastLeafPage));
-                    queue.offer(lastLeaf);
+                    queue.put(lastLeaf);
                     nodeFrontiers.get(level).page = null;
                     finish(level + 1, lastLeafPage);
                 } else {
@@ -1145,7 +1147,7 @@ public class BTree extends AbstractTreeIndex {
             int finalPageId = freePageManager.getFreePage(metaFrame);
             if (fifo) {
                 AsyncFIFOPageQueueManager.setDpid(frontier.page, BufferedFileHandle.getDiskPageId(fileId, finalPageId));
-                queue.offer(frontier.page);
+                queue.put(frontier.page);
                 frontier.page = null;
             } else {
                 ICachedPage realPage = bufferCache.unpinVirtual(frontier.page,

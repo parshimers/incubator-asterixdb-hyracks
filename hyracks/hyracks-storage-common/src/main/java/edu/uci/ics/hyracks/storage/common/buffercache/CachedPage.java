@@ -53,6 +53,7 @@ public class CachedPage implements ICachedPageInternal {
         this.dpid = dpid;
         dirty.set(false);
         valid = false;
+        this.virtual = false;
         pageReplacementStrategy.notifyCachePageReset(this);
     }
 
@@ -114,5 +115,11 @@ public class CachedPage implements ICachedPageInternal {
     @Override
     public long getDiskPageId() {
         return dpid;
+    }
+    CachedPage getNext() {
+        return next;
+    }
+    void setNext(CachedPage next) {
+        this.next = next;
     }
 }

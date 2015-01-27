@@ -23,6 +23,7 @@ import edu.uci.ics.hyracks.api.io.FileReference;
 import edu.uci.ics.hyracks.api.io.IFileHandle;
 import edu.uci.ics.hyracks.storage.am.lsm.common.api.IVirtualBufferCache;
 import edu.uci.ics.hyracks.storage.common.buffercache.ICachedPage;
+import edu.uci.ics.hyracks.storage.common.buffercache.IFIFOPageQueue;
 import edu.uci.ics.hyracks.storage.common.file.IFileMapManager;
 
 public class MultitenantVirtualBufferCache implements IVirtualBufferCache {
@@ -182,12 +183,12 @@ public class MultitenantVirtualBufferCache implements IVirtualBufferCache {
     }
 
     @Override
-    public ConcurrentLinkedQueue<ICachedPage> createFIFOQueue() {
+    public IFIFOPageQueue createFIFOQueue() {
         throw new UnsupportedOperationException("Virtual buffer caches don't have FIFO writers");
     }
 
     @Override
-    public void finishQueue(ConcurrentLinkedQueue<ICachedPage> queue) {
+    public void finishQueue(IFIFOPageQueue queue) {
         throw new UnsupportedOperationException("Virtual buffer caches don't have FIFO writers");
     }
 
