@@ -59,7 +59,7 @@ public abstract class AbstractTreeIndex implements ITreeIndex {
     protected int fileId = -1;
 
     private boolean isActivated = false;
-    private boolean initted = false;
+    private boolean wasActivated = false;
     private boolean fileOpen = false;
 
     protected boolean fifo = true; //DEBUG
@@ -128,7 +128,7 @@ public abstract class AbstractTreeIndex implements ITreeIndex {
             fileOpen = true;
             //initEmptyTree();
         }
-        initted = true;
+        wasActivated = true;
     }
 
     private void initEmptyTree() throws HyracksDataException {
@@ -197,13 +197,12 @@ public abstract class AbstractTreeIndex implements ITreeIndex {
         // or that the file we just opened actually is a tree
 
         isActivated = true;
-        initted = true;
+        wasActivated = true;
     }
 
     public synchronized void deactivate() throws HyracksDataException {
-        if (!isActivated && initted) {
-            //DEBUG
-            //throw new HyracksDataException("Failed to deactivate the index since it is already deactivated.");
+        if (!isActivated && wasActivated) {
+            throw new HyracksDataException("Failed to deactivate the index since it is already deactivated.");
         }
         if (isActivated) {
             freePageManager.close();

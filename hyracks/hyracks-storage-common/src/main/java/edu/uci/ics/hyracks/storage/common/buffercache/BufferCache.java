@@ -1028,64 +1028,25 @@ public class BufferCache implements IBufferCacheInternal, ILifeCycleComponent {
 
     @Override
     public void returnPage(ICachedPage page) {
-        returnPage(page, false);
+        returnPage(page, true);
     }
 
     @Override
-    // TODO: not 100% on reinsert. need to look at older commits when default
-    // behavior was different.
     public void returnPage(ICachedPage page, boolean reinsert) {
         CachedPage cPage = (CachedPage) page;
         CacheBucket bucket = null;
-        //        if (reinsert) {
-        //            if (DEBUG) {
-        // try {
-        //
-        // CachedPage curr;
-        // curr = bucket.cachedPage;
-        // while (curr != null) {
-        // if (cPage == curr) {
-        // throw new IllegalStateException();
-        // }
-        // curr = curr.next;
-        // }
-        // } finally {
-        // bucket.bucketLock.unlock();
-        // }
-        //            }
-        //        }
-
-        // pageReplacementStrategy.returnPage();
-        // now reinsert this into the hash table, basically like case 1
         if (reinsert) {
             int hash = hash(cPage.dpid);
             bucket = pageMap[hash];
             bucket.bucketLock.lock();
             try {
-                CachedPage curr;
-                boolean present = false;
-                curr = bucket.cachedPage;
-                //ensure page isnt already in hash map. this can happen if someone read in the page.
-                while (curr != null) {
-                    if (cPage == curr) {
-                        present = true;
-                    }
-                    curr = curr.next;
-                }
-                if (!present) {
-                    cPage.next = bucket.cachedPage;
-                    bucket.cachedPage = cPage;
-                }
+                cPage.reset(cPage.dpid);
+                cPage.next = bucket.cachedPage;
+                bucket.cachedPage = cPage;
+                cPage.pinCount.set(0);
             } finally {
                 bucket.bucketLock.unlock();
             }
-            //        }
-
-            //confiscatedPages.remove(cPage);
-            cPage.virtual = false;
-            cPage.dirty.set(false);
-            cPage.valid = true;
-            cPage.pinCount.set(0);
         } else {
             cPage.pinCount.set(0);
             cPage.invalidate();
