@@ -41,15 +41,22 @@ public abstract class AbstractInvertedIndexDeleteTest extends AbstractInvertedIn
     protected void runTest(LSMInvertedIndexTestContext testCtx, TupleGenerator tupleGen) throws IOException,
             IndexException {
         IIndex invIndex = testCtx.getIndex();
-        invIndex.create();
-        invIndex.activate();
+
+        if ((invIndexType != InvertedIndexType.LSM) && (invIndexType != InvertedIndexType.PARTITIONED_LSM)) {
+            invIndex.create();
+            invIndex.activate();
+        }
 
         for (int i = 0; i < numInsertRounds; i++) {
             // Start generating documents ids from 0 again.
             tupleGen.reset();
-
             if (bulkLoad) {
-                LSMInvertedIndexTestUtils.bulkLoadInvIndex(testCtx, tupleGen, NUM_DOCS_TO_INSERT);
+                if ((invIndexType != InvertedIndexType.LSM) && (invIndexType != InvertedIndexType.PARTITIONED_LSM)) {
+                    LSMInvertedIndexTestUtils.bulkLoadInvIndex(testCtx, tupleGen, NUM_DOCS_TO_INSERT, false);
+                } else {
+
+                    LSMInvertedIndexTestUtils.bulkLoadInvIndex(testCtx, tupleGen, NUM_DOCS_TO_INSERT, true);
+                }
             } else {
                 LSMInvertedIndexTestUtils.insertIntoInvIndex(testCtx, tupleGen, NUM_DOCS_TO_INSERT);
             }
@@ -70,7 +77,8 @@ public abstract class AbstractInvertedIndexDeleteTest extends AbstractInvertedIn
 
     @Test
     public void wordTokensInvIndexTest() throws IOException, IndexException {
-        LSMInvertedIndexTestContext testCtx = LSMInvertedIndexTestUtils.createWordInvIndexTestContext(harness, invIndexType);
+        LSMInvertedIndexTestContext testCtx = LSMInvertedIndexTestUtils.createWordInvIndexTestContext(harness,
+                invIndexType);
         TupleGenerator tupleGen = LSMInvertedIndexTestUtils.createStringDocumentTupleGen(harness.getRandom());
         runTest(testCtx, tupleGen);
     }
@@ -85,7 +93,8 @@ public abstract class AbstractInvertedIndexDeleteTest extends AbstractInvertedIn
 
     @Test
     public void ngramTokensInvIndexTest() throws IOException, IndexException {
-        LSMInvertedIndexTestContext testCtx = LSMInvertedIndexTestUtils.createNGramInvIndexTestContext(harness, invIndexType);
+        LSMInvertedIndexTestContext testCtx = LSMInvertedIndexTestUtils.createNGramInvIndexTestContext(harness,
+                invIndexType);
         TupleGenerator tupleGen = LSMInvertedIndexTestUtils.createPersonNamesTupleGen(harness.getRandom());
         runTest(testCtx, tupleGen);
     }

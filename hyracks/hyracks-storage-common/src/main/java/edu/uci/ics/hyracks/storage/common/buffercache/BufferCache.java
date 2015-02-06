@@ -634,7 +634,7 @@ public class BufferCache implements IBufferCacheInternal, ILifeCycleComponent {
                     if (shutdownStart) {
                         break;
                     }
-                    System.out.println(dumpState());
+//                    System.out.println(dumpState());
                     pageCleanerPolicy.notifyCleanCycleFinish(this);
                 }
             } catch (Exception e) {

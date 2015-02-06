@@ -51,11 +51,16 @@ public abstract class AbstractInvertedIndexSearchTest extends AbstractInvertedIn
     protected void runTest(LSMInvertedIndexTestContext testCtx, TupleGenerator tupleGen,
             List<IInvertedIndexSearchModifier> searchModifiers) throws IOException, IndexException {
         IIndex invIndex = testCtx.getIndex();
-        invIndex.create();
-        invIndex.activate();
-
+        if ((invIndexType != InvertedIndexType.LSM) && (invIndexType != InvertedIndexType.PARTITIONED_LSM)) {
+            invIndex.create();
+            invIndex.activate();
+        }
         if (bulkLoad) {
-            LSMInvertedIndexTestUtils.bulkLoadInvIndex(testCtx, tupleGen, NUM_DOCS_TO_INSERT);
+            if ((invIndexType != InvertedIndexType.LSM) && (invIndexType != InvertedIndexType.PARTITIONED_LSM)) {
+                LSMInvertedIndexTestUtils.bulkLoadInvIndex(testCtx, tupleGen, NUM_DOCS_TO_INSERT, true);
+            } else {
+                LSMInvertedIndexTestUtils.bulkLoadInvIndex(testCtx, tupleGen, NUM_DOCS_TO_INSERT, false);
+            }
         } else {
             LSMInvertedIndexTestUtils.insertIntoInvIndex(testCtx, tupleGen, NUM_DOCS_TO_INSERT);
         }
@@ -101,7 +106,8 @@ public abstract class AbstractInvertedIndexSearchTest extends AbstractInvertedIn
 
     @Test
     public void wordTokensInvIndexTest() throws IOException, IndexException {
-        LSMInvertedIndexTestContext testCtx = LSMInvertedIndexTestUtils.createWordInvIndexTestContext(harness, invIndexType);
+        LSMInvertedIndexTestContext testCtx = LSMInvertedIndexTestUtils.createWordInvIndexTestContext(harness,
+                invIndexType);
         testWordInvIndexIndex(testCtx);
     }
 
@@ -114,7 +120,8 @@ public abstract class AbstractInvertedIndexSearchTest extends AbstractInvertedIn
 
     @Test
     public void ngramTokensInvIndexTest() throws IOException, IndexException {
-        LSMInvertedIndexTestContext testCtx = LSMInvertedIndexTestUtils.createNGramInvIndexTestContext(harness, invIndexType);
+        LSMInvertedIndexTestContext testCtx = LSMInvertedIndexTestUtils.createNGramInvIndexTestContext(harness,
+                invIndexType);
         testNGramInvIndexIndex(testCtx);
     }
 

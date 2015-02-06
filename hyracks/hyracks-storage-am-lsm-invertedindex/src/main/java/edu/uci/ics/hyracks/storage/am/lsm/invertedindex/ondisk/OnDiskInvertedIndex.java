@@ -108,6 +108,7 @@ public class OnDiskInvertedIndex implements IInvertedIndex {
     // Last page id of inverted-lists file (inclusive). Set during bulk load.
     protected int invListsMaxPageId = -1;
     protected boolean isOpen = false;
+    protected boolean wasOpen = false;
 
     public OnDiskInvertedIndex(IBufferCache bufferCache, IFileMapProvider fileMapProvider,
             IInvertedListBuilder invListBuilder, ITypeTraits[] invListTypeTraits,
@@ -162,11 +163,17 @@ public class OnDiskInvertedIndex implements IInvertedIndex {
 
     @Override
     public synchronized void activate() throws HyracksDataException {
+        activate(false);
+    }
+
+    public synchronized void activate(boolean appendOnly) throws HyracksDataException {
         if (isOpen) {
             throw new HyracksDataException("Failed to activate the index since it is already activated.");
         }
 
-        //btree.activate();
+        if (!appendOnly) {
+            btree.activate();
+        }
         boolean fileIsMapped = false;
         synchronized (fileMapProvider) {
             fileIsMapped = fileMapProvider.isMapped(invListsFile);
@@ -187,11 +194,12 @@ public class OnDiskInvertedIndex implements IInvertedIndex {
         }
 
         isOpen = true;
+        wasOpen = true;
     }
 
     @Override
     public synchronized void deactivate() throws HyracksDataException {
-        if (!isOpen) {
+        if (!isOpen && wasOpen) {
             throw new HyracksDataException("Failed to deactivate the index since it is already deactivated.");
         }
 
@@ -303,11 +311,12 @@ public class OnDiskInvertedIndex implements IInvertedIndex {
 
         private final boolean verifyInput;
         private final MultiComparator allCmp;
-        
+
         private IFIFOPageQueue queue;
 
         public OnDiskInvertedIndexBulkLoader(float btreeFillFactor, boolean verifyInput, long numElementsHint,
-                boolean checkIfEmptyIndex, int startPageId, int fileId) throws IndexException, HyracksDataException {
+                boolean checkIfEmptyIndex, int startPageId, boolean appendOnly) throws IndexException,
+                HyracksDataException {
             this.verifyInput = verifyInput;
             this.tokenCmp = MultiComparator.create(btree.getComparatorFactories());
             this.invListCmp = MultiComparator.create(invListCmpFactories);
@@ -320,8 +329,12 @@ public class OnDiskInvertedIndex implements IInvertedIndex {
             this.btreeTupleReference = new ArrayTupleReference();
             this.lastTupleBuilder = new ArrayTupleBuilder(numTokenFields + numInvListKeys);
             this.lastTuple = new ArrayTupleReference();
+            if (appendOnly) {
+                create();
+                activate(appendOnly);
+            }
             this.btreeBulkloader = btree.createBulkLoader(btreeFillFactor, verifyInput, numElementsHint,
-                    checkIfEmptyIndex, true);
+                    checkIfEmptyIndex, appendOnly);
             currentPageId = startPageId;
             currentPage = bufferCache.confiscatePage(BufferedFileHandle.getDiskPageId(fileId, currentPageId));
             currentPage.acquireWriteLatch();
@@ -585,7 +598,7 @@ public class OnDiskInvertedIndex implements IInvertedIndex {
             boolean checkIfEmptyIndex) throws IndexException {
         try {
             return new OnDiskInvertedIndexBulkLoader(fillFactor, verifyInput, numElementsHint, checkIfEmptyIndex,
-                    rootPageId, fileId);
+                    rootPageId, false);
         } catch (HyracksDataException e) {
             throw new InvertedIndexException(e);
         }
@@ -596,7 +609,7 @@ public class OnDiskInvertedIndex implements IInvertedIndex {
             boolean checkIfEmptyIndex, boolean appendOnly) throws IndexException {
         try {
             return new OnDiskInvertedIndexBulkLoader(fillFactor, verifyInput, numElementsHint, checkIfEmptyIndex,
-                    rootPageId, fileId);
+                    rootPageId, appendOnly);
 
         } catch (HyracksDataException e) {
             throw new InvertedIndexException(e);
