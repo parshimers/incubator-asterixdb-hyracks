@@ -135,11 +135,16 @@ public class OnDiskInvertedIndex implements IInvertedIndex {
 
     @Override
     public synchronized void create() throws HyracksDataException {
+        create(false);
+    }
+
+    public synchronized void create(boolean appendOnly) throws HyracksDataException {
         if (isOpen) {
             throw new HyracksDataException("Failed to create since index is already open.");
         }
-        //btree.create();
-
+        if (!appendOnly) {
+            btree.create();
+        }
         boolean fileIsMapped = false;
         synchronized (fileMapProvider) {
             fileIsMapped = fileMapProvider.isMapped(invListsFile);
@@ -170,7 +175,6 @@ public class OnDiskInvertedIndex implements IInvertedIndex {
         if (isOpen) {
             throw new HyracksDataException("Failed to activate the index since it is already activated.");
         }
-
         if (!appendOnly) {
             btree.activate();
         }
@@ -330,7 +334,7 @@ public class OnDiskInvertedIndex implements IInvertedIndex {
             this.lastTupleBuilder = new ArrayTupleBuilder(numTokenFields + numInvListKeys);
             this.lastTuple = new ArrayTupleReference();
             if (appendOnly) {
-                create();
+                create(appendOnly);
                 activate(appendOnly);
             }
             this.btreeBulkloader = btree.createBulkLoader(btreeFillFactor, verifyInput, numElementsHint,

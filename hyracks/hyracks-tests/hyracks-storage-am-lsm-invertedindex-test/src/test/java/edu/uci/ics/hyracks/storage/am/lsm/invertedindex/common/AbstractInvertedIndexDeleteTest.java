@@ -42,7 +42,7 @@ public abstract class AbstractInvertedIndexDeleteTest extends AbstractInvertedIn
             IndexException {
         IIndex invIndex = testCtx.getIndex();
 
-        if ((invIndexType != InvertedIndexType.LSM) && (invIndexType != InvertedIndexType.PARTITIONED_LSM)) {
+        if ((invIndexType != InvertedIndexType.LSM) && (invIndexType != InvertedIndexType.PARTITIONED_LSM) || !bulkLoad) {
             invIndex.create();
             invIndex.activate();
         }
