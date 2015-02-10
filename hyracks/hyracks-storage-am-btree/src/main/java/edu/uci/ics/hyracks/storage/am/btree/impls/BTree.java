@@ -124,7 +124,9 @@ public class BTree extends AbstractTreeIndex {
                 NoOpOperationCallback.INSTANCE);
         PageValidationInfo pvi = accessor.ctx.createPageValidationInfo(null);
         accessor.ctx.validationInfos.addFirst(pvi);
-        validate(accessor.ctx, rootPage);
+        if (isActivated) {
+            validate(accessor.ctx, rootPage);
+        }
     }
 
     private void validate(BTreeOpContext ctx, int pageId) throws HyracksDataException {
@@ -996,16 +998,16 @@ public class BTree extends AbstractTreeIndex {
                             .getBuffer().array(), 0);
                     splitKey.getTuple().resetByTupleOffset(splitKey.getBuffer(), 0);
                     splitKey.setLeftPage(leafFrontier.pageId);
-                   
+
                     pagesToWrite.clear();
-                    propagateBulk(1,pagesToWrite);
+                    propagateBulk(1, pagesToWrite);
                     leafFrontier.pageId = freePageManager.getFreePage(metaFrame);
 
                     ((IBTreeLeafFrame) leafFrame).setNextLeaf(leafFrontier.pageId);
                     leafFrontier.page.releaseWriteLatch(true);
                     if (fifo) {
                         queue.put(leafFrontier.page);
-                        for(ICachedPage c : pagesToWrite){
+                        for (ICachedPage c : pagesToWrite) {
                             queue.put(c);
                         }
                     } else {
@@ -1087,12 +1089,12 @@ public class BTree extends AbstractTreeIndex {
                 if (fifo) {
                     AsyncFIFOPageQueueManager.setDpid(frontier.page,
                             BufferedFileHandle.getDiskPageId(fileId, finalPageId));
-                //    queue.offer(frontier.page);
+                    //    queue.offer(frontier.page);
                     pagesToWrite.add(frontier.page);
                 } else {
-                //    ICachedPage realPage = bufferCache.unpinVirtual(frontier.page,
-                //            BufferedFileHandle.getDiskPageId(fileId, finalPageId));
-                //    bufferCache.unpin(realPage);
+                    //    ICachedPage realPage = bufferCache.unpinVirtual(frontier.page,
+                    //            BufferedFileHandle.getDiskPageId(fileId, finalPageId));
+                    //    bufferCache.unpin(realPage);
                 }
                 //splitKey.setRightPage();
                 splitKey.setLeftPage(finalPageId);

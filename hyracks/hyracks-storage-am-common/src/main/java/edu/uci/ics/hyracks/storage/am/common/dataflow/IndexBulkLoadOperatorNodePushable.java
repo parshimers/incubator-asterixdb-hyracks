@@ -71,7 +71,7 @@ public class IndexBulkLoadOperatorNodePushable extends
         index = indexHelper.getIndexInstance();
         try {
             bulkLoader = index.createBulkLoader(fillFactor, verifyInput,
-                    numElementsHint, checkIfEmptyIndex, true);
+                    numElementsHint, checkIfEmptyIndex);
         } catch (Exception e) {
             indexHelper.close();
             throw new HyracksDataException(e);

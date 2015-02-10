@@ -693,7 +693,7 @@ public class LSMInvertedIndex extends AbstractLSMIndex implements IInvertedIndex
     public IIndexBulkLoader createBulkLoader(float fillFactor, boolean verifyInput, long numElementsHint,
             boolean checkIfEmptyIndex) throws IndexException {
         try {
-            return new LSMInvertedIndexBulkLoader(fillFactor, verifyInput, numElementsHint, checkIfEmptyIndex);
+            return new LSMInvertedIndexBulkLoader(fillFactor, verifyInput, numElementsHint, checkIfEmptyIndex, false);
         } catch (HyracksDataException e) {
             throw new IndexException(e);
         }
@@ -703,7 +703,7 @@ public class LSMInvertedIndex extends AbstractLSMIndex implements IInvertedIndex
     public IIndexBulkLoader createBulkLoader(float fillFactor, boolean verifyInput, long numElementsHint,
             boolean checkIfEmptyIndex, boolean appendOnly) throws IndexException {
         try {
-            return new LSMInvertedIndexBulkLoader(fillFactor, verifyInput, numElementsHint, checkIfEmptyIndex);
+            return new LSMInvertedIndexBulkLoader(fillFactor, verifyInput, numElementsHint, checkIfEmptyIndex, appendOnly);
         } catch (HyracksDataException e) {
             throw new IndexException(e);
         }
@@ -712,6 +712,7 @@ public class LSMInvertedIndex extends AbstractLSMIndex implements IInvertedIndex
     public class LSMInvertedIndexBulkLoader implements IIndexBulkLoader {
         private final ILSMComponent component;
         private final IIndexBulkLoader invIndexBulkLoader;
+        private final IIndexBulkLoader deletedKeysBTreeBulkLoader;
         private boolean cleanedUpArtifacts = false;
         private boolean isEmptyComponent = true;
         public final PermutingTupleReference indexTuple;
@@ -719,9 +720,13 @@ public class LSMInvertedIndex extends AbstractLSMIndex implements IInvertedIndex
         public final MultiComparator filterCmp;
 
         public LSMInvertedIndexBulkLoader(float fillFactor, boolean verifyInput, long numElementsHint,
-                boolean checkIfEmptyIndex) throws IndexException, HyracksDataException {
+                boolean checkIfEmptyIndex, boolean appendOnly) throws IndexException, HyracksDataException {
             if (checkIfEmptyIndex && !isEmptyIndex()) {
                 throw new IndexException("Cannot load an index that is not empty");
+            }
+            if(appendOnly){
+                create();
+                activate();
             }
             // Note that by using a flush target file name, we state that the
             // new bulk loaded tree is "newer" than any other merged tree.
@@ -731,6 +736,10 @@ public class LSMInvertedIndex extends AbstractLSMIndex implements IInvertedIndex
                 throw new IndexException(e);
             }
             invIndexBulkLoader = ((LSMInvertedIndexDiskComponent) component).getInvIndex().createBulkLoader(fillFactor,
+                    verifyInput, numElementsHint, false, true);
+            
+            //validity of the component depends on the deleted keys file being there even if it's empty.
+            deletedKeysBTreeBulkLoader = ((LSMInvertedIndexDiskComponent) component).getDeletedKeysBTree().createBulkLoader(fillFactor,
                     verifyInput, numElementsHint, false, true);
 
             if (filterFields != null) {
@@ -792,6 +801,7 @@ public class LSMInvertedIndex extends AbstractLSMIndex implements IInvertedIndex
                                     .getBTree()), (AbstractTreeIndexBulkLoader) invIndexBulkLoader);
                 }
                 invIndexBulkLoader.end();
+                deletedKeysBTreeBulkLoader.end();
 
                 if (isEmptyComponent) {
                     cleanupArtifacts();

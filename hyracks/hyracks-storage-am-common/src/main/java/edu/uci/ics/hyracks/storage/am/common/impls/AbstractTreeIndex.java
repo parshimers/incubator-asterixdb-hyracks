@@ -58,7 +58,7 @@ public abstract class AbstractTreeIndex implements ITreeIndex {
     protected FileReference file;
     protected int fileId = -1;
 
-    private boolean isActivated = false;
+    protected boolean isActivated = false;
     private boolean wasActivated = false;
     private boolean fileOpen = false;
 
