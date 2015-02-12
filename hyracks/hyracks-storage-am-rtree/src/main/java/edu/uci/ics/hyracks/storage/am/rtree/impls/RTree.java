@@ -1006,8 +1006,11 @@ public class RTree extends AbstractTreeIndex {
                     prevPageId = n.pageId;
                 }
                 //set next guide MBR 
-                ((RTreeNSMFrame) interiorFrame).adjustMBR();
-                tupleWriter.writeTupleFields(((RTreeNSMFrame) interiorFrame).getMBRTuples(), 0, mbr, 0);
+                //if propagateBulk didnt have to do anything this may be un-necessary
+                if (nodeFrontiers.size() > 1) {
+                    ((RTreeNSMFrame) interiorFrame).adjustMBR();
+                    tupleWriter.writeTupleFields(((RTreeNSMFrame) interiorFrame).getMBRTuples(), 0, mbr, 0);
+                }
             }
             if (appendOnly) {
                 rootPage = nodeFrontiers.get(nodeFrontiers.size() - 1).pageId;
