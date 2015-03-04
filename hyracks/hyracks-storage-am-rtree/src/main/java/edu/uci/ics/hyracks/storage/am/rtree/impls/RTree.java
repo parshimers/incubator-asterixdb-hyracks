@@ -957,7 +957,11 @@ public class RTree extends AbstractTreeIndex {
 
         public void end() throws HyracksDataException {
             pagesToWrite.clear();
-            propagateBulk(1, true, pagesToWrite);
+            //if writing a trivial 1-page tree, don't try and propagate up
+            if (nodeFrontiers.size() > 1) {
+                propagateBulk(1, true, pagesToWrite);
+            }
+
             for (ICachedPage c : pagesToWrite) {
                 queue.put(c);
             }

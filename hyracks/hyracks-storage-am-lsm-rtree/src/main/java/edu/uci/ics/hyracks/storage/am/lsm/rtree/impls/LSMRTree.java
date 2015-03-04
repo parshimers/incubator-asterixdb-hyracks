@@ -250,12 +250,12 @@ public class LSMRTree extends AbstractLSMRTree {
         } finally {
             rtreeScanCursor.close();
         }
+        rTreeTupleSorter.sort();
+
+        rTreeBulkloader = diskRTree.createBulkLoader(1.0f, false, 0L, false, true);
+        cursor = rTreeTupleSorter;
+
         if (!isEmpty) {
-            rTreeTupleSorter.sort();
-
-            rTreeBulkloader = diskRTree.createBulkLoader(1.0f, false, 0L, false, true);
-            cursor = rTreeTupleSorter;
-
             try {
                 while (cursor.hasNext()) {
                     cursor.next();
@@ -265,8 +265,9 @@ public class LSMRTree extends AbstractLSMRTree {
             } finally {
                 cursor.close();
             }
-            rTreeBulkloader.end();
         }
+
+        rTreeBulkloader.end();
 
         ITreeIndexAccessor memBTreeAccessor = flushingComponent.getBTree().createAccessor(
                 NoOpOperationCallback.INSTANCE, NoOpOperationCallback.INSTANCE);

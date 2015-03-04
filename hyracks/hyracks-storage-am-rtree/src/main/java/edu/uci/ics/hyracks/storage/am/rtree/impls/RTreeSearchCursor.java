@@ -100,6 +100,8 @@ public class RTreeSearchCursor implements ITreeIndexCursor {
             int pageId = pathList.getLastPageId();
             long parentLsn = pathList.getLastPageLsn();
             pathList.moveLast();
+            if(pageId <0) throw new IllegalStateException();
+            if(fileId<0) throw new IllegalStateException();
             ICachedPage node = bufferCache.pin(BufferedFileHandle.getDiskPageId(fileId, pageId), false);
             node.acquireReadLatch();
             readLatched = true;
