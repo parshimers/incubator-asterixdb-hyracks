@@ -625,15 +625,14 @@ public class LSMBTree extends AbstractLSMIndex implements ITreeIndex {
         // The order of forcing the dirty page to be flushed is critical. The
         // bloom filter must be always done first.
         LSMBTreeDiskComponent component = (LSMBTreeDiskComponent) lsmComponent;
-        // Flush the bloom filter first.
+//        // Flush the bloom filter first.
         int fileId = component.getBloomFilter().getFileId();
         IBufferCache bufferCache = component.getBTree().getBufferCache();
         int startPage = 0;
         int maxPage = component.getBloomFilter().getNumPages();
         forceFlushDirtyPages(bufferCache, fileId, startPage, maxPage);
         forceFlushDirtyPages(component.getBTree());
-        //TODO:************************DEBUG**********************
-        //markAsValidInternal(component.getBTree());
+        markAsValidInternal(component.getBTree());
     }
 
     public class LSMBTreeBulkLoader implements IIndexBulkLoader {

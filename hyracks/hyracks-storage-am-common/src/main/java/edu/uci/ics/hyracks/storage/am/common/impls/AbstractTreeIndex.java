@@ -128,7 +128,6 @@ public abstract class AbstractTreeIndex implements ITreeIndex {
             fileOpen = true;
             //initEmptyTree();
         }
-        wasActivated = true;
     }
 
     private void initEmptyTree() throws HyracksDataException {
@@ -439,6 +438,7 @@ public abstract class AbstractTreeIndex implements ITreeIndex {
                             }
                         }
                     }
+                    freePageManager.close();
                 }
             } else {
                 freePageManager.close();

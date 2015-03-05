@@ -149,21 +149,6 @@ public abstract class AbstractLSMIndex implements ILSMIndexInternal {
     protected void markAsValidInternal(ITreeIndex treeIndex) throws HyracksDataException {
         int fileId = treeIndex.getFileId();
         IBufferCache bufferCache = treeIndex.getBufferCache();
-        /*
-        ITreeIndexMetaDataFrame metadataFrame = treeIndex.getFreePageManager().getMetaDataFrameFactory().createFrame();
-        // Mark the component as a valid component by flushing the metadata page to disk
-        int metadataPageId = treeIndex.getFreePageManager().getFirstMetadataPage();
-        ICachedPage metadataPage = bufferCache.pin(BufferedFileHandle.getDiskPageId(fileId, metadataPageId), false);
-        metadataPage.acquireWriteLatch();
-        try {
-            metadataFrame.setPage(metadataPage);
-            metadataFrame.setValid(true);
-        } finally {
-            metadataPage.releaseWriteLatch(true);
-            bufferCache.unpin(metadataPage);
-        }
-
-        */
         int metaPageId = treeIndex.getFreePageManager().closeGivePageId();
         // WARNING: flushing the metadata page should be done after releasing the write latch; otherwise, the page 
         // won't be flushed to disk because it won't be dirty until the write latch has been released.
@@ -176,7 +161,7 @@ public abstract class AbstractLSMIndex implements ILSMIndexInternal {
                 bufferCache.unpin(metadataPage);
             }
         }
-        // Force modified metadata page to disk.
+        // Force everything if it hasn't been.
         bufferCache.force(fileId, true);
     }
 

@@ -42,6 +42,7 @@ public class LinkedListFreePageManager implements IFreePageManager {
             throws HyracksDataException {
         this.bufferCache = bufferCache;
         this.metaDataFrameFactory = metaDataFrameFactory;
+        this.confiscatedMetaNode = null;
     }
 
     @Override
@@ -245,6 +246,9 @@ public class LinkedListFreePageManager implements IFreePageManager {
 
     @Override
     public void init(ITreeIndexMetaDataFrame metaFrame) throws HyracksDataException {
+        if (confiscatedMetaNode != null) { // don't init twice
+            return;
+        }
         ICachedPage metaNode = bufferCache.confiscatePage(BufferCache.INVALID_DPID);
         metaNode.acquireWriteLatch();
         try {

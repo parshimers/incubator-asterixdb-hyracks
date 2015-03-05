@@ -22,6 +22,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Executor;
@@ -47,7 +48,7 @@ public class BufferCache implements IBufferCacheInternal, ILifeCycleComponent {
     private static final int MIN_CLEANED_COUNT_DIFF = 3;
     private static final int PIN_MAX_WAIT_TIME = 50;
     public static final int INVALID_DPID = -1;
-    public static final boolean DEBUG = false;
+    public static final boolean DEBUG = true;
 
     private final int pageSize;
     private final int maxOpenFiles;
@@ -60,10 +61,10 @@ public class BufferCache implements IBufferCacheInternal, ILifeCycleComponent {
     private final Map<Integer, BufferedFileHandle> fileInfoMap;
     private final Set<Integer> virtualFiles;
     private final AsyncFIFOPageQueueManager fifoWriter;
-
-    private final Set<Long> DEBUG_writtenPages;
+    //DEBUG
     private CopyOnWriteArrayList<CachedPage> confiscatedPages = new CopyOnWriteArrayList<CachedPage>();
-
+    private ConcurrentHashMap<CachedPage, StackTraceElement[]> confiscatedPagesOwner = new ConcurrentHashMap<CachedPage, StackTraceElement[]>();
+    //!DEBUG
     public List<ICachedPageInternal> cachedPages = new ArrayList<ICachedPageInternal>();
 
     private boolean closed;
@@ -92,7 +93,6 @@ public class BufferCache implements IBufferCacheInternal, ILifeCycleComponent {
 
         fifoWriter = new AsyncFIFOPageQueueManager();
 
-        DEBUG_writtenPages = new HashSet<Long>();
     }
 
     @Override
@@ -634,7 +634,7 @@ public class BufferCache implements IBufferCacheInternal, ILifeCycleComponent {
                     if (shutdownStart) {
                         break;
                     }
-//                    System.out.println(dumpState());
+                    //                    System.out.println(dumpState());
                     pageCleanerPolicy.notifyCleanCycleFinish(this);
                 }
             } catch (Exception e) {
@@ -999,7 +999,10 @@ public class BufferCache implements IBufferCacheInternal, ILifeCycleComponent {
                 // pageReplacementStrategy.subtractPage();
                 // }
                 // cachedPages.remove(returnPage);
-                //confiscatedPages.add((CachedPage) returnPage);
+                if (DEBUG) {
+                    confiscatedPages.add((CachedPage) returnPage);
+                    confiscatedPagesOwner.put((CachedPage) returnPage, Thread.currentThread().getStackTrace());
+                }
                 // return returnPage;
                 // }
                 ((CachedPage) returnPage).virtual = true;
@@ -1050,6 +1053,9 @@ public class BufferCache implements IBufferCacheInternal, ILifeCycleComponent {
         } else {
             cPage.pinCount.set(0);
             cPage.invalidate();
+        }
+        if(DEBUG){
+            confiscatedPages.remove(cPage);
         }
         pageReplacementStrategy.adviseWontNeed(cPage);
 
