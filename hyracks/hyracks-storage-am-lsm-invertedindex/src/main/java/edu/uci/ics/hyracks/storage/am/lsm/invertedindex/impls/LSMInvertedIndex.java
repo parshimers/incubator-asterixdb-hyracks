@@ -22,6 +22,7 @@ import edu.uci.ics.hyracks.api.dataflow.value.IBinaryComparatorFactory;
 import edu.uci.ics.hyracks.api.dataflow.value.ITypeTraits;
 import edu.uci.ics.hyracks.api.exceptions.HyracksDataException;
 import edu.uci.ics.hyracks.api.io.FileReference;
+import edu.uci.ics.hyracks.data.std.primitive.IntegerPointable;
 import edu.uci.ics.hyracks.dataflow.common.data.accessors.ITupleReference;
 import edu.uci.ics.hyracks.dataflow.common.data.marshalling.IntegerSerializerDeserializer;
 import edu.uci.ics.hyracks.storage.am.bloomfilter.impls.BloomCalculations;
@@ -433,7 +434,7 @@ public class LSMInvertedIndex extends AbstractLSMIndex implements IInvertedIndex
             ArrayList<IIndexAccessor> deletedKeysBTreeAccessors, List<ILSMComponent> operationalComponents) {
         ICursorInitialState initState = null;
         PermutingTupleReference keysOnlyTuple = createKeysOnlyTupleReference();
-        MultiComparator keyCmp = MultiComparator.createIgnoreFieldLength(invListCmpFactories);
+        MultiComparator keyCmp = MultiComparator.create(invListCmpFactories);
 
         // TODO: This check is not pretty, but it does the job. Come up with something more OO in the future.
         // Distinguish between regular searches and range searches (mostly used in merges).
@@ -534,8 +535,7 @@ public class LSMInvertedIndex extends AbstractLSMIndex implements IInvertedIndex
             while (btreeCountingCursor.hasNext()) {
                 btreeCountingCursor.next();
                 ITupleReference countTuple = btreeCountingCursor.getTuple();
-                numBTreeTuples = IntegerSerializerDeserializer.getInt(countTuple.getFieldData(0),
-                        countTuple.getFieldStart(0));
+                numBTreeTuples = IntegerPointable.getInteger(countTuple.getFieldData(0), countTuple.getFieldStart(0));
             }
         } finally {
             btreeCountingCursor.close();
