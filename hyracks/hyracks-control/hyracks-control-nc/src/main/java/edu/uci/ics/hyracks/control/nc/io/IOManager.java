@@ -31,7 +31,7 @@ import edu.uci.ics.hyracks.api.io.IIOManager;
 import edu.uci.ics.hyracks.api.io.IODeviceHandle;
 
 public class IOManager implements IIOManager {
-	public static final boolean DEBUG = false;
+	public static final boolean DEBUG = true;
     private final List<IODeviceHandle> ioDevices;
 
     private Executor executor;
@@ -83,6 +83,9 @@ public class IOManager implements IIOManager {
 
     @Override
     public int syncWrite(IFileHandle fHandle, long offset, ByteBuffer data) throws HyracksDataException {
+        if(DEBUG){
+            System.out.println("Write: "+offset);
+        }
         try {
             int n = 0;
             int remaining = data.remaining();
