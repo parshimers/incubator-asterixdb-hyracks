@@ -50,21 +50,6 @@ public class LSMInvertedIndexFlushOperation implements ILSMIOOperation, Comparab
     }
 
     @Override
-    public Set<IODeviceHandle> getReadDevices() {
-        return Collections.emptySet();
-    }
-
-    @Override
-    public Set<IODeviceHandle> getWriteDevices() {
-        Set<IODeviceHandle> devs = new HashSet<IODeviceHandle>();
-        devs.add(dictBTreeFlushTarget.getDeviceHandle());
-        devs.add(deletedKeysBTreeFlushTarget.getDeviceHandle());
-        devs.add(bloomFilterFlushTarget.getDeviceHandle());
-        return devs;
-
-    }
-
-    @Override
     public Boolean call() throws HyracksDataException, IndexException {
         accessor.flush(this);
         return true;

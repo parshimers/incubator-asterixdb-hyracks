@@ -63,9 +63,8 @@ public class LSMIndexFileManagerTest {
         fileMapProvider = TestStorageManagerComponentHolder.getFileMapProvider(null);
         baseDir = ioManager.getIODevices().get(DEFAULT_IO_DEVICE_ID).getPath() + sep + "lsm_tree"
                 + simpleDateFormat.format(new Date()) + sep;
-        File f = new File(baseDir);
-        f.mkdirs();
-        file = new FileReference(f);
+        file = new FileReference(baseDir);
+        ioManager.mkdirs(file);
     }
 
     @After
@@ -75,7 +74,7 @@ public class LSMIndexFileManagerTest {
     }
 
     public void sortOrderTest(boolean testFlushFileName) throws InterruptedException, HyracksDataException {
-        ILSMIndexFileManager fileManager = new DummyLSMIndexFileManager(fileMapProvider, file, new DummyTreeFactory());
+        ILSMIndexFileManager fileManager = new DummyLSMIndexFileManager(fileMapProvider, file, new DummyTreeFactory(), ioManager);
         LinkedList<String> fileNames = new LinkedList<String>();
 
         int numFileNames = 100;
@@ -115,7 +114,7 @@ public class LSMIndexFileManagerTest {
     }
 
     public void cleanInvalidFilesTest(IOManager ioManager) throws InterruptedException, IOException, IndexException {
-        ILSMIndexFileManager fileManager = new DummyLSMIndexFileManager(fileMapProvider, file, new DummyTreeFactory());
+        ILSMIndexFileManager fileManager = new DummyLSMIndexFileManager(fileMapProvider, file, new DummyTreeFactory(), ioManager);
         fileManager.createDirs();
 
         List<FileReference> flushFiles = new ArrayList<FileReference>();

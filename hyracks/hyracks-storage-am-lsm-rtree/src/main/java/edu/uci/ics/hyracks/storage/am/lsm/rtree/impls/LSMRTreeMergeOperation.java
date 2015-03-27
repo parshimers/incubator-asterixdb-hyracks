@@ -51,32 +51,7 @@ public class LSMRTreeMergeOperation implements ILSMIOOperation {
         this.callback = callback;
         this.indexIdentifier = indexIdentifier;
     }
-
-    @Override
-    public Set<IODeviceHandle> getReadDevices() {
-        Set<IODeviceHandle> devs = new HashSet<IODeviceHandle>();
-        for (ILSMComponent o : mergingComponents) {
-            LSMRTreeDiskComponent component = (LSMRTreeDiskComponent) o;
-            devs.add(component.getRTree().getFileReference().getDeviceHandle());
-            if (component.getBTree() != null) {
-                devs.add(component.getBTree().getFileReference().getDeviceHandle());
-                devs.add(component.getBloomFilter().getFileReference().getDeviceHandle());
-            }
-        }
-        return devs;
-    }
-
-    @Override
-    public Set<IODeviceHandle> getWriteDevices() {
-        Set<IODeviceHandle> devs = new HashSet<IODeviceHandle>();
-        devs.add(rtreeMergeTarget.getDeviceHandle());
-        if (btreeMergeTarget != null) {
-            devs.add(btreeMergeTarget.getDeviceHandle());
-            devs.add(bloomFilterMergeTarget.getDeviceHandle());
-        }
-        return devs;
-    }
-
+    
     @Override
     public Boolean call() throws HyracksDataException, IndexException {
         accessor.merge(this);

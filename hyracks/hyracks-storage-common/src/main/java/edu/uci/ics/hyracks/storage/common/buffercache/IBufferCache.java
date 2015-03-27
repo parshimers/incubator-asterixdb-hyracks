@@ -19,6 +19,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import edu.uci.ics.hyracks.api.exceptions.HyracksDataException;
 import edu.uci.ics.hyracks.api.io.FileReference;
 import edu.uci.ics.hyracks.api.io.IFileHandle;
+import edu.uci.ics.hyracks.api.io.IIOManager;
 
 public interface IBufferCache {
     public void createFile(FileReference fileRef) throws HyracksDataException;
@@ -76,5 +77,7 @@ public interface IBufferCache {
     void copyPage(ICachedPage src, ICachedPage dst);
 
     void setPageDiskId(ICachedPage page, long dpid);
+    
+    public IIOManager getIOManager();
 
 }

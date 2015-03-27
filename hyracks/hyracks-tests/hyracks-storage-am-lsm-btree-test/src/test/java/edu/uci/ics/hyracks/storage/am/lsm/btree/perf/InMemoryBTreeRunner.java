@@ -57,13 +57,13 @@ public class InMemoryBTreeRunner extends Thread implements IExperimentRunner {
             IBinaryComparatorFactory[] cmpFactories) throws HyracksDataException, BTreeException {
         this.numBatches = numBatches;
         fileName = tmpDir + sep + simpleDateFormat.format(new Date());
-        file = new FileReference(new File(fileName));
+        file = new FileReference(fileName);
         init(pageSize, numPages, typeTraits, cmpFactories);
     }
 
     protected void init(int pageSize, int numPages, ITypeTraits[] typeTraits, IBinaryComparatorFactory[] cmpFactories)
             throws HyracksDataException, BTreeException {
-        bufferCache = new VirtualBufferCache(new HeapBufferAllocator(), pageSize, numPages);
+        bufferCache = new VirtualBufferCache(new HeapBufferAllocator(), pageSize, numPages, null);
         TypeAwareTupleWriterFactory tupleWriterFactory = new TypeAwareTupleWriterFactory(typeTraits);
         ITreeIndexFrameFactory leafFrameFactory = new BTreeNSMLeafFrameFactory(tupleWriterFactory);
         ITreeIndexFrameFactory interiorFrameFactory = new BTreeNSMInteriorFrameFactory(tupleWriterFactory);
