@@ -214,7 +214,7 @@ public class HadoopWriteOperatorDescriptor extends AbstractFileWriteOperatorDesc
             FileSplit[] outputFileSplits = new FileSplit[numOutputters];
             for (int i = 0; i < numOutputters; i++) {
                 String outputPath = "/tmp/" + System.currentTimeMillis() + i;
-                outputFileSplits[i] = new FileSplit("localhost", new FileReference(new File(outputPath)));
+                outputFileSplits[i] = new FileSplit("localhost", new FileReference(outputPath));
             }
             return outputFileSplits;
         } else {

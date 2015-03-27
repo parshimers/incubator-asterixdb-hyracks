@@ -30,6 +30,7 @@ import edu.uci.ics.hyracks.storage.common.buffercache.HeapBufferAllocator;
 import edu.uci.ics.hyracks.storage.common.buffercache.ICacheMemoryAllocator;
 import edu.uci.ics.hyracks.storage.common.buffercache.ICachedPage;
 import edu.uci.ics.hyracks.storage.common.file.BufferedFileHandle;
+import edu.uci.ics.hyracks.test.support.TestStorageManagerComponentHolder;
 
 public class VirtualBufferCacheTest {
     private static final long SEED = 123456789L;
@@ -76,7 +77,7 @@ public class VirtualBufferCacheTest {
     @Test
     public void test01() throws Exception {
         ICacheMemoryAllocator allocator = new HeapBufferAllocator();
-        vbc = new VirtualBufferCache(allocator, PAGE_SIZE, NUM_PAGES);
+        vbc = new VirtualBufferCache(allocator, PAGE_SIZE, NUM_PAGES, TestStorageManagerComponentHolder.getIOManager());
         vbc.open();
         createFiles();
 
@@ -106,7 +107,7 @@ public class VirtualBufferCacheTest {
         for (int i = 0; i < NUM_FILES; i++) {
             FileState f = fileStates[i];
             String fName = String.format("f%d", i);
-            f.fileRef = new FileReference(new File(fName));
+            f.fileRef = new FileReference(fName);
             vbc.createFile(f.fileRef);
             f.fileId = vbc.getFileMapProvider().lookupFileId(f.fileRef);
         }

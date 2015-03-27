@@ -53,9 +53,9 @@ public abstract class IndexDataflowHelper implements IIndexDataflowHelper {
         this.resourceIdFactory = opDesc.getStorageManager().getResourceIdFactory(ctx);
         this.partition = partition;
         this.ioDeviceId = opDesc.getFileSplitProvider().getFileSplits()[partition].getIODeviceId();
-        this.file = new FileReference(new File(IndexFileNameUtil.prepareFileName(opDesc.getFileSplitProvider()
-                .getFileSplits()[partition].getLocalFile().getFile().getPath(), ioDeviceId)));
-        this.durable = durable;
+        this.file = new FileReference(IndexFileNameUtil.prepareFileName(opDesc.getFileSplitProvider()
+                .getFileSplits()[partition].getLocalFile().getFile().getPath(), ioDeviceId));
+	this.durable = durable;
     }
 
     protected abstract IIndex createIndexInstance() throws HyracksDataException;

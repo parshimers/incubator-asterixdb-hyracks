@@ -21,6 +21,7 @@ import java.util.List;
 import edu.uci.ics.hyracks.api.dataflow.value.IBinaryComparatorFactory;
 import edu.uci.ics.hyracks.api.dataflow.value.ITypeTraits;
 import edu.uci.ics.hyracks.api.io.FileReference;
+import edu.uci.ics.hyracks.api.io.FileReference.FileReferenceType;
 import edu.uci.ics.hyracks.storage.am.bloomfilter.impls.BloomFilterFactory;
 import edu.uci.ics.hyracks.storage.am.btree.exceptions.BTreeException;
 import edu.uci.ics.hyracks.storage.am.btree.frames.BTreeLeafFrameType;
@@ -100,7 +101,7 @@ public class InvertedIndexUtils {
     }
 
     public static FileReference getBTreeFile(FileReference invListsFile) {
-        return new FileReference(new File(invListsFile.getFile().getPath() + "_btree"));
+        return new FileReference(invListsFile.getFile().getPath() + "_btree");
     }
 
     public static BTreeFactory createDeletedKeysBTreeFactory(IFileMapProvider diskFileMapProvider,
@@ -139,9 +140,9 @@ public class InvertedIndexUtils {
         BloomFilterFactory bloomFilterFactory = new BloomFilterFactory(diskBufferCache, diskFileMapProvider,
                 bloomFilterKeyFields);
 
-        FileReference onDiskDirFileRef = new FileReference(new File(onDiskDir));
+        FileReference onDiskDirFileRef = new FileReference(onDiskDir, FileReferenceType.DISTRIBUTED_IF_AVAIL);
         LSMInvertedIndexFileManager fileManager = new LSMInvertedIndexFileManager(diskFileMapProvider,
-                onDiskDirFileRef, deletedKeysBTreeFactory);
+                onDiskDirFileRef, deletedKeysBTreeFactory, diskBufferCache.getIOManager());
 
         IInvertedListBuilderFactory invListBuilderFactory = new FixedSizeElementInvertedListBuilderFactory(
                 invListTypeTraits);
@@ -189,9 +190,9 @@ public class InvertedIndexUtils {
         BloomFilterFactory bloomFilterFactory = new BloomFilterFactory(diskBufferCache, diskFileMapProvider,
                 bloomFilterKeyFields);
 
-        FileReference onDiskDirFileRef = new FileReference(new File(onDiskDir));
+        FileReference onDiskDirFileRef = new FileReference(onDiskDir, FileReferenceType.DISTRIBUTED_IF_AVAIL);
         LSMInvertedIndexFileManager fileManager = new LSMInvertedIndexFileManager(diskFileMapProvider,
-                onDiskDirFileRef, deletedKeysBTreeFactory);
+                onDiskDirFileRef, deletedKeysBTreeFactory, diskBufferCache.getIOManager());
 
         IInvertedListBuilderFactory invListBuilderFactory = new FixedSizeElementInvertedListBuilderFactory(
                 invListTypeTraits);

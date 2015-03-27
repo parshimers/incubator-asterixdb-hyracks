@@ -185,7 +185,7 @@ public class BloomFilter {
             throw new HyracksDataException("Failed to destroy the bloom filter since it is activated.");
         }
 
-        file.delete();
+        bufferCache.getIOManager().delete(file);
         if (fileId == -1) {
             return;
         }

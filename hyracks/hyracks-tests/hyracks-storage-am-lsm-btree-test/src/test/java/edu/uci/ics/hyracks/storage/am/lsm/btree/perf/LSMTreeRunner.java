@@ -89,7 +89,7 @@ public class LSMTreeRunner implements IExperimentRunner {
         this.onDiskNumPages = onDiskNumPages;
 
         onDiskDir = classDir + sep + simpleDateFormat.format(new Date()) + sep;
-        file = new FileReference(new File(onDiskDir));
+        file = new FileReference(onDiskDir);
         ctx = TestUtils.create(HYRACKS_FRAME_SIZE);
 
         TestStorageManagerComponentHolder.init(this.onDiskPageSize, this.onDiskNumPages, MAX_OPEN_FILES);
@@ -101,7 +101,7 @@ public class LSMTreeRunner implements IExperimentRunner {
         List<IVirtualBufferCache> virtualBufferCaches = new ArrayList<IVirtualBufferCache>();
         for (int i = 0; i < 2; i++) {
             IVirtualBufferCache virtualBufferCache = new VirtualBufferCache(new HeapBufferAllocator(), inMemPageSize,
-                    inMemNumPages / 2);
+                    inMemNumPages / 2, ioManager);
             virtualBufferCaches.add(virtualBufferCache);
         }
 

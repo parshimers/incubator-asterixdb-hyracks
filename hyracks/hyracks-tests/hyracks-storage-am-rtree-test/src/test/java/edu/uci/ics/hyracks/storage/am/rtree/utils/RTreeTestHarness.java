@@ -66,7 +66,7 @@ public class RTreeTestHarness {
 
     public void setUp() throws HyracksDataException {
         fileName = tmpDir + sep + simpleDateFormat.format(new Date());
-        file = new FileReference(new File(fileName));
+        file = new FileReference(fileName);
         ctx = TestUtils.create(getHyracksFrameSize());
         TestStorageManagerComponentHolder.init(pageSize, numPages, maxOpenFiles);
         bufferCache = TestStorageManagerComponentHolder.getBufferCache(ctx);

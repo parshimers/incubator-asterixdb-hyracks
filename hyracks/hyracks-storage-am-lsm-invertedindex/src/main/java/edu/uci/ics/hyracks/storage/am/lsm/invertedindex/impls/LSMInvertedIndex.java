@@ -24,6 +24,7 @@ import edu.uci.ics.hyracks.api.exceptions.HyracksDataException;
 import edu.uci.ics.hyracks.api.io.FileReference;
 import edu.uci.ics.hyracks.data.std.primitive.IntegerPointable;
 import edu.uci.ics.hyracks.dataflow.common.data.accessors.ITupleReference;
+import edu.uci.ics.hyracks.dataflow.common.data.marshalling.IntegerSerializerDeserializer;
 import edu.uci.ics.hyracks.storage.am.bloomfilter.impls.BloomCalculations;
 import edu.uci.ics.hyracks.storage.am.bloomfilter.impls.BloomFilterFactory;
 import edu.uci.ics.hyracks.storage.am.bloomfilter.impls.BloomFilterSpecification;
@@ -35,6 +36,7 @@ import edu.uci.ics.hyracks.storage.am.btree.util.BTreeUtils;
 import edu.uci.ics.hyracks.storage.am.common.api.*;
 import edu.uci.ics.hyracks.storage.am.common.exceptions.TreeIndexDuplicateKeyException;
 import edu.uci.ics.hyracks.storage.am.common.impls.AbstractSearchPredicate;
+import edu.uci.ics.hyracks.storage.am.common.impls.AbstractTreeIndex.AbstractTreeIndexBulkLoader;
 import edu.uci.ics.hyracks.storage.am.common.impls.NoOpOperationCallback;
 import edu.uci.ics.hyracks.storage.am.common.ophelpers.IndexOperation;
 import edu.uci.ics.hyracks.storage.am.common.ophelpers.MultiComparator;
@@ -123,8 +125,8 @@ public class LSMInvertedIndex extends AbstractLSMIndex implements IInvertedIndex
                     new VirtualMetaDataManager(virtualBufferCache.getNumPages()), i);
             BTree deleteKeysBTree = BTreeUtils.createBTree(virtualBufferCache, new VirtualMetaDataManager(
                     virtualBufferCache.getNumPages()), ((IVirtualBufferCache) virtualBufferCache).getFileMapProvider(),
-                    invListTypeTraits, invListCmpFactories, BTreeLeafFrameType.REGULAR_NSM, new FileReference(new File(
-                            fileManager.getBaseDir() + "_virtual_del_" + i)));
+                    invListTypeTraits, invListCmpFactories, BTreeLeafFrameType.REGULAR_NSM, new FileReference(
+                            fileManager.getBaseDir() + "_virtual_del_" + i));
             LSMInvertedIndexMemoryComponent mutableComponent = new LSMInvertedIndexMemoryComponent(memInvIndex,
                     deleteKeysBTree, virtualBufferCache, i == 0 ? true : false, filterFactory == null ? null
                             : filterFactory.createLSMComponentFilter());
@@ -510,8 +512,8 @@ public class LSMInvertedIndex extends AbstractLSMIndex implements IInvertedIndex
             filterTuples.add(flushingComponent.getLSMComponentFilter().getMaxTuple());
             filterManager.updateFilterInfo(component.getLSMComponentFilter(), filterTuples);
             filterManager.writeFilterInfo(component.getLSMComponentFilter(),
-                    ((OnDiskInvertedIndex) component.getInvIndex()).getBTree()
-            );
+                    ((OnDiskInvertedIndex) component.getInvIndex()).getBTree(),
+                    (AbstractTreeIndexBulkLoader) invIndexBulkLoader);
         }
         invIndexBulkLoader.end();
 
@@ -801,7 +803,7 @@ public class LSMInvertedIndex extends AbstractLSMIndex implements IInvertedIndex
             IVirtualMetaDataManager virtualFreePageManager, int id) throws IndexException {
         return InvertedIndexUtils.createInMemoryBTreeInvertedindex(virtualBufferCache, virtualFreePageManager,
                 invListTypeTraits, invListCmpFactories, tokenTypeTraits, tokenCmpFactories, tokenizerFactory,
-                new FileReference(new File(fileManager.getBaseDir() + "_virtual_vocab_" + id)));
+                new FileReference(fileManager.getBaseDir() + "_virtual_vocab_" + id));
     }
 
     protected LSMInvertedIndexDiskComponent createDiskInvIndexComponent(ILSMComponentFactory factory,

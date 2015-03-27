@@ -25,6 +25,7 @@ import java.util.List;
 
 import edu.uci.ics.hyracks.api.exceptions.HyracksDataException;
 import edu.uci.ics.hyracks.api.io.FileReference;
+import edu.uci.ics.hyracks.api.io.IIOManager;
 import edu.uci.ics.hyracks.storage.am.common.api.IndexException;
 import edu.uci.ics.hyracks.storage.am.lsm.common.impls.AbstractLSMIndexFileManager;
 import edu.uci.ics.hyracks.storage.am.lsm.common.impls.BTreeFactory;
@@ -62,8 +63,8 @@ public class LSMInvertedIndexFileManager extends AbstractLSMIndexFileManager imp
         }
     };
 
-    public LSMInvertedIndexFileManager(IFileMapProvider fileMapProvider, FileReference file, BTreeFactory btreeFactory) {
-        super(fileMapProvider, file, null);
+    public LSMInvertedIndexFileManager(IFileMapProvider fileMapProvider, FileReference file, BTreeFactory btreeFactory, IIOManager ioManager) {
+        super(fileMapProvider, file, null, ioManager);
         this.btreeFactory = btreeFactory;
     }
 

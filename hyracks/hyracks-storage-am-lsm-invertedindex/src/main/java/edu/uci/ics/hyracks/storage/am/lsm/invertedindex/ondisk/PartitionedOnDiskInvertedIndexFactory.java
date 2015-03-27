@@ -40,7 +40,7 @@ public class PartitionedOnDiskInvertedIndexFactory extends OnDiskInvertedIndexFa
     @Override
     public IInvertedIndex createIndexInstance(FileReference dictBTreeFile) throws IndexException {
         String invListsFilePath = fileNameMapper.getInvListsFilePath(dictBTreeFile.getFile().getPath());
-        FileReference invListsFile = new FileReference(new File(invListsFilePath));
+        FileReference invListsFile = new FileReference(invListsFilePath);
         IInvertedListBuilder invListBuilder = invListBuilderFactory.create();
         return new PartitionedOnDiskInvertedIndex(bufferCache, fileMapProvider, invListBuilder, invListTypeTraits,
                 invListCmpFactories, tokenTypeTraits, tokenCmpFactories, dictBTreeFile, invListsFile);

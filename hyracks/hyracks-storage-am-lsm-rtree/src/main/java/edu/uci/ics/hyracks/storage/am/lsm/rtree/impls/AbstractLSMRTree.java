@@ -88,14 +88,16 @@ public abstract class AbstractLSMRTree extends AbstractLSMIndex implements ITree
                 filterManager, filterFields, durable);
         int i = 0;
         for (IVirtualBufferCache virtualBufferCache : virtualBufferCaches) {
-            RTree memRTree = new RTree(virtualBufferCache, virtualBufferCache.getFileMapProvider(),
-                    new VirtualMetaDataManager(virtualBufferCache.getNumPages()), rtreeInteriorFrameFactory,
-                    rtreeLeafFrameFactory, rtreeCmpFactories, fieldCount, new FileReference(new File(
-                            fileManager.getBaseDir() + "_virtual_r_" + i)));
-            BTree memBTree = new BTree(virtualBufferCache, virtualBufferCache.getFileMapProvider(),
-                    new VirtualMetaDataManager(virtualBufferCache.getNumPages()), btreeInteriorFrameFactory,
-                    btreeLeafFrameFactory, btreeCmpFactories, btreeCmpFactories.length, new FileReference(new File(
-                            fileManager.getBaseDir() + "_virtual_b_" + i)));
+            RTree memRTree = new RTree(virtualBufferCache,
+                    (virtualBufferCache).getFileMapProvider(), new VirtualFreePageManager(
+                            virtualBufferCache.getNumPages()), rtreeInteriorFrameFactory, rtreeLeafFrameFactory,
+                    rtreeCmpFactories, fieldCount, new FileReference(fileManager.getBaseDir() + "_virtual_r_"
+                            + i));
+            BTree memBTree = new BTree(virtualBufferCache,
+                    (virtualBufferCache).getFileMapProvider(), new VirtualFreePageManager(
+                            virtualBufferCache.getNumPages()), btreeInteriorFrameFactory, btreeLeafFrameFactory,
+                    btreeCmpFactories, btreeCmpFactories.length, new FileReference(fileManager.getBaseDir()
+                            + "_virtual_b_" + i));
             LSMRTreeMemoryComponent mutableComponent = new LSMRTreeMemoryComponent(memRTree, memBTree,
                     virtualBufferCache, i == 0 ? true : false, filterFactory == null ? null
                             : filterFactory.createLSMComponentFilter());
@@ -126,9 +128,9 @@ public abstract class AbstractLSMRTree extends AbstractLSMIndex implements ITree
             IBinaryComparatorFactory[] rtreeCmpFactories, IBinaryComparatorFactory[] btreeCmpFactories,
             ILinearizeComparatorFactory linearizer, int[] comparatorFields, IBinaryComparatorFactory[] linearizerArray,
             double bloomFilterFalsePositiveRate, ILSMMergePolicy mergePolicy, ILSMOperationTracker opTracker,
-            ILSMIOOperationScheduler ioScheduler, ILSMIOOperationCallback ioOpCallback, boolean durable) {
+            ILSMIOOperationScheduler ioScheduler, ILSMIOOperationCallback ioOpCallback) {
         super(componentFactory.getBufferCache(), fileManager, diskFileMapProvider, bloomFilterFalsePositiveRate,
-                mergePolicy, opTracker, ioScheduler, ioOpCallback, durable);
+                mergePolicy, opTracker, ioScheduler, ioOpCallback);
         this.rtreeInteriorFrameFactory = rtreeInteriorFrameFactory;
         this.rtreeLeafFrameFactory = rtreeLeafFrameFactory;
         this.btreeInteriorFrameFactory = btreeInteriorFrameFactory;
