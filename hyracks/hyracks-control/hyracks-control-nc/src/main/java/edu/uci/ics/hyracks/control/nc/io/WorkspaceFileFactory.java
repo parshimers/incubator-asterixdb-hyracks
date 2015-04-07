@@ -35,7 +35,7 @@ public final class WorkspaceFileFactory implements IWorkspaceFileFactory {
         registry.registerDeallocatable(new IDeallocatable() {
             @Override
             public void deallocate() {
-                fRef.delete();
+                ioManager.delete(fRef);
             }
         });
         return fRef;

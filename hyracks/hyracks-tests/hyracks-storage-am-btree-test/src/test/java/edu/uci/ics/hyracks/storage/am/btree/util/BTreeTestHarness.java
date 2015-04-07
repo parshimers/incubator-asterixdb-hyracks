@@ -23,6 +23,7 @@ import java.util.Random;
 import edu.uci.ics.hyracks.api.context.IHyracksTaskContext;
 import edu.uci.ics.hyracks.api.exceptions.HyracksDataException;
 import edu.uci.ics.hyracks.api.io.FileReference;
+import edu.uci.ics.hyracks.api.io.FileReference.FileReferenceType;
 import edu.uci.ics.hyracks.storage.am.btree.frames.BTreeLeafFrameType;
 import edu.uci.ics.hyracks.storage.am.config.AccessMethodTestsConfig;
 import edu.uci.ics.hyracks.storage.common.buffercache.IBufferCache;
@@ -72,13 +73,13 @@ public class BTreeTestHarness {
         TestStorageManagerComponentHolder.init(pageSize, numPages, maxOpenFiles);
         bufferCache = TestStorageManagerComponentHolder.getBufferCache(ctx);
         fileMapProvider = TestStorageManagerComponentHolder.getFileMapProvider(ctx);
-        file = new FileReference(new File(fileName));
+        file = new FileReference(fileName, FileReferenceType.DISTRIBUTED_IF_AVAIL);
         rnd.setSeed(RANDOM_SEED);
     }
 
     public void tearDown() throws HyracksDataException {
         bufferCache.close();
-        file.delete();
+        bufferCache.getIOManager().delete(file);
     }
 
     public IHyracksTaskContext getHyracksTaskContext() {

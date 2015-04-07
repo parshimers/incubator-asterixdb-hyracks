@@ -106,9 +106,9 @@ public abstract class AbstractfWordInvertedIndexTest extends AbstractIntegration
     protected final String btreeFileName = "invIndexBtree" + dateString;
 
     protected IFileSplitProvider primaryFileSplitProvider = new ConstantFileSplitProvider(
-            new FileSplit[] { new FileSplit(NC1_ID, new FileReference(new File(primaryFileName))) });
+            new FileSplit[] { new FileSplit(NC1_ID, new FileReference(primaryFileName)) });
     protected IFileSplitProvider btreeFileSplitProvider = new ConstantFileSplitProvider(
-            new FileSplit[] { new FileSplit(NC1_ID, new FileReference(new File(btreeFileName))) });
+            new FileSplit[] { new FileSplit(NC1_ID, new FileReference(btreeFileName)) });
 
     // Primary BTree index.
     protected int primaryFieldCount = 2;
@@ -194,8 +194,8 @@ public abstract class AbstractfWordInvertedIndexTest extends AbstractIntegration
     }
 
     private IOperatorDescriptor createFileScanOp(JobSpecification spec) {
-        FileSplit[] dblpTitleFileSplits = new FileSplit[] { new FileSplit(NC1_ID, new FileReference(new File("data"
-                + File.separator + "cleanednumbereddblptitles.txt"))) };
+        FileSplit[] dblpTitleFileSplits = new FileSplit[] { new FileSplit(NC1_ID, new FileReference("data"
+                + File.separator + "cleanednumbereddblptitles.txt")) };
         IFileSplitProvider dblpTitleSplitProvider = new ConstantFileSplitProvider(dblpTitleFileSplits);
         RecordDescriptor dblpTitleRecDesc = new RecordDescriptor(new ISerializerDeserializer[] {
                 IntegerSerializerDeserializer.INSTANCE, UTF8StringSerializerDeserializer.INSTANCE });

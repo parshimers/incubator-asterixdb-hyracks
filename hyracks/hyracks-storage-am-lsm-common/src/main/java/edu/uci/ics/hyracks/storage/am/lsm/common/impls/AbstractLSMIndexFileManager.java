@@ -31,6 +31,8 @@ import java.util.List;
 
 import edu.uci.ics.hyracks.api.exceptions.HyracksDataException;
 import edu.uci.ics.hyracks.api.io.FileReference;
+import edu.uci.ics.hyracks.api.io.FileReference.FileReferenceType;
+import edu.uci.ics.hyracks.api.io.IIOManager;
 import edu.uci.ics.hyracks.storage.am.common.api.ITreeIndex;
 import edu.uci.ics.hyracks.storage.am.common.api.ITreeIndexMetaDataFrame;
 import edu.uci.ics.hyracks.storage.am.common.api.IndexException;
@@ -55,15 +57,17 @@ public abstract class AbstractLSMIndexFileManager implements ILSMIndexFileManage
     protected final Comparator<ComparableFileName> recencyCmp = new RecencyComparator();
 
     protected final TreeIndexFactory<? extends ITreeIndex> treeFactory;
+    protected final IIOManager ioManager;
 
     public AbstractLSMIndexFileManager(IFileMapProvider fileMapProvider, FileReference file,
-            TreeIndexFactory<? extends ITreeIndex> treeFactory) {
-        this.baseDir = file.getFile().getPath();
+            TreeIndexFactory<? extends ITreeIndex> treeFactory, IIOManager ioManager) {
+        this.baseDir = file.getPath();
         if (!baseDir.endsWith(System.getProperty("file.separator"))) {
             baseDir += System.getProperty("file.separator");
         }
         this.fileMapProvider = fileMapProvider;
         this.treeFactory = treeFactory;
+        this.ioManager = ioManager;
     }
 
     private static FilenameFilter fileNameFilter = new FilenameFilter() {
@@ -97,15 +101,13 @@ public abstract class AbstractLSMIndexFileManager implements ILSMIndexFileManage
     protected void cleanupAndGetValidFilesInternal(FilenameFilter filter,
             TreeIndexFactory<? extends ITreeIndex> treeFactory, ArrayList<ComparableFileName> allFiles)
             throws HyracksDataException, IndexException {
-        File dir = new File(baseDir);
-        String[] files = dir.list(filter);
+        String[] files = ioManager.listFiles(new FileReference(baseDir, FileReferenceType.DISTRIBUTED_IF_AVAIL), transactionFileNameFilter);
         for (String fileName : files) {
-            File file = new File(dir.getPath() + File.separator + fileName);
-            FileReference fileRef = new FileReference(file);
+            FileReference fileRef = new FileReference(baseDir + File.separator + fileName, FileReferenceType.DISTRIBUTED_IF_AVAIL);
             if (treeFactory == null || isValidTreeIndex(treeFactory.createIndexInstance(fileRef))) {
                 allFiles.add(new ComparableFileName(fileRef));
             } else {
-                file.delete();
+                ioManager.delete(fileRef);
             }
         }
     }
@@ -129,23 +131,12 @@ public abstract class AbstractLSMIndexFileManager implements ILSMIndexFileManage
 
     @Override
     public void createDirs() {
-        File f = new File(baseDir);
-        f.mkdirs();
+        ioManager.mkdirs(new FileReference(baseDir, FileReferenceType.DISTRIBUTED_IF_AVAIL));
     }
 
     @Override
     public void deleteDirs() {
-        File f = new File(baseDir);
-        delete(f);
-    }
-
-    private void delete(File f) {
-        if (f.isDirectory()) {
-            for (File c : f.listFiles()) {
-                delete(c);
-            }
-        }
-        f.delete();
+        ioManager.delete(new FileReference(baseDir, FileReferenceType.DISTRIBUTED_IF_AVAIL));
     }
 
     protected static FilenameFilter bloomFilterFilter = new FilenameFilter() {
@@ -155,7 +146,7 @@ public abstract class AbstractLSMIndexFileManager implements ILSMIndexFileManage
     };
 
     protected FileReference createFlushFile(String relFlushFileName) {
-        return new FileReference(new File(relFlushFileName));
+        return new FileReference(relFlushFileName, FileReferenceType.DISTRIBUTED_IF_AVAIL);
     }
 
     protected FileReference createMergeFile(String relMergeFileName) {
@@ -218,7 +209,7 @@ public abstract class AbstractLSMIndexFileManager implements ILSMIndexFileManage
                 // The current file is completely contained in the interval of the 
                 // last file. Thus the last file must contain at least as much information 
                 // as the current file, so delete the current file.
-                current.fileRef.delete();
+                ioManager.delete(current.fileRef);
             } else {
                 // This scenario should not be possible since timestamps are monotonically increasing.
                 throw new HyracksDataException("Found LSM files with overlapping timestamp intervals, "
@@ -379,9 +370,8 @@ public abstract class AbstractLSMIndexFileManager implements ILSMIndexFileManage
         };
     }
 
-    protected FilenameFilter getTransactionFileFilter(boolean inclusive) {
-        File dir = new File(baseDir);
-        String[] files = dir.list(transactionFileNameFilter);
+    protected FilenameFilter getTransactionFileFilter(boolean inclusive) throws HyracksDataException {
+        String[] files = ioManager.listFiles(new FileReference(baseDir, FileReferenceType.DISTRIBUTED_IF_AVAIL), transactionFileNameFilter);
         if (files.length == 0) {
             return dummyFilter;
         } else {

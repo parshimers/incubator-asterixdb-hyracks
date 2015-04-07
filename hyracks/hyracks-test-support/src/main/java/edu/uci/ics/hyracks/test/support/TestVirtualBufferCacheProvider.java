@@ -39,7 +39,7 @@ public class TestVirtualBufferCacheProvider implements IVirtualBufferCacheProvid
     public List<IVirtualBufferCache> getVirtualBufferCaches(IHyracksTaskContext ctx) {
         List<IVirtualBufferCache> vbcs = new ArrayList<IVirtualBufferCache>();
         for (int i = 0; i < 2; i++) {
-            IVirtualBufferCache vbc = new VirtualBufferCache(new HeapBufferAllocator(), pageSize, numPages / 2);
+            IVirtualBufferCache vbc = new VirtualBufferCache(new HeapBufferAllocator(), pageSize, numPages / 2, ctx.getIOManager());
             vbcs.add(vbc);
         }
         return vbcs;

@@ -74,7 +74,7 @@ public class MaterializingPipelinedPartition implements IFrameWriter, IPartition
     @Override
     public void deallocate() {
         if (fRef != null) {
-            fRef.delete();
+            ioManager.delete(fRef);
         }
     }
 

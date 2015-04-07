@@ -69,13 +69,13 @@ public class BloomFilterTestHarness {
         TestStorageManagerComponentHolder.init(pageSize, numPages, maxOpenFiles);
         bufferCache = TestStorageManagerComponentHolder.getBufferCache(ctx);
         fileMapProvider = TestStorageManagerComponentHolder.getFileMapProvider(ctx);
-        file = new FileReference(new File(fileName));
+        file = new FileReference(fileName);
         rnd.setSeed(RANDOM_SEED);
     }
 
     public void tearDown() throws HyracksDataException {
         bufferCache.close();
-        file.delete();
+        bufferCache.getIOManager().delete(file);
     }
 
     public IHyracksTaskContext getHyracksTaskContext() {

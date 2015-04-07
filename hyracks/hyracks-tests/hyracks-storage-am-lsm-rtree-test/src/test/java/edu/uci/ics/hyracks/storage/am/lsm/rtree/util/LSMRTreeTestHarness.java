@@ -98,7 +98,7 @@ public class LSMRTreeTestHarness {
         ioDeviceId = 0;
         onDiskDir = ioManager.getIODevices().get(ioDeviceId).getPath() + sep + "lsm_rtree_"
                 + simpleDateFormat.format(new Date()) + sep;
-        file = new FileReference(new File(onDiskDir));
+        file = new FileReference(onDiskDir);
         ctx = TestUtils.create(getHyracksFrameSize());
         TestStorageManagerComponentHolder.init(diskPageSize, diskNumPages, diskMaxOpenFiles);
         diskBufferCache = TestStorageManagerComponentHolder.getBufferCache(ctx);
@@ -106,7 +106,7 @@ public class LSMRTreeTestHarness {
         virtualBufferCaches = new ArrayList<IVirtualBufferCache>();
         for (int i = 0; i < numMutableComponents; i++) {
             IVirtualBufferCache virtualBufferCache = new VirtualBufferCache(new HeapBufferAllocator(), memPageSize,
-                    memNumPages / numMutableComponents);
+                    memNumPages / numMutableComponents, ioManager);
             virtualBufferCaches.add(virtualBufferCache);
         }
         rnd.setSeed(RANDOM_SEED);

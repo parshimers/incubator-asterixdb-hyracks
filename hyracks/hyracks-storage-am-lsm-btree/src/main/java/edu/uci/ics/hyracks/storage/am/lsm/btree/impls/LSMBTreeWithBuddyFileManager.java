@@ -28,6 +28,8 @@ import java.util.List;
 
 import edu.uci.ics.hyracks.api.exceptions.HyracksDataException;
 import edu.uci.ics.hyracks.api.io.FileReference;
+import edu.uci.ics.hyracks.api.io.FileReference.FileReferenceType;
+import edu.uci.ics.hyracks.api.io.IIOManager;
 import edu.uci.ics.hyracks.storage.am.common.api.ITreeIndex;
 import edu.uci.ics.hyracks.storage.am.common.api.IndexException;
 import edu.uci.ics.hyracks.storage.am.lsm.common.impls.AbstractLSMIndexFileManager;
@@ -56,8 +58,8 @@ public class LSMBTreeWithBuddyFileManager extends AbstractLSMIndexFileManager {
 
     public LSMBTreeWithBuddyFileManager(IFileMapProvider fileMapProvider, FileReference file,
             TreeIndexFactory<? extends ITreeIndex> btreeFactory,
-            TreeIndexFactory<? extends ITreeIndex> buddyBtreeFactory) {
-        super(fileMapProvider, file, null);
+            TreeIndexFactory<? extends ITreeIndex> buddyBtreeFactory, IIOManager ioManager) {
+        super(fileMapProvider, file, null, ioManager);
         this.buddyBtreeFactory = buddyBtreeFactory;
         this.btreeFactory = btreeFactory;
     }
@@ -234,23 +236,23 @@ public class LSMBTreeWithBuddyFileManager extends AbstractLSMIndexFileManager {
                 throw new HyracksDataException("Failed to delete transaction lock :" + txnFileName);
             }
         }
-        File bTreeFile = null;
-        File buddyBTreeFile = null;
-        File bloomFilterFile = null;
+        String bTreeFileName = null;
+        String buddyBTreeFileName = null;
+        String bloomFilterFileName = null;
         for (String fileName : files) {
             if (fileName.endsWith(BTREE_STRING)) {
-                bTreeFile = new File(dir.getPath() + File.separator + fileName);
+                bTreeFileName = dir.getPath() + File.separator + fileName;
             } else if (fileName.endsWith(BUDDY_BTREE_STRING)) {
-                buddyBTreeFile = new File(dir.getPath() + File.separator + fileName);
+                buddyBTreeFileName = dir.getPath() + File.separator + fileName;
             } else if (fileName.endsWith(BLOOM_FILTER_STRING)) {
-                bloomFilterFile = new File(dir.getPath() + File.separator + fileName);
+                bloomFilterFileName = dir.getPath() + File.separator + fileName;
             } else {
                 throw new HyracksDataException("unrecognized file found = " + fileName);
             }
         }
-        FileReference bTreeFileRef = new FileReference(bTreeFile);
-        FileReference buddyBTreeFileRef = new FileReference(buddyBTreeFile);
-        FileReference bloomFilterFileRef = new FileReference(bloomFilterFile);
+        FileReference bTreeFileRef = new FileReference(bTreeFileName, FileReferenceType.DISTRIBUTED_IF_AVAIL);
+        FileReference buddyBTreeFileRef = new FileReference(buddyBTreeFileName);
+        FileReference bloomFilterFileRef = new FileReference(bloomFilterFileName);
         return new LSMComponentFileReferences(bTreeFileRef, buddyBTreeFileRef, bloomFilterFileRef);
     }
 
