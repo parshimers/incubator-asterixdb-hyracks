@@ -83,9 +83,6 @@ public class IOManager implements IIOManager {
 
     @Override
     public int syncWrite(IFileHandle fHandle, long offset, ByteBuffer data) throws HyracksDataException {
-        if(DEBUG){
-            System.out.println("Write: "+offset);
-        }
         try {
             int n = 0;
             int remaining = data.remaining();
@@ -103,7 +100,6 @@ public class IOManager implements IIOManager {
                 if (offset > ((FileHandle) fHandle).DEBUG_highOffset && ((FileHandle) fHandle).DEBUG_highOffset != 0) {
                     System.out.println("In file" + ((FileHandle) fHandle).getRandomAccessFile().toString()
                             + "Wrote offset " + offset + " before " + ((FileHandle) fHandle).DEBUG_highOffset);
-                    System.exit(1);
                 }
                 ((FileHandle) fHandle).DEBUG_highOffset = offset + n;
             }
