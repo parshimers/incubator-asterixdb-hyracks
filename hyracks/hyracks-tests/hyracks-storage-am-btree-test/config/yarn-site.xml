@@ -18,7 +18,7 @@
     
     <property>
       <name>yarn.resourcemanager.resource-tracker.address</name>
-      <value>sandbox.hortonworks.com:8025</value>
+      <value>localhost:8025</value>
     </property>
     
     <property>
@@ -28,7 +28,7 @@
     
     <property>
       <name>yarn.resourcemanager.hostname</name>
-      <value>sandbox.hortonworks.com</value>
+      <value>localhost</value>
     </property>
     
     <property>
@@ -53,12 +53,12 @@
     
     <property>
       <name>yarn.resourcemanager.address</name>
-      <value>sandbox.hortonworks.com:8050</value>
+      <value>localhost:8050</value>
     </property>
     
     <property>
       <name>yarn.resourcemanager.scheduler.address</name>
-      <value>sandbox.hortonworks.com:8030</value>
+      <value>localhost:8030</value>
     </property>
     
     <property>
@@ -103,7 +103,7 @@
     
     <property>
       <name>yarn.timeline-service.webapp.address</name>
-      <value>sandbox.hortonworks.com:8188</value>
+      <value>localhost:8188</value>
     </property>
     
     <property>
@@ -188,7 +188,7 @@
     
     <property>
       <name>yarn.resourcemanager.webapp.address</name>
-      <value>sandbox.hortonworks.com:8088</value>
+      <value>localhost:8088</value>
     </property>
     
     <property>
@@ -213,7 +213,7 @@
     
     <property>
       <name>yarn.log.server.url</name>
-      <value>http://sandbox.hortonworks.com:19888/jobhistory/logs</value>
+      <value>http://localhost:19888/jobhistory/logs</value>
     </property>
     
     <property>
@@ -223,7 +223,7 @@
     
     <property>
       <name>yarn.resourcemanager.admin.address</name>
-      <value>sandbox.hortonworks.com:8141</value>
+      <value>localhost:8141</value>
     </property>
     
     <property>
@@ -233,7 +233,7 @@
     
     <property>
       <name>yarn.timeline-service.webapp.https.address</name>
-      <value>sandbox.hortonworks.com:8190</value>
+      <value>localhost:8190</value>
     </property>
     
     <property>
