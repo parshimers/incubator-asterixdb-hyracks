@@ -27,7 +27,6 @@ import java.util.logging.Logger;
 import edu.uci.ics.hyracks.api.exceptions.HyracksDataException;
 import edu.uci.ics.hyracks.api.io.FileReference;
 import edu.uci.ics.hyracks.api.io.IFileHandle;
-import edu.uci.ics.hyracks.api.io.IIOManager;
 import edu.uci.ics.hyracks.storage.am.lsm.common.api.IVirtualBufferCache;
 import edu.uci.ics.hyracks.storage.common.buffercache.ICacheMemoryAllocator;
 import edu.uci.ics.hyracks.storage.common.buffercache.ICachedPage;
@@ -52,15 +51,12 @@ public class VirtualBufferCache implements IVirtualBufferCache {
     private volatile int nextFree;
 
     private boolean open;
-    
-    protected IIOManager ioManager;
 
-    public VirtualBufferCache(ICacheMemoryAllocator allocator, int pageSize, int numPages, IIOManager ioManager) {
+    public VirtualBufferCache(ICacheMemoryAllocator allocator, int pageSize, int numPages) {
         this.allocator = allocator;
         this.fileMapManager = new TransientFileMapManager();
         this.pageSize = pageSize;
         this.numPages = numPages;
-        this.ioManager = ioManager;
 
         buckets = new CacheBucket[numPages];
         pages = new ArrayList<VirtualPage>();
@@ -446,10 +442,5 @@ public class VirtualBufferCache implements IVirtualBufferCache {
     public void returnPage(ICachedPage page, boolean reinsert) {
         // TODO Auto-generated method stub
         
-    }
-
-    @Override
-    public IIOManager getIOManager() {
-        return ioManager;
     }
 }

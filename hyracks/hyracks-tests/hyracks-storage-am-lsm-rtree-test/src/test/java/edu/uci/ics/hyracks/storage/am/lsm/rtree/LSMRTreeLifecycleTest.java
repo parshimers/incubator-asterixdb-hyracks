@@ -49,7 +49,7 @@ public class LSMRTreeLifecycleTest extends AbstractIndexLifecycleTest {
     @Override
     protected boolean persistentStateExists() throws Exception {
         // make sure all of the directories exist
-        if (!harness.getIOManager().exists(harness.getFileReference())) {
+        if (!new FileReference(harness.getFileReference().getFile()).getFile().exists()) {
             return false;
         }
         return true;

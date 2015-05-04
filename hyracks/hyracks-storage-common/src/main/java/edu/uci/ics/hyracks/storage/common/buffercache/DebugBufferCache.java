@@ -21,7 +21,6 @@ import java.util.concurrent.atomic.AtomicLong;
 import edu.uci.ics.hyracks.api.exceptions.HyracksDataException;
 import edu.uci.ics.hyracks.api.io.FileReference;
 import edu.uci.ics.hyracks.api.io.IFileHandle;
-import edu.uci.ics.hyracks.api.io.IIOManager;
 
 /**
  * Implementation of an IBufferCache that counts the number of pins/unpins,
@@ -252,11 +251,6 @@ public class DebugBufferCache implements IBufferCache {
     public void returnPage(ICachedPage page, boolean reinsert) {
         // TODO Auto-generated method stub
         
-    }
-
-    @Override
-    public IIOManager getIOManager() {
-        return bufferCache.getIOManager();
     }
 
 }

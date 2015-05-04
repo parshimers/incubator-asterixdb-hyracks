@@ -147,7 +147,7 @@ public class ClusterControllerService extends AbstractRemoteService {
     private final Map<DeploymentId, DeploymentRun> deploymentRunMap;
 
     private final Map<String, StateDumpRun> stateDumpRunMap;
-    
+
     private ShutdownRun shutdownCallback;
 
     public ClusterControllerService(final CCConfig ccConfig) throws Exception {
@@ -257,13 +257,13 @@ public class ClusterControllerService extends AbstractRemoteService {
     @Override
     public void stop() throws Exception {
         LOGGER.log(Level.INFO, "Stopping ClusterControllerService");
-        clusterIPC.stop();
-        clientIPC.stop();
-        executor.shutdownNow();
         webServer.stop();
         sweeper.cancel();
         workQueue.stop();
+        executor.shutdownNow();
+        clusterIPC.stop();
         jobLog.close();
+        clientIPC.stop();
         LOGGER.log(Level.INFO, "Stopped ClusterControllerService");
     }
 
@@ -579,6 +579,7 @@ public class ClusterControllerService extends AbstractRemoteService {
                 case SHUTDOWN_RESPONSE: {
                     CCNCFunctions.ShutdownResponseFunction sdrf = (ShutdownResponseFunction) fn;
                     workQueue.schedule(new NotifyShutdownWork(ClusterControllerService.this, sdrf.getNodeId()));
+                    return;
                 }
             }
             LOGGER.warning("Unknown function: " + fn.getFunctionId());
@@ -624,12 +625,11 @@ public class ClusterControllerService extends AbstractRemoteService {
     public synchronized void removeDeploymentRun(DeploymentId deploymentKey) {
         deploymentRunMap.remove(deploymentKey);
     }
-    
-    public synchronized void setShutdownRun(ShutdownRun sRun) {
+
+    public synchronized void setShutdownRun(ShutdownRun sRun){
         shutdownCallback = sRun;
     }
-
-    public synchronized ShutdownRun getShutdownRun() {
+    public synchronized ShutdownRun getShutdownRun(){
         return shutdownCallback;
     }
 

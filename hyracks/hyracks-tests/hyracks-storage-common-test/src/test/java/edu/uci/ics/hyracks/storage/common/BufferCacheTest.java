@@ -63,7 +63,7 @@ public class BufferCacheTest {
         IBufferCache bufferCache = TestStorageManagerComponentHolder.getBufferCache(ctx);
         IFileMapProvider fmp = TestStorageManagerComponentHolder.getFileMapProvider(ctx);
         String fileName = getFileName();
-        FileReference file = new FileReference(fileName);
+        FileReference file = new FileReference(new File(fileName));
         bufferCache.createFile(file);
         int fileId = fmp.lookupFileId(file);
         int num = 10;
@@ -148,7 +148,7 @@ public class BufferCacheTest {
 
         for (int i = 0; i < MAX_OPEN_FILES; i++) {
             String fileName = getFileName();
-            FileReference file = new FileReference(fileName);
+            FileReference file = new FileReference(new File(fileName));
             bufferCache.createFile(file);
             int fileId = fmp.lookupFileId(file);
             bufferCache.openFile(fileId);
@@ -160,7 +160,7 @@ public class BufferCacheTest {
         // since all files are open, next open should fail
         try {
             String fileName = getFileName();
-            FileReference file = new FileReference(fileName);
+            FileReference file = new FileReference(new File(fileName));
             bufferCache.createFile(file);
             int fileId = fmp.lookupFileId(file);
             bufferCache.openFile(fileId);
@@ -178,7 +178,7 @@ public class BufferCacheTest {
         exceptionThrown = false;
         try {
             String fileName = getFileName();
-            FileReference file = new FileReference(fileName);
+            FileReference file = new FileReference(new File(fileName));
             bufferCache.createFile(file);
             int fileId = fmp.lookupFileId(file);
             bufferCache.openFile(fileId);
@@ -210,7 +210,7 @@ public class BufferCacheTest {
         // open max number of files and write some stuff into their first page
         for (int i = 0; i < MAX_OPEN_FILES; i++) {
             String fileName = getFileName();
-            FileReference file = new FileReference(fileName);
+            FileReference file = new FileReference(new File(fileName));
             bufferCache.createFile(file);
             int fileId = fmp.lookupFileId(file);
             bufferCache.openFile(fileId);
@@ -238,7 +238,7 @@ public class BufferCacheTest {
         // since all files are open, next open should fail
         try {
             String fileName = getFileName();
-            FileReference file = new FileReference(fileName);
+            FileReference file = new FileReference(new File(fileName));
             bufferCache.createFile(file);
             int fileId = fmp.lookupFileId(file);
             bufferCache.openFile(fileId);
@@ -260,7 +260,7 @@ public class BufferCacheTest {
         // now open a few new files
         for (int i = 0; i < filesToClose; i++) {
             String fileName = getFileName();
-            FileReference file = new FileReference(fileName);
+            FileReference file = new FileReference(new File(fileName));
             bufferCache.createFile(file);
             int fileId = fmp.lookupFileId(file);
             bufferCache.openFile(fileId);
@@ -270,7 +270,7 @@ public class BufferCacheTest {
         // since all files are open, next open should fail
         try {
             String fileName = getFileName();
-            FileReference file = new FileReference(fileName);
+            FileReference file = new FileReference(new File(fileName));
             bufferCache.createFile(file);
             int fileId = fmp.lookupFileId(file);
             bufferCache.openFile(fileId);
@@ -328,7 +328,7 @@ public class BufferCacheTest {
         int testPageId = 0;
         int lastRealPage = 0;
         String fileName = getFileName();
-        FileReference file = new FileReference(fileName);
+        FileReference file = new FileReference(new File(fileName));
         bufferCache.createFile(file);
         int memFileId = bufferCache.createMemFile();
         int fileId = fmp.lookupFileId(file);

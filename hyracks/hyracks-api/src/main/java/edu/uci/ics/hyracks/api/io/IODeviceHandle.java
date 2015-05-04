@@ -42,6 +42,6 @@ public class IODeviceHandle implements Serializable {
     }
 
     public FileReference createFileReference(String relPath) {
-        return new FileReference(relPath);
+        return new FileReference(this, relPath);
     }
 }

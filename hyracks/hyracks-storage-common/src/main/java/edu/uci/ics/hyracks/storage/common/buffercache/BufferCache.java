@@ -1083,9 +1083,4 @@ public class BufferCache implements IBufferCacheInternal, ILifeCycleComponent {
         System.arraycopy(srcCast.buffer.array(), 0, dstCast.getBuffer().array(), 0, srcCast.buffer.capacity());
     }
 
-    @Override
-    public IIOManager getIOManager() {
-        return ioManager;
-    }
-
 }

@@ -54,14 +54,6 @@
   		<artifactId>hyracks-comm</artifactId>
   		<version>0.2.16-SNAPSHOT</version>
   	</dependency>
-  	<dependency>
-  		<groupId>org.apache.hadoop</groupId>
-  		<artifactId>hadoop-common</artifactId>
-  	</dependency>
-  	<dependency>
-  		<groupId>org.apache.hadoop</groupId>
-  		<artifactId>hadoop-hdfs</artifactId>
-  	</dependency>
   </dependencies>
   <reporting>
     <plugins>

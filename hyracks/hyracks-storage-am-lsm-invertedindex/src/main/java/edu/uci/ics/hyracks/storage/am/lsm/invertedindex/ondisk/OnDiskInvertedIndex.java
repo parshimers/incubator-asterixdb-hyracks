@@ -220,7 +220,7 @@ public class OnDiskInvertedIndex implements IInvertedIndex {
         }
 
         btree.destroy();
-        bufferCache.getIOManager().delete(invListsFile);
+        invListsFile.delete();
         if (fileId == -1) {
             return;
         }
@@ -237,7 +237,7 @@ public class OnDiskInvertedIndex implements IInvertedIndex {
         btree.clear();
         bufferCache.closeFile(fileId);
         bufferCache.deleteFile(fileId, false);
-        bufferCache.getIOManager().delete(invListsFile);
+        invListsFile.getFile().delete();
 
         boolean fileIsMapped = false;
         synchronized (fileMapProvider) {

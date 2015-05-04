@@ -51,7 +51,7 @@ public class MaterializedPartition implements IPartition {
     @Override
     public void deallocate() {
         if (partitionFile != null) {
-           ioManager.delete(partitionFile);
+            partitionFile.delete();
         }
     }
 
