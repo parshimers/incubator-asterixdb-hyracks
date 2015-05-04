@@ -38,17 +38,17 @@
     
     <property>
       <name>hadoop.proxyuser.hcat.hosts</name>
-      <value>localhost</value>
+      <value>sandbox.hortonworks.com</value>
     </property>
     
     <property>
       <name>hadoop.proxyuser.hive.hosts</name>
-      <value>localhost</value>
+      <value>sandbox.hortonworks.com</value>
     </property>
     
     <property>
       <name>fs.defaultFS</name>
-      <value>hdfs://localhost:8020</value>
+      <value>hdfs://sandbox.hortonworks.com:8020</value>
     </property>
     
     <property>
@@ -119,7 +119,7 @@
     
     <property>
       <name>hadoop.proxyuser.oozie.hosts</name>
-      <value>localhost</value>
+      <value>sandbox.hortonworks.com</value>
     </property>
     
     <property>

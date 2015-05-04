@@ -24,7 +24,7 @@ public class IOHDFSSubSystem implements IIOSubSystem {
         conf.addResource(new Path("config/hdfs-site.xml"));
         conf.addResource(new Path("config/mapred-site.xml"));
         try {
-            uri = new URI("hdfs://localhost:8020/");
+            uri = new URI("hdfs://sandbox.hortonworks.com/hdfstest/");
             fs = FileSystem.get(uri, conf);
         } catch (IOException | URISyntaxException e) {
             // TODO Auto-generated catch block

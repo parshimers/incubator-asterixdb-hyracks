@@ -42,7 +42,7 @@ public class HDFSFileHandle implements IFileHandle, IFileHandleInternal {
         conf.addResource(new Path("config/mapred-site.xml"));
         System.out.println("SHORTCIRCUIT " + conf.get("dfs.client.read.shortcircuit"));
         try {
-            fs = FileSystem.get(new URI("hdfs://localhost:8020/"), conf);
+            fs = FileSystem.get(new URI("hdfs://sandbox.hortonworks.com/hdfstest/"), conf);
         } catch (IOException | URISyntaxException e) {
             // TODO Auto-generated catch block
             e.printStackTrace();
@@ -56,7 +56,7 @@ public class HDFSFileHandle implements IFileHandle, IFileHandleInternal {
 
     public HDFSFileHandle(FileReference fileRef) {
         try {
-            this.uri = new URI("hdfs://localhost:8020/" + fileRef.getPath());
+            this.uri = new URI("hdfs://sandbox.hortonworks.com/hdfstest/" + fileRef.getPath());
             this.fileRef = fileRef;
             path = new Path(uri.getPath());
         } catch (URISyntaxException e) {
