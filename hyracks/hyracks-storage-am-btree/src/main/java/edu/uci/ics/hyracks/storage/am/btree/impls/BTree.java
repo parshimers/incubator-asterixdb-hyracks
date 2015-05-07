@@ -1129,7 +1129,6 @@ public class BTree extends AbstractTreeIndex {
 
         @Override
         protected void handleException() throws HyracksDataException {
-            super.handleException();
             end();
         }
 
