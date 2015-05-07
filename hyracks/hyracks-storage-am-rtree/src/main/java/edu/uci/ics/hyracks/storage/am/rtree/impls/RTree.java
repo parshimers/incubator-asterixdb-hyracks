@@ -925,18 +925,12 @@ public class RTree extends AbstractTreeIndex {
 
                     leafFrontier.pageId = freePageManager.getFreePage(metaFrame);
                     leafFrontier.page.releaseWriteLatch(true);
-                    if (fifo) {
-                        queue.put(leafFrontier.page);
-                        for (ICachedPage c : pagesToWrite) {
-                            queue.put(c);
-                        }
-                        leafFrontier.page = bufferCache.confiscatePage(BufferedFileHandle.getDiskPageId(fileId,
-                                leafFrontier.pageId));
-                    } else {
-                        bufferCache.unpin(leafFrontier.page);
-                        leafFrontier.page = bufferCache.pin(
-                                BufferedFileHandle.getDiskPageId(fileId, leafFrontier.pageId), true);
+                    queue.put(leafFrontier.page);
+                    for (ICachedPage c : pagesToWrite) {
+                        queue.put(c);
                     }
+                    leafFrontier.page = bufferCache.confiscatePage(BufferedFileHandle.getDiskPageId(fileId,
+                            leafFrontier.pageId));
                     leafFrontier.page.acquireWriteLatch();
                     leafFrame.setPage(leafFrontier.page);
                     leafFrame.initBuffer((byte) 0);
@@ -984,29 +978,16 @@ public class RTree extends AbstractTreeIndex {
 
                     int finalPageId = freePageManager.getFreePage(metaFrame);
                     n.page.releaseWriteLatch(true);
-                    if (fifo) {
-                        AsyncFIFOPageQueueManager
-                                .setDpid(n.page, BufferedFileHandle.getDiskPageId(fileId, finalPageId));
-                        queue.put(n.page);
-                        n.page = null;
-                    } else {
-
-                        ICachedPage finalPage = bufferCache.unpinVirtual(n.page,
-                                BufferedFileHandle.getDiskPageId(fileId, finalPageId));
-                        n.page = finalPage;
-                        //bufferCache.unpin(prev.page);
-                    }
+                    AsyncFIFOPageQueueManager.setDpid(n.page, BufferedFileHandle.getDiskPageId(fileId, finalPageId));
+                    queue.put(n.page);
+                    n.page = null;
                     n.pageId = finalPageId;
                     prevPageId = n.pageId;
                     //else we are looking at a leaf
                 } else {
                     n.page.releaseWriteLatch(true);
-                    if (fifo) {
-                        queue.put(n.page);
-                        n.page = null;
-                    } else {
-                        bufferCache.unpin(n.page);
-                    }
+                    queue.put(n.page);
+                    n.page = null;
                     prevPageId = n.pageId;
                 }
                 //set next guide MBR 
@@ -1065,28 +1046,14 @@ public class RTree extends AbstractTreeIndex {
                     prevNodeFrontierPages.set(level, finalPageId);
                 }
                 frontier.page.releaseWriteLatch(true);
-                if (fifo) {
-                    AsyncFIFOPageQueueManager.setDpid(frontier.page,
-                            BufferedFileHandle.getDiskPageId(fileId, finalPageId));
-                    //queue.offer(frontier.page);
-                    pagesToWrite.add(frontier.page);
-                } else {
-                    ICachedPage finalPage = bufferCache.unpinVirtual(frontier.page,
-                            BufferedFileHandle.getDiskPageId(fileId, finalPageId));
-                    bufferCache.unpin(finalPage);
-                }
+                AsyncFIFOPageQueueManager.setDpid(frontier.page, BufferedFileHandle.getDiskPageId(fileId, finalPageId));
+                //queue.offer(frontier.page);
+                pagesToWrite.add(frontier.page);
 
                 lowerFrame = prevInteriorFrame;
                 lowerFrame.setPage(frontier.page);
 
-                if (fifo) {
-                    frontier.page = bufferCache.confiscatePage(-1);
-                } else {
-
-                    frontier.pageId = ++virtualPageIncrement;
-                    frontier.page = bufferCache.pinVirtual(BufferedFileHandle.getDiskPageId(virtualFileId,
-                            frontier.pageId));
-                }
+                frontier.page = bufferCache.confiscatePage(-1);
                 frontier.page.acquireWriteLatch();
                 interiorFrame.setPage(frontier.page);
                 interiorFrame.initBuffer((byte) level);

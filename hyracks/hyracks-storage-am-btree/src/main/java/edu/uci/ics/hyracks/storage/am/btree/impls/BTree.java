@@ -1006,23 +1006,14 @@ public class BTree extends AbstractTreeIndex {
 
                     ((IBTreeLeafFrame) leafFrame).setNextLeaf(leafFrontier.pageId);
                     leafFrontier.page.releaseWriteLatch(true);
-                    if (fifo) {
-                        queue.put(leafFrontier.page);
-                        for (ICachedPage c : pagesToWrite) {
-                            queue.put(c);
-                        }
-                    } else {
-                        bufferCache.unpin(leafFrontier.page);
+                    queue.put(leafFrontier.page);
+                    for (ICachedPage c : pagesToWrite) {
+                        queue.put(c);
                     }
 
                     splitKey.setRightPage(leafFrontier.pageId);
-                    if (fifo) {
-                        leafFrontier.page = bufferCache.confiscatePage(BufferedFileHandle.getDiskPageId(fileId,
-                                leafFrontier.pageId));
-                    } else {
-                        leafFrontier.page = bufferCache.pin(
-                                BufferedFileHandle.getDiskPageId(fileId, leafFrontier.pageId), true);
-                    }
+                    leafFrontier.page = bufferCache.confiscatePage(BufferedFileHandle.getDiskPageId(fileId,
+                            leafFrontier.pageId));
                     leafFrontier.page.acquireWriteLatch();
                     leafFrame.setPage(leafFrontier.page);
                     leafFrame.initBuffer((byte) 0);
@@ -1042,7 +1033,7 @@ public class BTree extends AbstractTreeIndex {
                 handleException();
                 throw e;
             } catch (RuntimeException e) {
-                //handleException();
+                handleException();
                 throw e;
             }
         }
@@ -1087,27 +1078,12 @@ public class BTree extends AbstractTreeIndex {
                 ((IBTreeInteriorFrame) interiorFrame).deleteGreatest();
                 frontier.page.releaseWriteLatch(true);
                 int finalPageId = freePageManager.getFreePage(metaFrame);
-                if (fifo) {
-                    AsyncFIFOPageQueueManager.setDpid(frontier.page,
-                            BufferedFileHandle.getDiskPageId(fileId, finalPageId));
-                    //    queue.offer(frontier.page);
-                    pagesToWrite.add(frontier.page);
-                } else {
-                    //    ICachedPage realPage = bufferCache.unpinVirtual(frontier.page,
-                    //            BufferedFileHandle.getDiskPageId(fileId, finalPageId));
-                    //    bufferCache.unpin(realPage);
-                }
-                //splitKey.setRightPage();
+                AsyncFIFOPageQueueManager.setDpid(frontier.page, BufferedFileHandle.getDiskPageId(fileId, finalPageId));
+                pagesToWrite.add(frontier.page);
                 splitKey.setLeftPage(finalPageId);
 
                 propagateBulk(level + 1, pagesToWrite);
-                if (fifo) {
-                    frontier.page = bufferCache.confiscatePage(-1);
-                } else {
-                    frontier.pageId = ++virtualPageIncrement;
-                    frontier.page = bufferCache.pinVirtual(BufferedFileHandle.getDiskPageId(virtualFileId,
-                            frontier.pageId));
-                }
+                frontier.page = bufferCache.confiscatePage(-1);
                 frontier.page.acquireWriteLatch();
                 interiorFrame.setPage(frontier.page);
                 interiorFrame.initBuffer((byte) level);
@@ -1128,15 +1104,10 @@ public class BTree extends AbstractTreeIndex {
                 ICachedPage lastLeaf = nodeFrontiers.get(level).page;
                 int lastLeafPage = nodeFrontiers.get(level).pageId;
                 lastLeaf.releaseWriteLatch(true);
-                if (fifo) {
-                    AsyncFIFOPageQueueManager.setDpid(lastLeaf, BufferedFileHandle.getDiskPageId(fileId, lastLeafPage));
-                    queue.put(lastLeaf);
-                    nodeFrontiers.get(level).page = null;
-                    finish(level + 1, lastLeafPage);
-                } else {
-                    bufferCache.unpin(lastLeaf);
-                    finish(level + 1, -1);
-                }
+                AsyncFIFOPageQueueManager.setDpid(lastLeaf, BufferedFileHandle.getDiskPageId(fileId, lastLeafPage));
+                queue.put(lastLeaf);
+                nodeFrontiers.get(level).page = null;
+                finish(level + 1, lastLeafPage);
                 return;
             }
             NodeFrontier frontier = nodeFrontiers.get(level);
@@ -1148,16 +1119,9 @@ public class BTree extends AbstractTreeIndex {
             //otherwise...
             frontier.page.releaseWriteLatch(false);
             int finalPageId = freePageManager.getFreePage(metaFrame);
-            if (fifo) {
-                AsyncFIFOPageQueueManager.setDpid(frontier.page, BufferedFileHandle.getDiskPageId(fileId, finalPageId));
-                queue.put(frontier.page);
-                frontier.page = null;
-            } else {
-                ICachedPage realPage = bufferCache.unpinVirtual(frontier.page,
-                        BufferedFileHandle.getDiskPageId(fileId, finalPageId));
-                bufferCache.unpin(realPage);
-                frontier.page = realPage;
-            }
+            AsyncFIFOPageQueueManager.setDpid(frontier.page, BufferedFileHandle.getDiskPageId(fileId, finalPageId));
+            queue.put(frontier.page);
+            frontier.page = null;
             frontier.pageId = finalPageId;
 
             finish(level + 1, finalPageId);
@@ -1165,8 +1129,8 @@ public class BTree extends AbstractTreeIndex {
 
         @Override
         protected void handleException() throws HyracksDataException {
+            super.handleException();
             end();
-            releasedLatches = true;
         }
 
         @Override
@@ -1202,7 +1166,8 @@ public class BTree extends AbstractTreeIndex {
             tuple.resetByTupleIndex(interiorFrame, i);
             // Print child pointer.
             int numFields = tuple.getFieldCount();
-            int childPageId = IntegerPointable.getInteger(tuple.getFieldData(numFields - 1), tuple.getFieldStart(numFields - 1) + tuple.getFieldLength(numFields - 1));
+            int childPageId = IntegerPointable.getInteger(tuple.getFieldData(numFields - 1),
+                    tuple.getFieldStart(numFields - 1) + tuple.getFieldLength(numFields - 1));
             strBuilder.append("(" + childPageId + ") ");
             String tupleString = TupleUtils.printTuple(tuple, fieldSerdes);
             strBuilder.append(tupleString + " | ");

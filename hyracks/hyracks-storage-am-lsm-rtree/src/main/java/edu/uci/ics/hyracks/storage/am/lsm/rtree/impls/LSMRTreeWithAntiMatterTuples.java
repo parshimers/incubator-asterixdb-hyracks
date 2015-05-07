@@ -451,7 +451,8 @@ public class LSMRTreeWithAntiMatterTuples extends AbstractLSMRTree {
     @Override
     public IIndexBulkLoader createBulkLoader(float fillFactor, boolean verifyInput, long numElementsHint,
             boolean checkIfEmptyIndex, boolean appendOnly) throws IndexException {
-        // TODO Auto-generated method stub
-        return null;
+        if (!appendOnly)
+            throw new UnsupportedOperationException("LSM indexes don't support in-place modification");
+        return createBulkLoader(fillFactor, verifyInput, numElementsHint, checkIfEmptyIndex);
     }
 }

@@ -62,8 +62,6 @@ public abstract class AbstractTreeIndex implements ITreeIndex {
     private boolean wasActivated = false;
     private boolean fileOpen = false;
 
-    protected boolean fifo = true; //DEBUG
-
     protected int BULKLOAD_LEAF_START = 0;
 
     public AbstractTreeIndex(IBufferCache bufferCache, IFileMapProvider fileMapProvider,
@@ -177,8 +175,8 @@ public abstract class AbstractTreeIndex implements ITreeIndex {
                 throw e;
             }
         }
+        freePageManager.open(fileId);
         if (!fileOpen) {
-            freePageManager.open(fileId);
             if (freePageManager.getFirstMetadataPage() < 1) {
                 // regular or empty tree
                 rootPage = 1;
@@ -347,14 +345,8 @@ public abstract class AbstractTreeIndex implements ITreeIndex {
 
             NodeFrontier leafFrontier = new NodeFrontier(leafFrame.createTupleReference());
             leafFrontier.pageId = freePageManager.getFreePage(metaFrame);
-            if (fifo) {
-                leafFrontier.page = bufferCache.confiscatePage(BufferedFileHandle.getDiskPageId(fileId,
-                        leafFrontier.pageId));
-            } else {
-
-                leafFrontier.page = bufferCache
-                        .pin(BufferedFileHandle.getDiskPageId(fileId, leafFrontier.pageId), true);
-            }
+            leafFrontier.page = bufferCache.confiscatePage(BufferedFileHandle
+                    .getDiskPageId(fileId, leafFrontier.pageId));
             leafFrontier.page.acquireWriteLatch();
 
             interiorFrame.setPage(leafFrontier.page);
@@ -375,18 +367,10 @@ public abstract class AbstractTreeIndex implements ITreeIndex {
             // Unlatch and unpin pages.
             for (NodeFrontier nodeFrontier : nodeFrontiers) {
                 ICachedPage frontierPage = nodeFrontier.page;
-                if (!fifo) {
-                    if (bufferCache.isVirtual(frontierPage)) {
-                        frontierPage.releaseWriteLatch(true);
-                        bufferCache.unpin(frontierPage);
-                        continue;
-                    } else {
-                        frontierPage.releaseWriteLatch(true);
-                        int finalPageId = freePageManager.getFreePage(metaFrame);
-                        ICachedPage realPage = bufferCache.unpinVirtual(nodeFrontier.page,
-                                BufferedFileHandle.getDiskPageId(fileId, finalPageId));
-                        bufferCache.unpin(realPage);
-                    }
+                if (bufferCache.isVirtual(frontierPage)) {
+                    frontierPage.releaseWriteLatch(true);
+                    bufferCache.unpin(frontierPage);
+                    continue;
                 }
             }
             bufferCache.finishQueue(queue);
@@ -396,15 +380,13 @@ public abstract class AbstractTreeIndex implements ITreeIndex {
         @Override
         public void end() throws HyracksDataException {
             //move the root page to the first data page if necessary
-            if (fifo) {
-                //write the filter page right after the metadata page
-                if (filterPage != null) {
-                    bufferCache.setPageDiskId(filterPage,
-                            BufferedFileHandle.getDiskPageId(fileId, freePageManager.getFreePage(metaFrame)));
-                    queue.put(filterPage);
-                }
-                bufferCache.finishQueue(queue);
+            //write the filter page right after the metadata page
+            if (filterPage != null) {
+                bufferCache.setPageDiskId(filterPage,
+                        BufferedFileHandle.getDiskPageId(fileId, freePageManager.getFreePage(metaFrame)));
+                queue.put(filterPage);
             }
+            bufferCache.finishQueue(queue);
             if (!appendOnly) {
                 ICachedPage newRoot = bufferCache.pin(BufferedFileHandle.getDiskPageId(fileId, rootPage), true);
                 newRoot.acquireWriteLatch();
@@ -430,15 +412,11 @@ public abstract class AbstractTreeIndex implements ITreeIndex {
                         for (int i = 0; i < nodeFrontiers.size(); i++) {
                             try {
                                 nodeFrontiers.get(i).page.releaseWriteLatch(true);
-                            } catch (Exception e) {
+                            } catch (IllegalMonitorStateException e) {
                                 //ignore illegal monitor state exception
-                            }
-                            if (!fifo) {
-                                bufferCache.unpin(nodeFrontiers.get(i).page);
                             }
                         }
                     }
-                    freePageManager.close();
                 }
             } else {
                 freePageManager.close();
@@ -448,15 +426,8 @@ public abstract class AbstractTreeIndex implements ITreeIndex {
         protected void addLevel() throws HyracksDataException {
             NodeFrontier frontier = new NodeFrontier(tupleWriter.createTupleReference());
             //frontier.pageId = freePageManager.getFreePage(metaFrame);
-            if (fifo) {
-                frontier.page = bufferCache.confiscatePage(-1);
-                frontier.pageId = -1;
-            } else {
-
-                frontier.pageId = ++virtualPageIncrement;
-                frontier.page = bufferCache
-                        .pinVirtual(BufferedFileHandle.getDiskPageId(virtualFileId, frontier.pageId));
-            }
+            frontier.page = bufferCache.confiscatePage(-1);
+            frontier.pageId = -1;
             frontier.page.acquireWriteLatch();
             frontier.lastTuple.setFieldCount(cmp.getKeyFieldCount());
             interiorFrame.setPage(frontier.page);

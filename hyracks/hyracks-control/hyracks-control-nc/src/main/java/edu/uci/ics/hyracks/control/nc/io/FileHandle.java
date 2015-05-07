@@ -28,8 +28,6 @@ public class FileHandle implements IFileHandle {
     private RandomAccessFile raf;
 
     private FileChannel channel;
-   //*************************DEBUG - REMOVE ME*****************************************
-    public long DEBUG_highOffset = 0;
 
     public FileHandle(FileReference fileRef) {
         this.fileRef = fileRef;
