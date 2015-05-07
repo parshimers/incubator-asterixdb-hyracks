@@ -355,25 +355,20 @@ public class VirtualBufferCache implements IVirtualBufferCache {
     //These 4 methods aren't applicable here.
     @Override
     public int createMemFile() throws HyracksDataException {
-        // TODO Auto-generated method stub
         return 0;
     }
 
     @Override
     public void deleteMemFile(int fileId) throws HyracksDataException {
-        // TODO Auto-generated method stub
-
     }
 
     @Override
     public ICachedPage pinVirtual(long vpid) throws HyracksDataException {
-        // TODO Auto-generated method stub
         return null;
     }
 
     @Override
     public ICachedPage unpinVirtual(long vpid, long dpid) throws HyracksDataException {
-        // TODO Auto-generated method stub
         return null;
     }
 
@@ -392,25 +387,21 @@ public class VirtualBufferCache implements IVirtualBufferCache {
 
     @Override
     public ICachedPage unpinVirtual(ICachedPage vp, long dpid) throws HyracksDataException {
-        // TODO Auto-generated method stub
         return null;
     }
 
     @Override
     public boolean isVirtual(long vpid) throws HyracksDataException {
-        // TODO Auto-generated method stub
         return false;
     }
 
     @Override
     public boolean isVirtual(ICachedPage vp) throws HyracksDataException {
-        // TODO Auto-generated method stub
         return false;
     }
 
     @Override
     public void returnPage(ICachedPage page) {
-        // TODO Auto-generated method stub
 
     }
 
@@ -426,26 +417,22 @@ public class VirtualBufferCache implements IVirtualBufferCache {
 
     @Override
     public ICachedPage confiscatePage(long dpid) {
-        // TODO Auto-generated method stub
-        return null;
+        throw new UnsupportedOperationException("Virtual buffer caches don't have FIFO writers");
     }
 
     @Override
     public void copyPage(ICachedPage src, ICachedPage dst) {
-        // TODO Auto-generated method stub
-        
+        throw new UnsupportedOperationException("Virtual buffer caches don't have FIFO writers");
     }
 
     @Override
     public void setPageDiskId(ICachedPage page, long dpid) {
-        // TODO Auto-generated method stub
         
     }
 
     @Override
     public void returnPage(ICachedPage page, boolean reinsert) {
-        // TODO Auto-generated method stub
-        
+        throw new UnsupportedOperationException("Virtual buffer caches don't have FIFO writers");
     }
 
     @Override

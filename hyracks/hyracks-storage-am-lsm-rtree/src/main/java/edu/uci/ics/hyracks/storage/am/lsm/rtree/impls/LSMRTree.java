@@ -621,16 +621,12 @@ public class LSMRTree extends AbstractLSMRTree {
         int startPage = 0;
         int maxPage = component.getBloomFilter().getNumPages();
         forceFlushDirtyPages(bufferCache, fileId, startPage, maxPage);
-        //forceFlushDirtyPages(component.getRTree());
-        //markAsValidInternal(component.getRTree());
-        //forceFlushDirtyPages(component.getBTree());
-        //markAsValidInternal(component.getBTree());
     }
 
     @Override
     public IIndexBulkLoader createBulkLoader(float fillFactor, boolean verifyInput, long numElementsHint,
             boolean checkIfEmptyIndex, boolean appendOnly) throws IndexException {
-        // TODO Auto-generated method stub
-        return null;
+        if(!appendOnly) throw new UnsupportedOperationException("LSM indexes don't support in-place modification");
+        return createBulkLoader(fillFactor,verifyInput,numElementsHint,checkIfEmptyIndex);
     }
 }

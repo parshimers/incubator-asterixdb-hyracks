@@ -140,20 +140,6 @@ public class BloomFilter {
             throw new HyracksDataException("Failed to create the bloom filter since it is activated.");
         }
         prepareFile();
-        /*
-                ICachedPage metaPage = bufferCache.pin(BufferedFileHandle.getDiskPageId(fileId, METADATA_PAGE_ID), true);
-                metaPage.acquireWriteLatch();
-                try {
-                    metaPage.getBuffer().putInt(NUM_PAGES_OFFSET, 0);
-                    metaPage.getBuffer().putInt(NUM_HASHES_USED_OFFSET, 0);
-                    metaPage.getBuffer().putLong(NUM_ELEMENTS_OFFSET, 0L);
-                    metaPage.getBuffer().putLong(NUM_BITS_OFFSET, 0L);
-                } finally {
-                    metaPage.releaseWriteLatch(true);
-                    bufferCache.unpin(metaPage);
-                }
-                bufferCache.closeFile(fileId);
-                */
         bufferCache.closeFile(fileId);
     }
 

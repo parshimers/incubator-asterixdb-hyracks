@@ -879,7 +879,11 @@ public class ExternalBTreeWithBuddy extends AbstractLSMIndex implements ITreeInd
     @Override
     public IIndexBulkLoader createBulkLoader(float fillFactor, boolean verifyInput, long numElementsHint,
             boolean checkIfEmptyIndex, boolean appendOnly) throws IndexException {
-        // TODO Auto-generated method stub
-        return null;
+        if(!appendOnly){
+            throw new IndexException("LSM Indices do not support in-place inserts");
+        }
+        else{
+            return createBulkLoader(fillFactor, verifyInput,numElementsHint,checkIfEmptyIndex);
+        }
     }
 }

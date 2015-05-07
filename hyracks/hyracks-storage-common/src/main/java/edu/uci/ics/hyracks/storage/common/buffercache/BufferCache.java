@@ -48,7 +48,7 @@ public class BufferCache implements IBufferCacheInternal, ILifeCycleComponent {
     private static final int MIN_CLEANED_COUNT_DIFF = 3;
     private static final int PIN_MAX_WAIT_TIME = 50;
     public static final int INVALID_DPID = -1;
-    public static final boolean DEBUG = true;
+    public static final boolean DEBUG = false;
 
     private final int pageSize;
     private final int maxOpenFiles;
