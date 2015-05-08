@@ -20,7 +20,7 @@ public interface IFreePageManager {
     public void open(int fileId);
 
     public void close() throws HyracksDataException;
-    
+
     public int closeGivePageId() throws HyracksDataException;
 
     public int getFreePage(ITreeIndexMetaDataFrame metaFrame) throws HyracksDataException;
@@ -50,4 +50,9 @@ public interface IFreePageManager {
     int getFilterPageId() throws HyracksDataException;
 
     void setFilterPageId(int filterPageId) throws HyracksDataException;
+
+    long getLSN() throws HyracksDataException;
+
+    void setLSN(long lsn) throws HyracksDataException;
+
 }

@@ -359,4 +359,49 @@ public class LinkedListFreePageManager implements IFreePageManager {
         headPage = 0;
         return headPage;
     }
+
+    @Override
+    public long getLSN() throws HyracksDataException {
+        ICachedPage metaNode;
+        int filterPageId = BufferCache.INVALID_DPID;
+        if (!appendOnly) {
+            metaNode = bufferCache.pin(BufferedFileHandle.getDiskPageId(fileId, getFirstMetadataPage()), false);
+        } else {
+            metaNode = confiscatedMetaNode;
+        }
+        ITreeIndexMetaDataFrame metaFrame = metaDataFrameFactory.createFrame();
+        metaNode.acquireReadLatch();
+        try {
+            metaFrame.setPage(metaNode);
+            return metaFrame.getLSN();
+        } finally {
+            metaNode.releaseReadLatch();
+            if (!appendOnly) {
+                bufferCache.unpin(metaNode);
+            }
+        }
+    }
+
+    @Override
+    public void setLSN(long lsn) throws HyracksDataException {
+        ICachedPage metaNode;
+        int filterPageId = BufferCache.INVALID_DPID;
+        if (!appendOnly) {
+            metaNode = bufferCache.pin(BufferedFileHandle.getDiskPageId(fileId, getFirstMetadataPage()), false);
+        } else {
+            metaNode = confiscatedMetaNode;
+        }
+        ITreeIndexMetaDataFrame metaFrame = metaDataFrameFactory.createFrame();
+        metaNode.acquireWriteLatch();
+        try {
+            metaFrame.setPage(metaNode);
+            metaFrame.setLSN(lsn);
+        } finally {
+            metaNode.releaseWriteLatch(true);
+            if (!appendOnly) {
+                bufferCache.unpin(metaNode);
+            }
+        }
+    }
+
 }
