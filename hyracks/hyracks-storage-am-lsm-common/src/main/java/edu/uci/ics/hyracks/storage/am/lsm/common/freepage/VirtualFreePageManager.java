@@ -136,4 +136,12 @@ public class VirtualFreePageManager implements IVirtualFreePageManager {
         // Method doesn't make sense for this free page manager.
     }
 
+    public void setLSN(long lsn) throws HyracksDataException {
+        //do nada!
+    }
+
+    public long getLSN() throws HyracksDataException{
+        return 0;
+    }
+
 }
