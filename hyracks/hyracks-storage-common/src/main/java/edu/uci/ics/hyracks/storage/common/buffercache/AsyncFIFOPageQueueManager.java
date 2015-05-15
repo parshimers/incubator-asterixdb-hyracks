@@ -1,7 +1,11 @@
 package edu.uci.ics.hyracks.storage.common.buffercache;
 
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 
 import edu.uci.ics.hyracks.api.exceptions.HyracksDataException;
 import edu.uci.ics.hyracks.storage.common.file.BufferedFileHandle;
@@ -26,11 +30,13 @@ public class AsyncFIFOPageQueueManager implements Runnable {
         final ConcurrentLinkedQueue<ICachedPage> pageQueue;
         final IBufferCache bufferCache;
         final IFIFOPageWriter writer;
+        final ConcurrentHashMap<Integer, AtomicInteger> highOffsets;
         int fileid = -1;
-        
+
         protected PageQueue(IBufferCache bufferCache, IFIFOPageWriter writer) {
             if(DEBUG) System.out.println("[FIFO] New Queue");
             this.pageQueue = new ConcurrentLinkedQueue<ICachedPage>();
+            this.highOffsets = new ConcurrentHashMap<Integer, AtomicInteger>();
             this.bufferCache = bufferCache;
             this.writer = writer;
         }
@@ -71,33 +77,42 @@ public class AsyncFIFOPageQueueManager implements Runnable {
     protected LinkedBlockingQueue<QueueEntry> queue = new LinkedBlockingQueue<QueueEntry>();
     Thread writerThread;
     boolean haltWriter = true;
-    
-    public PageQueue createQueue(IBufferCache bufferCache, IFIFOPageWriter writer) {
+    AtomicBoolean sleeping = new AtomicBoolean();
+
+    public synchronized PageQueue createQueue(IBufferCache bufferCache, IFIFOPageWriter writer) {
         if (writerThread == null) {
-            synchronized (this) {
-                if (writerThread == null) {
-                    writerThread = new Thread(this);
-                    haltWriter = false;
-                    writerThread.start();
-                }
+            if (writerThread == null) {
+                writerThread = new Thread(this);
+                writerThread.setName("FIFO Writer Thread");
+                haltWriter = false;
+                writerThread.start();
             }
         }
-        
         return new PageQueue(bufferCache, writer);
+    }
+    public synchronized void destroyQueue(){
+        haltWriter = true;
+        if(writerThread!=null){
+            writerThread.interrupt();
+            try {
+                writerThread.join();
+            }catch(InterruptedException e){
+               // that's ok?
+            }
+        }
     }
 
     public static void setDpid(ICachedPage page, long dpid) {
         ((CachedPage) page).dpid = dpid;
     }
 
-    public void finishQueue(IFIFOPageQueue pageQueue) {
+    public void finishQueue() {
         if(DEBUG) System.out.println("[FIFO] Finishing Queue");
         try {
-            synchronized (queue) {
-               if(DEBUG)  System.out.println("Waiting for " + pageQueue);
-               if(!queue.isEmpty()){
-                  queue.wait();
-               }
+            synchronized(queue){
+            while(!queue.isEmpty() || !sleeping.get()){
+                    queue.wait();
+                }
             }
         } catch (InterruptedException e) {
             // TODO what do we do here?
@@ -112,21 +127,24 @@ public class AsyncFIFOPageQueueManager implements Runnable {
         while (!haltWriter) {
             try {
                 QueueEntry entry = queue.take();
+                sleeping.set(false);
                 ICachedPage page = entry.page;
                 
-                if(DEBUG) System.out.println("[FIFO] Write " + ((CachedPage)page).dpid);
+                if(DEBUG) System.out.println("[FIFO] Write " + BufferedFileHandle.getFileId(((CachedPage)page).dpid)+","
+                        + BufferedFileHandle.getPageId(((CachedPage)page).dpid));
 
                 try {
                     entry.writer.write(page, entry.bufferCache);
+
+                    synchronized(queue){
+                    if(queue.isEmpty()){
+                            queue.notifyAll();
+                        }
+                        sleeping.compareAndSet(false,true);
+                    }
                 } catch (HyracksDataException e) {
                     // TODO Auto-generated catch block
                     e.printStackTrace();
-                }
-                
-                if(queue.isEmpty()) {
-                    synchronized(queue) {
-                        queue.notifyAll(); // TODO not 100% threadsafe
-                    }
                 }
             } catch(InterruptedException e) {
                 // TODO

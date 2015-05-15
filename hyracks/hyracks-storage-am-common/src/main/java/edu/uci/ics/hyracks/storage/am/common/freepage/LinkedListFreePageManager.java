@@ -137,9 +137,12 @@ public class LinkedListFreePageManager implements IFreePageManager {
                             metaFrame.addFreePage(nextPage);
                         }
                     } finally {
-                        nextNode.releaseWriteLatch(true);
                         if (!appendOnly) {
-                            bufferCache.unpin(nextNode);
+                            metaNode.releaseWriteLatch(true);
+                            bufferCache.unpin(metaNode);
+                        }
+                        else{
+                            metaNode.releaseWriteLatch(false);
                         }
                     }
                 } else {
@@ -153,9 +156,12 @@ public class LinkedListFreePageManager implements IFreePageManager {
                 }
             }
         } finally {
-            metaNode.releaseWriteLatch(true);
             if (!appendOnly) {
+                metaNode.releaseWriteLatch(true);
                 bufferCache.unpin(metaNode);
+            }
+            else{
+                metaNode.releaseWriteLatch(false);
             }
         }
 
@@ -170,13 +176,13 @@ public class LinkedListFreePageManager implements IFreePageManager {
         } else {
             metaNode = confiscatedMetaNode;
         }
-        metaNode.acquireWriteLatch();
+        metaNode.acquireReadLatch();
         int maxPage = -1;
         try {
             metaFrame.setPage(metaNode);
             maxPage = metaFrame.getMaxPage();
         } finally {
-            metaNode.releaseWriteLatch(true);
+            metaNode.releaseReadLatch();
             if (!appendOnly) {
                 bufferCache.unpin(metaNode);
             }
@@ -198,9 +204,12 @@ public class LinkedListFreePageManager implements IFreePageManager {
             metaFrame.setPage(metaNode);
             metaFrame.setLSMComponentFilterPageId(filterPageId);
         } finally {
-            metaNode.releaseWriteLatch(true);
             if (!appendOnly) {
+                metaNode.releaseWriteLatch(true);
                 bufferCache.unpin(metaNode);
+            }
+            else{
+                metaNode.releaseWriteLatch(false);
             }
         }
     }
@@ -215,12 +224,12 @@ public class LinkedListFreePageManager implements IFreePageManager {
             metaNode = confiscatedMetaNode;
         }
         ITreeIndexMetaDataFrame metaFrame = metaDataFrameFactory.createFrame();
-        metaNode.acquireWriteLatch();
+        metaNode.acquireReadLatch();
         try {
             metaFrame.setPage(metaNode);
             filterPageId = metaFrame.getLSMComponentFilterPageId();
         } finally {
-            metaNode.releaseWriteLatch(true);
+            metaNode.releaseReadLatch();
             if (!appendOnly) {
                 bufferCache.unpin(metaNode);
             }
@@ -397,9 +406,12 @@ public class LinkedListFreePageManager implements IFreePageManager {
             metaFrame.setPage(metaNode);
             metaFrame.setLSN(lsn);
         } finally {
-            metaNode.releaseWriteLatch(true);
             if (!appendOnly) {
+                metaNode.releaseWriteLatch(true);
                 bufferCache.unpin(metaNode);
+            }
+            else{
+                metaNode.releaseWriteLatch(false);
             }
         }
     }

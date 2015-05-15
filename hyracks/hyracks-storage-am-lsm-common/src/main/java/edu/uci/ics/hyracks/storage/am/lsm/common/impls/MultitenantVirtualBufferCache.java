@@ -14,13 +14,11 @@
  */
 package edu.uci.ics.hyracks.storage.am.lsm.common.impls;
 
-import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import edu.uci.ics.hyracks.api.exceptions.HyracksDataException;
 import edu.uci.ics.hyracks.api.io.FileReference;
-import edu.uci.ics.hyracks.api.io.IFileHandle;
 import edu.uci.ics.hyracks.storage.am.lsm.common.api.IVirtualBufferCache;
 import edu.uci.ics.hyracks.storage.common.buffercache.ICachedPage;
 import edu.uci.ics.hyracks.storage.common.buffercache.IFIFOPageQueue;
@@ -188,7 +186,7 @@ public class MultitenantVirtualBufferCache implements IVirtualBufferCache {
     }
 
     @Override
-    public void finishQueue(IFIFOPageQueue queue) {
+    public void finishQueue() {
         throw new UnsupportedOperationException("Virtual buffer caches don't have FIFO writers");
     }
 

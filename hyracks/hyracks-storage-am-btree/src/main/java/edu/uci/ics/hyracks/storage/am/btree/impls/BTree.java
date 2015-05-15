@@ -1005,7 +1005,7 @@ public class BTree extends AbstractTreeIndex {
                     leafFrontier.pageId = freePageManager.getFreePage(metaFrame);
 
                     ((IBTreeLeafFrame) leafFrame).setNextLeaf(leafFrontier.pageId);
-                    leafFrontier.page.releaseWriteLatch(true);
+                    leafFrontier.page.releaseWriteLatch(false);
                     queue.put(leafFrontier.page);
                     for (ICachedPage c : pagesToWrite) {
                         queue.put(c);
@@ -1076,7 +1076,7 @@ public class BTree extends AbstractTreeIndex {
                 splitKey.getTuple().resetByTupleOffset(splitKey.getBuffer(), 0);
 
                 ((IBTreeInteriorFrame) interiorFrame).deleteGreatest();
-                frontier.page.releaseWriteLatch(true);
+                frontier.page.releaseWriteLatch(false);
                 int finalPageId = freePageManager.getFreePage(metaFrame);
                 AsyncFIFOPageQueueManager.setDpid(frontier.page, BufferedFileHandle.getDiskPageId(fileId, finalPageId));
                 pagesToWrite.add(frontier.page);
@@ -1103,7 +1103,7 @@ public class BTree extends AbstractTreeIndex {
             if (level < 1) {
                 ICachedPage lastLeaf = nodeFrontiers.get(level).page;
                 int lastLeafPage = nodeFrontiers.get(level).pageId;
-                lastLeaf.releaseWriteLatch(true);
+                lastLeaf.releaseWriteLatch(false);
                 AsyncFIFOPageQueueManager.setDpid(lastLeaf, BufferedFileHandle.getDiskPageId(fileId, lastLeafPage));
                 queue.put(lastLeaf);
                 nodeFrontiers.get(level).page = null;
@@ -1121,7 +1121,6 @@ public class BTree extends AbstractTreeIndex {
             int finalPageId = freePageManager.getFreePage(metaFrame);
             AsyncFIFOPageQueueManager.setDpid(frontier.page, BufferedFileHandle.getDiskPageId(fileId, finalPageId));
             queue.put(frontier.page);
-            frontier.page = null;
             frontier.pageId = finalPageId;
 
             finish(level + 1, finalPageId);
@@ -1129,6 +1128,10 @@ public class BTree extends AbstractTreeIndex {
 
         @Override
         protected void handleException() throws HyracksDataException {
+            //pages might not be write latched
+            for(NodeFrontier n :nodeFrontiers){
+                n.page.acquireWriteLatch();
+            }
             end();
         }
 
@@ -1136,6 +1139,7 @@ public class BTree extends AbstractTreeIndex {
         public void end() throws HyracksDataException {
             finish(0, -1);
             super.end();
+            bufferCache.force(fileId,true);
 
         }
     }

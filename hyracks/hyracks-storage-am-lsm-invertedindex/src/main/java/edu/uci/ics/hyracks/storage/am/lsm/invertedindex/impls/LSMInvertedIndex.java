@@ -693,7 +693,7 @@ public class LSMInvertedIndex extends AbstractLSMIndex implements IInvertedIndex
     public IIndexBulkLoader createBulkLoader(float fillFactor, boolean verifyInput, long numElementsHint,
             boolean checkIfEmptyIndex) throws IndexException {
         try {
-            return new LSMInvertedIndexBulkLoader(fillFactor, verifyInput, numElementsHint, checkIfEmptyIndex, false);
+            return new LSMInvertedIndexBulkLoader(fillFactor, verifyInput, numElementsHint, checkIfEmptyIndex, true);
         } catch (HyracksDataException e) {
             throw new IndexException(e);
         }
@@ -723,10 +723,6 @@ public class LSMInvertedIndex extends AbstractLSMIndex implements IInvertedIndex
                 boolean checkIfEmptyIndex, boolean appendOnly) throws IndexException, HyracksDataException {
             if (checkIfEmptyIndex && !isEmptyIndex()) {
                 throw new IndexException("Cannot load an index that is not empty");
-            }
-            if(appendOnly){
-                create();
-                activate();
             }
             // Note that by using a flush target file name, we state that the
             // new bulk loaded tree is "newer" than any other merged tree.

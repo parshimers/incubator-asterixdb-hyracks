@@ -71,7 +71,7 @@ public interface IBufferCache {
 
     public IFIFOPageQueue createFIFOQueue();
 
-    public void finishQueue(IFIFOPageQueue queue);
+    public void finishQueue();
 
     void copyPage(ICachedPage src, ICachedPage dst);
 

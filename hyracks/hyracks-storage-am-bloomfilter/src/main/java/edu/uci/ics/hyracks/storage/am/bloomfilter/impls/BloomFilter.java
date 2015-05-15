@@ -16,8 +16,6 @@
 package edu.uci.ics.hyracks.storage.am.bloomfilter.impls;
 
 import java.nio.ByteBuffer;
-import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.LinkedBlockingQueue;
 
 import edu.uci.ics.hyracks.api.exceptions.HyracksDataException;
 import edu.uci.ics.hyracks.api.io.FileReference;
@@ -233,7 +231,7 @@ public class BloomFilter {
                 try {
                     initPage(page.getBuffer().array());
                 } finally {
-                    page.releaseWriteLatch(true);
+                    page.releaseWriteLatch(false);
                 }
                 pages[currentPageId - 1] = page;
                 ++currentPageId;
@@ -264,7 +262,7 @@ public class BloomFilter {
                 metaDataPage.getBuffer().putLong(NUM_ELEMENTS_OFFSET, numElements);
                 metaDataPage.getBuffer().putLong(NUM_BITS_OFFSET, numBits);
             } finally {
-                metaDataPage.releaseWriteLatch(true);
+                metaDataPage.releaseWriteLatch(false);
             }
         }
 
@@ -290,7 +288,7 @@ public class BloomFilter {
 
                     buffer.put(byteIndex, b);
                 } finally {
-                    page.releaseWriteLatch(true);
+                    page.releaseWriteLatch(false);
                 }
 
             }
@@ -303,8 +301,11 @@ public class BloomFilter {
             for (ICachedPage p : pages) {
                 queue.put(p);
             }
-            bufferCache.finishQueue(queue);
-            readBloomFilterMetaData();
+            bufferCache.finishQueue();
+            BloomFilter.this.numBits = numBits;
+            BloomFilter.this.numHashes = numHashes;
+            BloomFilter.this.numElements = numElements;
+            BloomFilter.this.numPages = numPages;
         }
 
     }

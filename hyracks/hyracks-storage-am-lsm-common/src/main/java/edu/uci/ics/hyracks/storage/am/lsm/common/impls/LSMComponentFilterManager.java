@@ -77,7 +77,7 @@ public class LSMComponentFilterManager implements ILSMComponentFilterManager {
             }
 
         } finally {
-            filterPage.releaseWriteLatch(true);
+            filterPage.releaseWriteLatch(false);
             bulkLoader.insertFilterPage(filterPage);
         }
     }

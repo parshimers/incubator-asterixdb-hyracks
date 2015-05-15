@@ -924,7 +924,7 @@ public class RTree extends AbstractTreeIndex {
                     propagateBulk(1, false, pagesToWrite);
 
                     leafFrontier.pageId = freePageManager.getFreePage(metaFrame);
-                    leafFrontier.page.releaseWriteLatch(true);
+                    leafFrontier.page.releaseWriteLatch(false);
                     queue.put(leafFrontier.page);
                     for (ICachedPage c : pagesToWrite) {
                         queue.put(c);
@@ -977,7 +977,7 @@ public class RTree extends AbstractTreeIndex {
                             prevPageId);
 
                     int finalPageId = freePageManager.getFreePage(metaFrame);
-                    n.page.releaseWriteLatch(true);
+                    n.page.releaseWriteLatch(false);
                     AsyncFIFOPageQueueManager.setDpid(n.page, BufferedFileHandle.getDiskPageId(fileId, finalPageId));
                     queue.put(n.page);
                     n.page = null;
@@ -985,7 +985,7 @@ public class RTree extends AbstractTreeIndex {
                     prevPageId = n.pageId;
                     //else we are looking at a leaf
                 } else {
-                    n.page.releaseWriteLatch(true);
+                    n.page.releaseWriteLatch(false);
                     queue.put(n.page);
                     n.page = null;
                     prevPageId = n.pageId;
@@ -1045,7 +1045,7 @@ public class RTree extends AbstractTreeIndex {
                 } else {
                     prevNodeFrontierPages.set(level, finalPageId);
                 }
-                frontier.page.releaseWriteLatch(true);
+                frontier.page.releaseWriteLatch(false);
                 AsyncFIFOPageQueueManager.setDpid(frontier.page, BufferedFileHandle.getDiskPageId(fileId, finalPageId));
                 //queue.offer(frontier.page);
                 pagesToWrite.add(frontier.page);

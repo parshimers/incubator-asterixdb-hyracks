@@ -622,8 +622,8 @@ public class ExternalBTreeWithBuddy extends AbstractLSMIndex implements ITreeInd
             component.getBloomFilter().create();
         }
 
-        component.getBTree().activate();
-        component.getBuddyBTree().activate();
+//        component.getBTree().activate();
+//        component.getBuddyBTree().activate();
         component.getBloomFilter().activate();
         return component;
     }
@@ -690,7 +690,7 @@ public class ExternalBTreeWithBuddy extends AbstractLSMIndex implements ITreeInd
             btreeBulkLoader = (BTreeBulkLoader) ((LSMBTreeWithBuddyDiskComponent) component).getBTree()
                     .createBulkLoader(fillFactor, verifyInput, numElementsHint, false,true);
             buddyBtreeBulkLoader = (BTreeBulkLoader) ((LSMBTreeWithBuddyDiskComponent) component).getBuddyBTree()
-                    .createBulkLoader(fillFactor, verifyInput, numElementsHint, false);
+                    .createBulkLoader(fillFactor, verifyInput, numElementsHint, false, true);
             int maxBucketsPerElement = BloomCalculations.maxBucketsPerElement(numElementsHint);
             BloomFilterSpecification bloomFilterSpec = BloomCalculations.computeBloomSpec(maxBucketsPerElement,
                     bloomFilterFalsePositiveRate);

@@ -18,7 +18,6 @@ package edu.uci.ics.hyracks.storage.am.lsm.invertedindex.ondisk;
 import java.io.DataOutput;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.util.concurrent.ConcurrentLinkedQueue;
 
 import edu.uci.ics.hyracks.api.context.IHyracksCommonContext;
 import edu.uci.ics.hyracks.api.dataflow.value.IBinaryComparatorFactory;
@@ -30,7 +29,6 @@ import edu.uci.ics.hyracks.data.std.primitive.IntegerPointable;
 import edu.uci.ics.hyracks.dataflow.common.comm.io.ArrayTupleBuilder;
 import edu.uci.ics.hyracks.dataflow.common.comm.io.ArrayTupleReference;
 import edu.uci.ics.hyracks.dataflow.common.data.accessors.ITupleReference;
-import edu.uci.ics.hyracks.dataflow.common.data.marshalling.IntegerSerializerDeserializer;
 import edu.uci.ics.hyracks.dataflow.common.util.TupleUtils;
 import edu.uci.ics.hyracks.storage.am.btree.frames.BTreeLeafFrameType;
 import edu.uci.ics.hyracks.storage.am.btree.impls.BTree;
@@ -343,7 +341,7 @@ public class OnDiskInvertedIndex implements IInvertedIndex {
         }
 
         public void pinNextPage() throws HyracksDataException {
-            currentPage.releaseWriteLatch(true);
+            currentPage.releaseWriteLatch(false);
             queue.put(currentPage);
             currentPageId++;
             currentPage = bufferCache.confiscatePage(BufferedFileHandle.getDiskPageId(fileId, currentPageId));
@@ -450,11 +448,11 @@ public class OnDiskInvertedIndex implements IInvertedIndex {
             btreeBulkloader.end();
 
             if (currentPage != null) {
-                currentPage.releaseWriteLatch(true);
+                currentPage.releaseWriteLatch(false);
                 queue.put(currentPage);
             }
             invListsMaxPageId = currentPageId;
-            bufferCache.finishQueue(queue);
+            bufferCache.finishQueue();
         }
     }
 
