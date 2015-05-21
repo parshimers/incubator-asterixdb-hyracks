@@ -16,7 +16,7 @@ package edu.uci.ics.hyracks.storage.am.common.util;
 
 import java.text.DecimalFormat;
 
-import edu.uci.ics.hyracks.storage.am.common.api.IFreePageManager;
+import edu.uci.ics.hyracks.storage.am.common.api.ITreeMetaDataManager;
 import edu.uci.ics.hyracks.storage.am.common.api.ITreeIndexFrame;
 import edu.uci.ics.hyracks.storage.am.common.api.ITreeIndexMetaDataFrame;
 
@@ -53,7 +53,7 @@ public class TreeIndexStats {
 	}
 
 	public void add(ITreeIndexMetaDataFrame metaFrame,
-			IFreePageManager freePageManager) {
+			ITreeMetaDataManager freePageManager) {
 		if (freePageManager.isFreePage(metaFrame)) {
 			freePages++;
 		} else if (freePageManager.isMetaPage(metaFrame)) {

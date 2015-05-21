@@ -18,15 +18,16 @@ package edu.uci.ics.hyracks.storage.am.lsm.common.freepage;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import edu.uci.ics.hyracks.api.exceptions.HyracksDataException;
-import edu.uci.ics.hyracks.storage.am.common.api.IVirtualFreePageManager;
+import edu.uci.ics.hyracks.storage.am.common.api.IVirtualTreeMetaDataManager;
 import edu.uci.ics.hyracks.storage.am.common.api.ITreeIndexMetaDataFrame;
 import edu.uci.ics.hyracks.storage.am.common.api.ITreeIndexMetaDataFrameFactory;
+import edu.uci.ics.hyracks.storage.common.buffercache.ICachedPage;
 
-public class VirtualFreePageManager implements IVirtualFreePageManager {
+public class VirtualTreeMetaDataManager implements IVirtualTreeMetaDataManager {
     protected final int capacity;
     protected final AtomicInteger currentPageId = new AtomicInteger();
 
-    public VirtualFreePageManager(int capacity) {
+    public VirtualTreeMetaDataManager(int capacity) {
         // We start the currentPageId from 1, because the BTree uses
         // the first page as metadata page, and the second page as root page.
         // (when returning free pages we first increment, then get)
@@ -145,6 +146,14 @@ public class VirtualFreePageManager implements IVirtualFreePageManager {
     @Override
     public void setLSN(long lsn) throws HyracksDataException {
         // Method doesn't make sense for this free page manager.
+    }
+
+    public void setFilterPage(ICachedPage page) {
+        // Method doesn't make sense for this free page manager.
+    }
+
+    public ICachedPage getFilterPage(){
+        return null;
     }
 
 }

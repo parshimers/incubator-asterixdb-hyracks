@@ -64,10 +64,10 @@ public class TreeIndexStatsOperatorNodePushable extends AbstractUnaryOutputSourc
             IBufferCache bufferCache = opDesc.getStorageManager().getBufferCache(ctx);
             IFileMapProvider fileMapProvider = opDesc.getStorageManager().getFileMapProvider(ctx);
             int indexFileId = fileMapProvider.lookupFileId(treeIndexHelper.getFileReference());
-            statsGatherer = new TreeIndexStatsGatherer(bufferCache, treeIndex.getFreePageManager(), indexFileId,
+            statsGatherer = new TreeIndexStatsGatherer(bufferCache, treeIndex.getMetaManager(), indexFileId,
                     treeIndex.getRootPageId());
             TreeIndexStats stats = statsGatherer.gatherStats(treeIndex.getLeafFrameFactory().createFrame(), treeIndex
-                    .getInteriorFrameFactory().createFrame(), treeIndex.getFreePageManager().getMetaDataFrameFactory()
+                    .getInteriorFrameFactory().createFrame(), treeIndex.getMetaManager().getMetaDataFrameFactory()
                     .createFrame());
             // Write the stats output as a single string field.
             ByteBuffer frame = ctx.allocateFrame();

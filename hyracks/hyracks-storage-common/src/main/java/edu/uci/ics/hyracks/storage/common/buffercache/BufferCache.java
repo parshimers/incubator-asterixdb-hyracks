@@ -45,7 +45,7 @@ public class BufferCache implements IBufferCacheInternal, ILifeCycleComponent {
     private static final int MIN_CLEANED_COUNT_DIFF = 3;
     private static final int PIN_MAX_WAIT_TIME = 50;
     public static final int INVALID_DPID = -1;
-    public static final boolean DEBUG = false;
+    public static final boolean DEBUG = true;
 
     private final int pageSize;
     private final int maxOpenFiles;
@@ -191,66 +191,15 @@ public class BufferCache implements IBufferCacheInternal, ILifeCycleComponent {
         return cPage;
     }
 
-    @Override
-    /**
-     * Allocate and pin a virtual page. This is just like a normal page, except that it will never be flushed.
-     */
-    public ICachedPage pinVirtual(long vpid) throws HyracksDataException {
-        pinSanityCheck(vpid);
-        CachedPage cPage = findPage(vpid, true);
-        cPage.virtual.set(true);
-        return cPage;
-    }
 
-    @Override
-    /**
-     * Takes a virtual page, and copies it to a new page at the physical identifier. 
-     */
-    // TODO: I should not have to copy the page. I should just append it to the
-    // end of the hash bucket, but this is
-    // safer/easier for now.
-    public ICachedPage unpinVirtual(long vpid, long dpid) throws HyracksDataException {
-        CachedPage virtPage = findPage(vpid, true); // should definitely
-                                                    // succeed.
-        if (!virtPage.virtual.get()) {
-            // TODO: this should be a runtime exception, because it is not
-            // possible to incur outside of programmer error
-            throw new HyracksDataException("First argument must be a virtual page");
-        }
-        if (virtPage.pinCount.get() <= 1) {
-            throw new IllegalStateException("Unpin called on a page that isn't pinned");
-        }
-        if (DEBUG) {
-            pinSanityCheck(dpid); // debug
-        }
-        ICachedPage realPage = pin(dpid, true);
-        try {
-            virtPage.acquireReadLatch();
-            realPage.acquireWriteLatch();
-            System.arraycopy(virtPage.buffer.array(), 0, realPage.getBuffer().array(), 0, virtPage.buffer.capacity());
-        } finally {
-            realPage.releaseWriteLatch(true);
-            virtPage.releaseReadLatch();
-        }
-        virtPage.virtual.set(false);
-        virtPage.dirty.set(false);
-        virtPage.valid = false;
-        virtPage.pinCount.set(0);
-        return realPage;
-    }
 
-    public boolean isVirtual(long vpid) throws HyracksDataException {
+    private boolean isVirtual(long vpid) throws HyracksDataException {
         CachedPage virtPage = findPage(vpid, true);
         return virtPage.virtual.get();
     }
 
     public boolean isVirtual(ICachedPage vp) throws HyracksDataException {
         return isVirtual(((CachedPage) vp).dpid);
-    }
-
-    public ICachedPage unpinVirtual(ICachedPage vp, long dpid) throws HyracksDataException {
-        long vpid = ((CachedPage) vp).dpid;
-        return unpinVirtual(vpid, dpid);
     }
 
     private CachedPage findPage(long dpid, boolean virtual) throws HyracksDataException {
@@ -336,6 +285,7 @@ public class BufferCache implements IBufferCacheInternal, ILifeCycleComponent {
                                 cPage.pinCount.incrementAndGet();
                                 victim.pinCount.decrementAndGet();
                                 assert !cPage.virtual.get();
+                                assert victim.getVictimized().compareAndSet(true,false);
                                 return cPage;
                             }
                             cPage = cPage.next;
@@ -346,6 +296,8 @@ public class BufferCache implements IBufferCacheInternal, ILifeCycleComponent {
                     } finally {
                         bucket.bucketLock.unlock();
                     }
+                    assert victim.getVictimized().compareAndSet(true,false);
+                    assert !victim.virtual.get();
                     return victim;
                 }
                 int victimHash = hash(victim.dpid);
@@ -374,6 +326,7 @@ public class BufferCache implements IBufferCacheInternal, ILifeCycleComponent {
                             if (cPage.dpid == dpid) {
                                 cPage.pinCount.incrementAndGet();
                                 victim.pinCount.decrementAndGet();
+                                assert victim.getVictimized().compareAndSet(true,false);
                                 return cPage;
                             }
                             cPage = cPage.next;
@@ -382,6 +335,8 @@ public class BufferCache implements IBufferCacheInternal, ILifeCycleComponent {
                     } finally {
                         bucket.bucketLock.unlock();
                     }
+                    assert victim.getVictimized().compareAndSet(true,false);
+                    assert !victim.virtual.get();
                     return victim;
                 } else {
                     /*
@@ -410,6 +365,8 @@ public class BufferCache implements IBufferCacheInternal, ILifeCycleComponent {
                             if (cPage.dpid == dpid) {
                                 cPage.pinCount.incrementAndGet();
                                 victim.pinCount.decrementAndGet();
+                                assert victim.getVictimized().compareAndSet(true,false);
+                                assert !cPage.virtual.get();
                                 return cPage;
                             }
                             cPage = cPage.next;
@@ -431,6 +388,8 @@ public class BufferCache implements IBufferCacheInternal, ILifeCycleComponent {
                         victimBucket.bucketLock.unlock();
                         bucket.bucketLock.unlock();
                     }
+                    assert victim.getVictimized().compareAndSet(true,false);
+                    assert !victim.virtual.get();
                     return victim;
                 }
             }
@@ -666,7 +625,7 @@ public class BufferCache implements IBufferCacheInternal, ILifeCycleComponent {
                     if (shutdownStart) {
                         break;
                     }
-                                        System.out.println(dumpState());
+//                                        System.out.println(dumpState());
                     pageCleanerPolicy.notifyCleanCycleFinish(this);
                 }
             } catch (Exception e) {
@@ -954,7 +913,7 @@ public class BufferCache implements IBufferCacheInternal, ILifeCycleComponent {
         synchronized (fileInfoMap) {
             BufferedFileHandle fInfo = fileInfoMap.get(fileId);
             if (fInfo == null) {
-                throw new HyracksDataException("No such file mapped");
+                throw new HyracksDataException("No such file mapped for fileId:" + fileId);
             }
             assert ioManager.getSize(fInfo.getFileHandle()) % getPageSize() == 0;
             return (int) (ioManager.getSize(fInfo.getFileHandle()) / getPageSize());
@@ -1052,7 +1011,7 @@ public class BufferCache implements IBufferCacheInternal, ILifeCycleComponent {
                         confiscateLock.unlock();
                     }
                 }
-
+                ((CachedPage) returnPage).getVictimized().compareAndSet(true,false);
                 return returnPage;
             }
             // no page available to confiscate. try kicking the cleaner thread.
@@ -1097,8 +1056,9 @@ public class BufferCache implements IBufferCacheInternal, ILifeCycleComponent {
                 cPage.valid = true;
                 cPage.next = bucket.cachedPage;
                 bucket.cachedPage = cPage;
-                cPage.pinCount.decrementAndGet();
-                assert cPage.pinCount.get() == 0;
+                assert cPage.pinCount.decrementAndGet() ==0 ;
+                assert cPage.latch.getReadLockCount() == 1;
+                assert cPage.latch.getWriteHoldCount() == 0;
                 if(DEBUG){
                     confiscatedPages.remove(cPage);
                     confiscatedPagesOwner.remove(cPage);
@@ -1113,6 +1073,8 @@ public class BufferCache implements IBufferCacheInternal, ILifeCycleComponent {
             cPage.invalidate();
             cPage.pinCount.decrementAndGet();
             assert cPage.pinCount.get() == 0;
+            assert cPage.latch.getReadLockCount() == 0;
+            assert cPage.latch.getWriteHoldCount() == 0;
             if(DEBUG){
                 confiscateLock.lock();
                 try{

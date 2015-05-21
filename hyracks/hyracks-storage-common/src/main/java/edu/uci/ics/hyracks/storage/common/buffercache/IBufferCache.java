@@ -37,14 +37,6 @@ public interface IBufferCache {
 
     public ICachedPage pin(long dpid, boolean newPage) throws HyracksDataException;
 
-    public ICachedPage pinVirtual(long vpid) throws HyracksDataException;
-
-    public ICachedPage unpinVirtual(long vpid, long dpid) throws HyracksDataException;
-
-    public ICachedPage unpinVirtual(ICachedPage vp, long dpid) throws HyracksDataException;
-
-    public boolean isVirtual(long vpid) throws HyracksDataException;
-
     public boolean isVirtual(ICachedPage vp) throws HyracksDataException;
 
     public void unpin(ICachedPage page) throws HyracksDataException;

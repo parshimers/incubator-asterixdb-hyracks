@@ -14,6 +14,8 @@
  */
 package edu.uci.ics.hyracks.storage.common.buffercache;
 
+import java.util.concurrent.atomic.AtomicBoolean;
+
 public interface ICachedPageInternal extends ICachedPage {
     public int getCachedPageId();
 
@@ -22,4 +24,6 @@ public interface ICachedPageInternal extends ICachedPage {
     public Object getReplacementStrategyObject();
 
     public boolean pinIfGoodVictim();
+
+    AtomicBoolean getVictimized();
 }

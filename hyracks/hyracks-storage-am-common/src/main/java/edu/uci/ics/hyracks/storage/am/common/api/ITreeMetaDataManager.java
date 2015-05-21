@@ -15,8 +15,9 @@
 package edu.uci.ics.hyracks.storage.am.common.api;
 
 import edu.uci.ics.hyracks.api.exceptions.HyracksDataException;
+import edu.uci.ics.hyracks.storage.common.buffercache.ICachedPage;
 
-public interface IFreePageManager {
+public interface ITreeMetaDataManager {
     public void open(int fileId);
 
     public void close() throws HyracksDataException;
@@ -54,5 +55,9 @@ public interface IFreePageManager {
     long getLSN() throws HyracksDataException;
 
     void setLSN(long lsn) throws HyracksDataException;
+
+    void setFilterPage(ICachedPage page);
+
+    ICachedPage getFilterPage();
 
 }

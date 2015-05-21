@@ -90,14 +90,23 @@ public class AsyncFIFOPageQueueManager implements Runnable {
         }
         return new PageQueue(bufferCache, writer);
     }
-    public synchronized void destroyQueue(){
+    public void destroyQueue(){
         haltWriter = true;
         if(writerThread!=null){
-            writerThread.interrupt();
+            while(!sleeping.get()){
+                synchronized(queue){
+                    try {
+                        queue.wait();
+                    }catch(InterruptedException e){
+                        break;
+                    }
+                }
+            }
             try {
+                writerThread.interrupt();
                 writerThread.join();
             }catch(InterruptedException e){
-               // that's ok?
+                // that's ok?
             }
         }
     }
@@ -125,10 +134,12 @@ public class AsyncFIFOPageQueueManager implements Runnable {
     public void run() {
         if(DEBUG) System.out.println("[FIFO] Writer started");
         while (!haltWriter) {
+            ICachedPage page = null;
             try {
                 QueueEntry entry = queue.take();
                 sleeping.set(false);
-                ICachedPage page = entry.page;
+                page = entry.page;
+                page.acquireReadLatch();
                 
                 if(DEBUG) System.out.println("[FIFO] Write " + BufferedFileHandle.getFileId(((CachedPage)page).dpid)+","
                         + BufferedFileHandle.getPageId(((CachedPage)page).dpid));
@@ -147,7 +158,11 @@ public class AsyncFIFOPageQueueManager implements Runnable {
                     e.printStackTrace();
                 }
             } catch(InterruptedException e) {
-                // TODO
+                continue;
+            } finally{
+                if(page!=null){
+                    page.releaseReadLatch();
+                }
             }
         }
     }

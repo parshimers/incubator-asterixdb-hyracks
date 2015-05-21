@@ -17,7 +17,7 @@ package edu.uci.ics.hyracks.storage.am.common.freepage;
 import java.util.logging.Logger;
 
 import edu.uci.ics.hyracks.api.exceptions.HyracksDataException;
-import edu.uci.ics.hyracks.storage.am.common.api.IFreePageManager;
+import edu.uci.ics.hyracks.storage.am.common.api.ITreeMetaDataManager;
 import edu.uci.ics.hyracks.storage.am.common.api.ITreeIndexMetaDataFrame;
 import edu.uci.ics.hyracks.storage.am.common.api.ITreeIndexMetaDataFrameFactory;
 import edu.uci.ics.hyracks.storage.common.buffercache.BufferCache;
@@ -25,7 +25,7 @@ import edu.uci.ics.hyracks.storage.common.buffercache.IBufferCache;
 import edu.uci.ics.hyracks.storage.common.buffercache.ICachedPage;
 import edu.uci.ics.hyracks.storage.common.file.BufferedFileHandle;
 
-public class LinkedListFreePageManager implements IFreePageManager {
+public class LinkedListFreePageManager implements ITreeMetaDataManager {
 
     private static final byte META_PAGE_LEVEL_INDICATOR = -1;
     private static final byte FREE_PAGE_LEVEL_INDICATOR = -2;
@@ -35,6 +35,7 @@ public class LinkedListFreePageManager implements IFreePageManager {
     private final ITreeIndexMetaDataFrameFactory metaDataFrameFactory;
     private boolean appendOnly = false;
     ICachedPage confiscatedMetaNode;
+    ICachedPage filterPage;
     private static Logger LOGGER = Logger
             .getLogger("edu.uci.ics.hyracks.storage.am.common.freepage.LinkedListFreePageManager");
 
@@ -140,8 +141,7 @@ public class LinkedListFreePageManager implements IFreePageManager {
                         if (!appendOnly) {
                             metaNode.releaseWriteLatch(true);
                             bufferCache.unpin(metaNode);
-                        }
-                        else{
+                        } else {
                             metaNode.releaseWriteLatch(false);
                         }
                     }
@@ -159,8 +159,7 @@ public class LinkedListFreePageManager implements IFreePageManager {
             if (!appendOnly) {
                 metaNode.releaseWriteLatch(true);
                 bufferCache.unpin(metaNode);
-            }
-            else{
+            } else {
                 metaNode.releaseWriteLatch(false);
             }
         }
@@ -207,8 +206,7 @@ public class LinkedListFreePageManager implements IFreePageManager {
             if (!appendOnly) {
                 metaNode.releaseWriteLatch(true);
                 bufferCache.unpin(metaNode);
-            }
-            else{
+            } else {
                 metaNode.releaseWriteLatch(false);
             }
         }
@@ -228,6 +226,10 @@ public class LinkedListFreePageManager implements IFreePageManager {
         try {
             metaFrame.setPage(metaNode);
             filterPageId = metaFrame.getLSMComponentFilterPageId();
+            if(appendOnly && filterPageId == -1){
+                //hint to filter manager that we are in append-only mode
+                filterPageId = -2;
+            }
         } finally {
             metaNode.releaseReadLatch();
             if (!appendOnly) {
@@ -306,9 +308,34 @@ public class LinkedListFreePageManager implements IFreePageManager {
         closeGivePageId();
     }
 
+    private void writeFilterPage() throws HyracksDataException {
+        if(filterPage != null) {
+            ITreeIndexMetaDataFrame metaFrame = metaDataFrameFactory.createFrame();
+            metaFrame.setPage(confiscatedMetaNode);
+            metaFrame.setValid(true);
+            int finalFilterPage = getMaxPage(metaFrame);
+            ICachedPage finalFilter = bufferCache.pin(BufferedFileHandle.getDiskPageId(fileId, finalFilterPage), true);
+            try {
+                filterPage.acquireReadLatch();
+                finalFilter.acquireWriteLatch();
+                bufferCache.copyPage(filterPage, finalFilter);
+                setFilterPageId(finalFilterPage);
+            }
+            finally {
+                finalFilter.releaseWriteLatch(true);
+                bufferCache.flushDirtyPage(finalFilter);
+                bufferCache.unpin(finalFilter);
+                filterPage.releaseReadLatch();
+                bufferCache.returnPage(filterPage,false);
+            }
+        }
+    }
+
+
     public int closeGivePageId() throws HyracksDataException {
         int finalPageId = 0;
         if (appendOnly && fileId > 0) {
+            writeFilterPage();
             ITreeIndexMetaDataFrame metaFrame = metaDataFrameFactory.createFrame();
             metaFrame.setPage(confiscatedMetaNode);
             metaFrame.setValid(true);
@@ -338,7 +365,7 @@ public class LinkedListFreePageManager implements IFreePageManager {
      * However, some implementations still write the meta data to the front. To deal with this as well
      * as to provide downward compatibility, this method tries to find the meta data page first in the
      * last and then in the first page of the file.
-     * 
+     *
      * @return The Id of the page holding the meta data
      * @throws HyracksDataException
      */
@@ -409,11 +436,20 @@ public class LinkedListFreePageManager implements IFreePageManager {
             if (!appendOnly) {
                 metaNode.releaseWriteLatch(true);
                 bufferCache.unpin(metaNode);
-            }
-            else{
+            } else {
                 metaNode.releaseWriteLatch(false);
             }
         }
     }
 
+    @Override
+    public void setFilterPage(ICachedPage filterPage) {
+        this.filterPage = filterPage;
+    }
+
+    @Override
+    public ICachedPage getFilterPage() {
+        return this.filterPage;
+    }
 }
+

@@ -133,16 +133,6 @@ public class MultitenantVirtualBufferCache implements IVirtualBufferCache {
     }
 
     @Override
-    public ICachedPage pinVirtual(long vpid) throws HyracksDataException {
-        throw new UnsupportedOperationException("Virtual Pages are not a valid concept in this context");
-    }
-
-    @Override
-    public ICachedPage unpinVirtual(long vpid, long dpid) throws HyracksDataException {
-        throw new UnsupportedOperationException("Virtual Pages are not a valid concept in this context");
-    }
-
-    @Override
     public int getNumPagesOfFile(int fileId) throws HyracksDataException {
         throw new UnsupportedOperationException();
     }
@@ -153,16 +143,6 @@ public class MultitenantVirtualBufferCache implements IVirtualBufferCache {
             LOGGER.log(Level.INFO, "Calling adviseWontNeed on " + this.getClass().getName()
                     + " makes no sense as this BufferCache cannot evict pages");
         }
-    }
-
-    @Override
-    public ICachedPage unpinVirtual(ICachedPage vp, long dpid) throws HyracksDataException {
-        throw new UnsupportedOperationException("Virtual Pages are not a valid concept in this context");
-    }
-
-    @Override
-    public boolean isVirtual(long vpid) throws HyracksDataException {
-        throw new UnsupportedOperationException("Virtual Pages are not a valid concept in this context");
     }
 
     @Override

@@ -357,16 +357,6 @@ public class VirtualBufferCache implements IVirtualBufferCache {
     }
 
     @Override
-    public ICachedPage pinVirtual(long vpid) throws HyracksDataException {
-        return null;
-    }
-
-    @Override
-    public ICachedPage unpinVirtual(long vpid, long dpid) throws HyracksDataException {
-        return null;
-    }
-
-    @Override
     public int getNumPagesOfFile(int fileId) throws HyracksDataException {
         throw new UnsupportedOperationException();
     }
@@ -377,16 +367,6 @@ public class VirtualBufferCache implements IVirtualBufferCache {
             LOGGER.log(Level.INFO, "Calling adviseWontNeed on " + this.getClass().getName()
                     + " makes no sense as this BufferCache cannot evict pages");
         }
-    }
-
-    @Override
-    public ICachedPage unpinVirtual(ICachedPage vp, long dpid) throws HyracksDataException {
-        return null;
-    }
-
-    @Override
-    public boolean isVirtual(long vpid) throws HyracksDataException {
-        return false;
     }
 
     @Override

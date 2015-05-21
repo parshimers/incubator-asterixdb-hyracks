@@ -33,7 +33,6 @@ import edu.uci.ics.hyracks.storage.am.common.api.ITreeIndexCursor;
 import edu.uci.ics.hyracks.storage.am.common.api.ITreeIndexFrameFactory;
 import edu.uci.ics.hyracks.storage.am.common.api.IndexException;
 import edu.uci.ics.hyracks.storage.am.common.api.TreeIndexException;
-import edu.uci.ics.hyracks.storage.am.common.impls.AbstractTreeIndex.AbstractTreeIndexBulkLoader;
 import edu.uci.ics.hyracks.storage.am.common.impls.NoOpOperationCallback;
 import edu.uci.ics.hyracks.storage.am.common.ophelpers.IndexOperation;
 import edu.uci.ics.hyracks.storage.am.common.ophelpers.MultiComparator;
@@ -248,8 +247,8 @@ public class LSMRTreeWithAntiMatterTuples extends AbstractLSMRTree {
             filterTuples.add(flushingComponent.getLSMComponentFilter().getMinTuple());
             filterTuples.add(flushingComponent.getLSMComponentFilter().getMaxTuple());
             filterManager.updateFilterInfo(component.getLSMComponentFilter(), filterTuples);
-            filterManager.writeFilterInfo(component.getLSMComponentFilter(), component.getRTree(),
-                    (AbstractTreeIndexBulkLoader) rTreeBulkloader);
+            filterManager.writeFilterInfo(component.getLSMComponentFilter(), component.getRTree()
+            );
         }
         rTreeBulkloader.end();
 
@@ -304,8 +303,8 @@ public class LSMRTreeWithAntiMatterTuples extends AbstractLSMRTree {
                 filterTuples.add(mergeOp.getMergingComponents().get(i).getLSMComponentFilter().getMaxTuple());
             }
             filterManager.updateFilterInfo(component.getLSMComponentFilter(), filterTuples);
-            filterManager.writeFilterInfo(component.getLSMComponentFilter(), component.getBTree(),
-                    (AbstractTreeIndexBulkLoader) bulkloader);
+            filterManager.writeFilterInfo(component.getLSMComponentFilter(), component.getBTree()
+            );
         }
         bulkloader.end();
 
@@ -419,7 +418,7 @@ public class LSMRTreeWithAntiMatterTuples extends AbstractLSMRTree {
 
                 if (component.getLSMComponentFilter() != null) {
                     filterManager.writeFilterInfo(component.getLSMComponentFilter(),
-                            ((LSMRTreeDiskComponent) component).getRTree(), (AbstractTreeIndexBulkLoader) bulkLoader);
+                            ((LSMRTreeDiskComponent) component).getRTree());
                 }
                 bulkLoader.end();
 

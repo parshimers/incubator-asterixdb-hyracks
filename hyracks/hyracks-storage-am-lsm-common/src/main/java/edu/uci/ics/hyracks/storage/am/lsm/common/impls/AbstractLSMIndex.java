@@ -122,9 +122,9 @@ public abstract class AbstractLSMIndex implements ILSMIndexInternal {
         // Flush all dirty pages of the tree. 
         // By default, metadata and data are flushed asynchronously in the buffercache.
         // This means that the flush issues writes to the OS, but the data may still lie in filesystem buffers.
-        ITreeIndexMetaDataFrame metadataFrame = treeIndex.getFreePageManager().getMetaDataFrameFactory().createFrame();
+        ITreeIndexMetaDataFrame metadataFrame = treeIndex.getMetaManager().getMetaDataFrameFactory().createFrame();
         int startPage = 0;
-        int maxPage = treeIndex.getFreePageManager().getMaxPage(metadataFrame);
+        int maxPage = treeIndex.getMetaManager().getMaxPage(metadataFrame);
         forceFlushDirtyPages(bufferCache, fileId, startPage, maxPage);
     }
 
@@ -149,7 +149,7 @@ public abstract class AbstractLSMIndex implements ILSMIndexInternal {
     protected void markAsValidInternal(ITreeIndex treeIndex) throws HyracksDataException {
         int fileId = treeIndex.getFileId();
         IBufferCache bufferCache = treeIndex.getBufferCache();
-        int metaPageId = treeIndex.getFreePageManager().closeGivePageId();
+        int metaPageId = treeIndex.getMetaManager().closeGivePageId();
         // WARNING: flushing the metadata page should be done after releasing the write latch; otherwise, the page 
         // won't be flushed to disk because it won't be dirty until the write latch has been released.
         ICachedPage metadataPage = bufferCache.tryPin(BufferedFileHandle.getDiskPageId(fileId, metaPageId));

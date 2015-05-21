@@ -21,16 +21,7 @@ import edu.uci.ics.hyracks.api.dataflow.value.IBinaryComparatorFactory;
 import edu.uci.ics.hyracks.api.exceptions.HyracksDataException;
 import edu.uci.ics.hyracks.api.io.FileReference;
 import edu.uci.ics.hyracks.dataflow.common.data.accessors.ITupleReference;
-import edu.uci.ics.hyracks.storage.am.common.api.IFreePageManager;
-import edu.uci.ics.hyracks.storage.am.common.api.IIndexBulkLoader;
-import edu.uci.ics.hyracks.storage.am.common.api.ITreeIndex;
-import edu.uci.ics.hyracks.storage.am.common.api.ITreeIndexAccessor;
-import edu.uci.ics.hyracks.storage.am.common.api.ITreeIndexFrame;
-import edu.uci.ics.hyracks.storage.am.common.api.ITreeIndexFrameFactory;
-import edu.uci.ics.hyracks.storage.am.common.api.ITreeIndexMetaDataFrame;
-import edu.uci.ics.hyracks.storage.am.common.api.ITreeIndexTupleWriter;
-import edu.uci.ics.hyracks.storage.am.common.api.IndexException;
-import edu.uci.ics.hyracks.storage.am.common.api.TreeIndexException;
+import edu.uci.ics.hyracks.storage.am.common.api.*;
 import edu.uci.ics.hyracks.storage.am.common.ophelpers.MultiComparator;
 import edu.uci.ics.hyracks.storage.common.buffercache.IBufferCache;
 import edu.uci.ics.hyracks.storage.common.buffercache.ICachedPage;
@@ -44,7 +35,7 @@ public abstract class AbstractTreeIndex implements ITreeIndex {
 
     protected final IBufferCache bufferCache;
     protected final IFileMapProvider fileMapProvider;
-    protected final IFreePageManager freePageManager;
+    protected final ITreeMetaDataManager freePageManager;
 
     protected final ITreeIndexFrameFactory interiorFrameFactory;
     protected final ITreeIndexFrameFactory leafFrameFactory;
@@ -62,7 +53,7 @@ public abstract class AbstractTreeIndex implements ITreeIndex {
     protected int BULKLOAD_LEAF_START = 0;
 
     public AbstractTreeIndex(IBufferCache bufferCache, IFileMapProvider fileMapProvider,
-            IFreePageManager freePageManager, ITreeIndexFrameFactory interiorFrameFactory,
+            ITreeMetaDataManager freePageManager, ITreeIndexFrameFactory interiorFrameFactory,
             ITreeIndexFrameFactory leafFrameFactory, IBinaryComparatorFactory[] cmpFactories, int fieldCount,
             FileReference file) {
         this.bufferCache = bufferCache;
@@ -281,7 +272,7 @@ public abstract class AbstractTreeIndex implements ITreeIndex {
         return cmpFactories;
     }
 
-    public IFreePageManager getFreePageManager() {
+    public ITreeMetaDataManager getMetaManager() {
         return freePageManager;
     }
 
@@ -376,16 +367,7 @@ public abstract class AbstractTreeIndex implements ITreeIndex {
         @Override
         public void end() throws HyracksDataException {
             //move the root page to the first data page if necessary
-            //write the filter page right after the metadata page
-            if (filterPage != null) {
-                bufferCache.setPageDiskId(filterPage,
-                        BufferedFileHandle.getDiskPageId(fileId, freePageManager.getFreePage(metaFrame)));
-                queue.put(filterPage);
-                bufferCache.finishQueue();
-            }
-            else{
-                bufferCache.finishQueue();
-            }
+            bufferCache.finishQueue();
             if (!appendOnly) {
                 ICachedPage newRoot = bufferCache.pin(BufferedFileHandle.getDiskPageId(fileId, rootPage), true);
                 newRoot.acquireWriteLatch();
@@ -407,17 +389,26 @@ public abstract class AbstractTreeIndex implements ITreeIndex {
                     // register old root as a free page
                     freePageManager.addFreePage(metaFrame, lastNodeFrontier.pageId);
 
-                    if (!releasedLatches) {
-                        for (int i = 0; i < nodeFrontiers.size(); i++) {
-                            try {
-                                nodeFrontiers.get(i).page.releaseWriteLatch(false);
-                            } catch (IllegalMonitorStateException e) {
-                                //ignore illegal monitor state exception
-                            }
+                }
+                if (!releasedLatches) {
+                    for (int i = 0; i < nodeFrontiers.size(); i++) {
+                        try {
+                            nodeFrontiers.get(i).page.releaseWriteLatch(false);
+                        } catch (IllegalMonitorStateException e) {
+                            //ignore illegal monitor state exception
                         }
                     }
                 }
             } else {
+                if (!releasedLatches) {
+                    for (int i = 0; i < nodeFrontiers.size(); i++) {
+                        try {
+                            nodeFrontiers.get(i).page.releaseWriteLatch(false);
+                        } catch (IllegalMonitorStateException e) {
+                            //ignore illegal monitor state exception
+                        }
+                    }
+                }
                 freePageManager.close();
             }
         }

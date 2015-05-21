@@ -18,7 +18,7 @@ import java.util.ArrayList;
 import java.util.Random;
 
 import edu.uci.ics.hyracks.api.exceptions.HyracksDataException;
-import edu.uci.ics.hyracks.storage.am.common.api.IFreePageManager;
+import edu.uci.ics.hyracks.storage.am.common.api.ITreeMetaDataManager;
 import edu.uci.ics.hyracks.storage.am.common.api.ITreeIndexFrame;
 import edu.uci.ics.hyracks.storage.am.common.api.ITreeIndexMetaDataFrame;
 import edu.uci.ics.hyracks.storage.am.common.ophelpers.IntArrayList;
@@ -28,13 +28,13 @@ import edu.uci.ics.hyracks.storage.common.file.BufferedFileHandle;
 
 public class TreeIndexBufferCacheWarmup {
 	private final IBufferCache bufferCache;
-	private final IFreePageManager freePageManager;
+	private final ITreeMetaDataManager freePageManager;
 	private final int fileId;
 	private final ArrayList<IntArrayList> pagesByLevel = new ArrayList<IntArrayList>();
 	private final Random rnd = new Random();
 
 	public TreeIndexBufferCacheWarmup(IBufferCache bufferCache,
-			IFreePageManager freePageManager, int fileId) {
+			ITreeMetaDataManager freePageManager, int fileId) {
 		this.bufferCache = bufferCache;
 		this.freePageManager = freePageManager;
 		this.fileId = fileId;

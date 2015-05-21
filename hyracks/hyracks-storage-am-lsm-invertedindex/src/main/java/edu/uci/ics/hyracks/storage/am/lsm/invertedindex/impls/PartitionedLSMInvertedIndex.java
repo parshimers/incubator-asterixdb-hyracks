@@ -22,7 +22,7 @@ import edu.uci.ics.hyracks.api.dataflow.value.IBinaryComparatorFactory;
 import edu.uci.ics.hyracks.api.dataflow.value.ITypeTraits;
 import edu.uci.ics.hyracks.api.io.FileReference;
 import edu.uci.ics.hyracks.storage.am.bloomfilter.impls.BloomFilterFactory;
-import edu.uci.ics.hyracks.storage.am.common.api.IVirtualFreePageManager;
+import edu.uci.ics.hyracks.storage.am.common.api.IVirtualTreeMetaDataManager;
 import edu.uci.ics.hyracks.storage.am.common.api.IndexException;
 import edu.uci.ics.hyracks.storage.am.lsm.common.api.ILSMComponentFilterFactory;
 import edu.uci.ics.hyracks.storage.am.lsm.common.api.ILSMComponentFilterFrameFactory;
@@ -62,7 +62,7 @@ public class PartitionedLSMInvertedIndex extends LSMInvertedIndex {
 
     @Override
     protected InMemoryInvertedIndex createInMemoryInvertedIndex(IVirtualBufferCache virtualBufferCache,
-            IVirtualFreePageManager virtualFreePageManager, int id) throws IndexException {
+            IVirtualTreeMetaDataManager virtualFreePageManager, int id) throws IndexException {
         return InvertedIndexUtils.createPartitionedInMemoryBTreeInvertedindex(virtualBufferCache,
                 virtualFreePageManager, invListTypeTraits, invListCmpFactories, tokenTypeTraits, tokenCmpFactories,
                 tokenizerFactory, new FileReference(new File(fileManager.getBaseDir() + "_virtual_vocab_" + id)));

@@ -27,7 +27,7 @@ public class FIFOLocalWriter implements IFIFOPageWriter {
         bufferCache.ioManager.syncWrite(fInfo.getFileHandle(), (long) BufferedFileHandle.getPageId(cPage.dpid) * bufferCache.getPageSize(),
                 cPage.buffer);
         bufferCache.returnPage(cPage);
-        if(DEBUG) System.out.println("[FIFO] Return page");
+        if(DEBUG) System.out.println("[FIFO] Return page: " + cPage.cpid + "," + cPage.dpid);
     }
     
     @Override
