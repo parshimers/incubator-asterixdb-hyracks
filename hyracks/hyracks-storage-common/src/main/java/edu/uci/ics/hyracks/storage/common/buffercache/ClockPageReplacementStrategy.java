@@ -94,12 +94,9 @@ public class ClockPageReplacementStrategy implements IPageReplacementStrategy {
              * page as a victim.
              */
             AtomicBoolean accessedFlag = getPerPageObject(cPage);
-            if (!accessedFlag.compareAndSet(true, false) && !cPage.getVictimized().get()) {
+            if (!accessedFlag.compareAndSet(true, false)) {
                 if (cPage.pinIfGoodVictim()) {
-                    //Resolve the race of returning a victim to two actors
-                    if(cPage.getVictimized().compareAndSet(false,true)) {
                         return cPage;
-                    }
                 }
             }
             clockPtr.set(clockPtr.incrementAndGet() % (numPages.get()-1));
@@ -125,12 +122,9 @@ public class ClockPageReplacementStrategy implements IPageReplacementStrategy {
         bufferCache.addPage(cPage);
         numPages.incrementAndGet();
         AtomicBoolean accessedFlag = getPerPageObject(cPage);
-        if (!accessedFlag.compareAndSet(true, false) && !cPage.getVictimized().get()) {
+        if (!accessedFlag.compareAndSet(true, false)) {
             if (cPage.pinIfGoodVictim()) {
-                //Resolve the race of returning a victim to two actors
-                if(cPage.getVictimized().compareAndSet(false,true)) {
-                    return cPage;
-                }
+                return cPage;
             }
         }
         return null;

@@ -126,9 +126,9 @@ public abstract class AbstractLSMIndex implements ILSMIndexInternal {
         // Flush all dirty pages of the tree. 
         // By default, metadata and data are flushed asynchronously in the buffercache.
         // This means that the flush issues writes to the OS, but the data may still lie in filesystem buffers.
-        ITreeIndexMetaDataFrame metadataFrame = treeIndex.getFreePageManager().getMetaDataFrameFactory().createFrame();
+        ITreeIndexMetaDataFrame metadataFrame = treeIndex.getMetaManager().getMetaDataFrameFactory().createFrame();
         int startPage = 0;
-        int maxPage = treeIndex.getFreePageManager().getMaxPage(metadataFrame);
+        int maxPage = treeIndex.getMetaManager().getMaxPage(metadataFrame);
         forceFlushDirtyPages(bufferCache, fileId, startPage, maxPage);
     }
 
@@ -156,22 +156,10 @@ public abstract class AbstractLSMIndex implements ILSMIndexInternal {
     protected void markAsValidInternal(ITreeIndex treeIndex) throws HyracksDataException {
         int fileId = treeIndex.getFileId();
         IBufferCache bufferCache = treeIndex.getBufferCache();
-        ITreeIndexMetaDataFrame metadataFrame = treeIndex.getFreePageManager().getMetaDataFrameFactory().createFrame();
-        // Mark the component as a valid component by flushing the metadata page to disk
-        int metadataPageId = treeIndex.getFreePageManager().getFirstMetadataPage();
-        ICachedPage metadataPage = bufferCache.pin(BufferedFileHandle.getDiskPageId(fileId, metadataPageId), false);
-        metadataPage.acquireWriteLatch();
-        try {
-            metadataFrame.setPage(metadataPage);
-            metadataFrame.setValid(true);
-        } finally {
-            metadataPage.releaseWriteLatch(true);
-            bufferCache.unpin(metadataPage);
-        }
-
-        // WARNING: flushing the metadata page should be done after releasing the write latch; otherwise, the page 
+        int metaPageId = treeIndex.getMetaManager().closeGivePageId();
+        // WARNING: flushing the metadata page should be done after releasing the write latch; otherwise, the page
         // won't be flushed to disk because it won't be dirty until the write latch has been released.
-        metadataPage = bufferCache.tryPin(BufferedFileHandle.getDiskPageId(fileId, metadataPageId));
+        ICachedPage metadataPage = bufferCache.tryPin(BufferedFileHandle.getDiskPageId(fileId, metaPageId));
         if (metadataPage != null) {
             try {
                 // Flush the single modified page to disk.
@@ -180,7 +168,6 @@ public abstract class AbstractLSMIndex implements ILSMIndexInternal {
                 bufferCache.unpin(metadataPage);
             }
         }
-
         // Force modified metadata page to disk.
         // If the index is not durable, then the flush is not necessary.
         if (durable) {

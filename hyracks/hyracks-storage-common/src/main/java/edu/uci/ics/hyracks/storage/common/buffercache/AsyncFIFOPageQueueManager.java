@@ -16,6 +16,7 @@ public class AsyncFIFOPageQueueManager implements Runnable {
     protected class QueueEntry {
         ICachedPage page;
         int fileid = -1;
+        boolean notifier = false;
         IFIFOPageWriter writer;
         IBufferCache bufferCache;
         protected QueueEntry(ICachedPage page, int fileid, IFIFOPageWriter writer, IBufferCache bufferCache)  {
@@ -23,6 +24,13 @@ public class AsyncFIFOPageQueueManager implements Runnable {
             this.fileid = fileid;
             this.writer = writer;
             this.bufferCache = bufferCache;
+        }
+        protected QueueEntry(boolean notifier)  {
+            this.page = null;
+            this.fileid = -1;
+            this.writer = null;
+            this.bufferCache = null;
+            this.notifier = notifier;
         }
     }
     
@@ -93,10 +101,10 @@ public class AsyncFIFOPageQueueManager implements Runnable {
     public void destroyQueue(){
         haltWriter = true;
         if(writerThread!=null){
-            while(!sleeping.get()){
+            while(!queue.isEmpty()){
                 synchronized(queue){
                     try {
-                        queue.wait();
+                        queue.wait(100l);
                     }catch(InterruptedException e){
                         break;
                     }
@@ -118,9 +126,15 @@ public class AsyncFIFOPageQueueManager implements Runnable {
     public void finishQueue() {
         if(DEBUG) System.out.println("[FIFO] Finishing Queue");
         try {
-            synchronized(queue){
-            while(!queue.isEmpty() || !sleeping.get()){
-                    queue.wait();
+            if(queue.isEmpty()){
+                return;
+            }
+            //else
+            QueueEntry lowWater = new QueueEntry(true);
+            queue.put(lowWater);
+            while(queue.contains(lowWater)){
+                synchronized(lowWater){
+                    lowWater.wait(100l);
                 }
             }
         } catch (InterruptedException e) {
@@ -137,7 +151,12 @@ public class AsyncFIFOPageQueueManager implements Runnable {
             ICachedPage page = null;
             try {
                 QueueEntry entry = queue.take();
-                sleeping.set(false);
+                if(entry.notifier == true){
+                    synchronized(entry) {
+                        entry.notifyAll();
+                        continue;
+                    }
+                }
                 page = entry.page;
                 page.acquireReadLatch();
                 
@@ -146,13 +165,6 @@ public class AsyncFIFOPageQueueManager implements Runnable {
 
                 try {
                     entry.writer.write(page, entry.bufferCache);
-
-                    synchronized(queue){
-                    if(queue.isEmpty()){
-                            queue.notifyAll();
-                        }
-                        sleeping.compareAndSet(false,true);
-                    }
                 } catch (HyracksDataException e) {
                     // TODO Auto-generated catch block
                     e.printStackTrace();

@@ -119,8 +119,6 @@ public class LSMRTree extends AbstractLSMRTree {
      * Opens LSMRTree, cleaning up invalid files from base dir, and registering
      * all valid files as on-disk RTrees and BTrees.
      * 
-     * @param fileReference
-     *            Dummy file id.
      * @throws HyracksDataException
      */
     @Override
@@ -266,7 +264,6 @@ public class LSMRTree extends AbstractLSMRTree {
             } finally {
                 cursor.close();
             }
-            rTreeBulkloader.end();
         }
 
         rTreeBulkloader.end();
@@ -364,9 +361,6 @@ public class LSMRTree extends AbstractLSMRTree {
             LSMRTreeDeletedKeysBTreeMergeCursor btreeCursor = new LSMRTreeDeletedKeysBTreeMergeCursor(opCtx);
             search(opCtx, btreeCursor, rtreeSearchPred);
 
-            BTree btree = mergedComponent.getBTree();
-            IIndexBulkLoader btreeBulkLoader = btree.createBulkLoader(1.0f, true, 0L, false);
-
             long numElements = 0L;
             for (int i = 0; i < mergeOp.getMergingComponents().size(); ++i) {
                 numElements += ((LSMRTreeDiskComponent) mergeOp.getMergingComponents().get(i)).getBloomFilter()
@@ -390,8 +384,18 @@ public class LSMRTree extends AbstractLSMRTree {
                 btreeCursor.close();
                 builder.end();
             }
-            btreeBulkLoader.end();
         }
+
+        if (mergedComponent.getLSMComponentFilter() != null) {
+                List<ITupleReference> filterTuples = new ArrayList<ITupleReference>();
+            for (int i = 0; i < mergeOp.getMergingComponents().size(); ++i) {
+                filterTuples.add(mergeOp.getMergingComponents().get(i).getLSMComponentFilter().getMinTuple());
+                filterTuples.add(mergeOp.getMergingComponents().get(i).getLSMComponentFilter().getMaxTuple());
+            }
+            filterManager.updateFilterInfo(mergedComponent.getLSMComponentFilter(), filterTuples);
+            filterManager.writeFilterInfo(mergedComponent.getLSMComponentFilter(), mergedComponent.getRTree());
+        }
+        btreeBulkLoader.end();
 
         IIndexBulkLoader bulkLoader = mergedComponent.getRTree().createBulkLoader(1.0f, false, 0L, false, true);
         try {
@@ -511,6 +515,7 @@ public class LSMRTree extends AbstractLSMRTree {
     public class LSMRTreeBulkLoader implements IIndexBulkLoader {
         private final ILSMComponent component;
         private final IIndexBulkLoader bulkLoader;
+        private final IIndexBulkLoader buddyBTreeBulkloader;
         private boolean cleanedUpArtifacts = false;
         private boolean isEmptyComponent = true;
         public final PermutingTupleReference indexTuple;
@@ -531,9 +536,8 @@ public class LSMRTree extends AbstractLSMRTree {
             }
             bulkLoader = ((LSMRTreeDiskComponent) component).getRTree().createBulkLoader(fillFactor, verifyInput,
                     numElementsHint, false, true);
-            buddyBTreeBulkloader = ((LSMRTreeDiskComponent) component).getBTree().createBulkLoader(fillFactor,
-                    verifyInput, numElementsHint, false, true);
-
+            buddyBTreeBulkloader = ((LSMRTreeDiskComponent)component).getBTree().createBulkLoader(fillFactor,
+                    verifyInput,numElementsHint,false,true);
             if (filterFields != null) {
                 indexTuple = new PermutingTupleReference(rtreeFields);
                 filterCmp = MultiComparator.create(component.getLSMComponentFilter().getFilterCmpFactories());

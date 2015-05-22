@@ -1120,8 +1120,6 @@ public class BTree extends AbstractTreeIndex {
         public void end() throws HyracksDataException {
             finish(0, -1);
             super.end();
-            bufferCache.force(fileId,true);
-
         }
     }
 

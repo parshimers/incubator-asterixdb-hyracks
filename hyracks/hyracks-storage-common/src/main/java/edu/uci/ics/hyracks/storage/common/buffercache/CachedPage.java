@@ -17,7 +17,6 @@ package edu.uci.ics.hyracks.storage.common.buffercache;
 import java.nio.ByteBuffer;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 /**
@@ -35,7 +34,6 @@ public class CachedPage implements ICachedPageInternal {
     CachedPage next;
     volatile boolean valid;
     final AtomicBoolean virtual;
-    final AtomicBoolean victimized;
 
     public CachedPage(int cpid, ByteBuffer buffer, IPageReplacementStrategy pageReplacementStrategy) {
         this.cpid = cpid;
@@ -48,9 +46,7 @@ public class CachedPage implements ICachedPageInternal {
         dpid = -1;
         valid = false;
         virtual = new AtomicBoolean();
-        victimized = new AtomicBoolean();
         virtual.set(false);
-        victimized.set(false);
     }
 
     public void reset(long dpid) {
@@ -121,13 +117,12 @@ public class CachedPage implements ICachedPageInternal {
     public long getDiskPageId() {
         return dpid;
     }
+
     CachedPage getNext() {
         return next;
     }
+
     void setNext(CachedPage next) {
         this.next = next;
     }
-
-    @Override
-    public AtomicBoolean getVictimized(){return victimized;}
 }

@@ -381,7 +381,7 @@ public abstract class AbstractTreeIndex implements ITreeIndex {
                     System.arraycopy(lastNodeFrontier.page.getBuffer().array(), 0, newRoot.getBuffer().array(), 0,
                             lastNodeFrontier.page.getBuffer().capacity());
                 } finally {
-                    newRoot.releaseWriteLatch(false);
+                    newRoot.releaseWriteLatch(true);
                     bufferCache.unpin(newRoot);
                     oldRoot.releaseReadLatch();
                     bufferCache.unpin(oldRoot);
@@ -399,7 +399,8 @@ public abstract class AbstractTreeIndex implements ITreeIndex {
                         }
                     }
                 }
-            } else {
+            }
+            else {
                 if (!releasedLatches) {
                     for (int i = 0; i < nodeFrontiers.size(); i++) {
                         try {

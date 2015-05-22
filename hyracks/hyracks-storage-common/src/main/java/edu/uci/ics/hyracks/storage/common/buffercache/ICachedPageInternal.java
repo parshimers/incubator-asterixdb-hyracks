@@ -25,5 +25,4 @@ public interface ICachedPageInternal extends ICachedPage {
 
     public boolean pinIfGoodVictim();
 
-    AtomicBoolean getVictimized();
 }

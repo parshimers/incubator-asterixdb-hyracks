@@ -48,7 +48,7 @@ import edu.uci.ics.hyracks.storage.am.common.api.ITreeIndexMetaDataFrame;
 import edu.uci.ics.hyracks.storage.am.common.api.ITreeIndexMetaDataFrameFactory;
 import edu.uci.ics.hyracks.storage.am.common.api.TreeIndexException;
 import edu.uci.ics.hyracks.storage.am.common.frames.LIFOMetaDataFrameFactory;
-import edu.uci.ics.hyracks.storage.am.common.freepage.LinkedListFreePageManager;
+import edu.uci.ics.hyracks.storage.am.common.freepage.LinkedTreeMetaDataManager;
 import edu.uci.ics.hyracks.storage.am.common.tuples.TypeAwareTupleWriterFactory;
 import edu.uci.ics.hyracks.storage.am.common.util.TreeIndexBufferCacheWarmup;
 import edu.uci.ics.hyracks.storage.am.common.util.TreeIndexStats;
@@ -94,7 +94,7 @@ public class BTreeStatsTest extends AbstractBTreeTest {
         IBTreeInteriorFrame interiorFrame = (IBTreeInteriorFrame) interiorFrameFactory.createFrame();
         ITreeIndexMetaDataFrame metaFrame = metaFrameFactory.createFrame();
 
-        ITreeMetaDataManager freePageManager = new LinkedListFreePageManager(bufferCache, metaFrameFactory);
+        ITreeMetaDataManager freePageManager = new LinkedTreeMetaDataManager(bufferCache, metaFrameFactory);
 
         BTree btree = new BTree(bufferCache, fmp, freePageManager, interiorFrameFactory, leafFrameFactory,
                 cmpFactories, fieldCount, harness.getFileReference());

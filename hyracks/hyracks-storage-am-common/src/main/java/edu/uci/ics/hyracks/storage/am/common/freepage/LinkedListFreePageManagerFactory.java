@@ -33,6 +33,6 @@ public class LinkedListFreePageManagerFactory implements IFreePageManagerFactory
     }
 
     public ITreeMetaDataManager createFreePageManager() throws HyracksDataException {
-        return new LinkedListFreePageManager(bufferCache, metaDataFrameFactory);
+        return new LinkedTreeMetaDataManager(bufferCache, metaDataFrameFactory);
     }
 }
