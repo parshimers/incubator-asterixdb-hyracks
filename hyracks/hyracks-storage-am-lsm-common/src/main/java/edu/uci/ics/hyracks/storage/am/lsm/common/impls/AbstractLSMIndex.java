@@ -60,6 +60,7 @@ public abstract class AbstractLSMIndex implements ILSMIndexInternal {
     protected final ILSMComponentFilterFrameFactory filterFrameFactory;
     protected final LSMComponentFilterManager filterManager;
     protected final int[] filterFields;
+    protected final boolean durable;
 
     protected boolean isActivated;
 
@@ -70,7 +71,7 @@ public abstract class AbstractLSMIndex implements ILSMIndexInternal {
             double bloomFilterFalsePositiveRate, ILSMMergePolicy mergePolicy, ILSMOperationTracker opTracker,
             ILSMIOOperationScheduler ioScheduler, ILSMIOOperationCallback ioOpCallback,
             ILSMComponentFilterFrameFactory filterFrameFactory, LSMComponentFilterManager filterManager,
-            int[] filterFields) {
+            int[] filterFields, boolean durable) {
         this.virtualBufferCaches = virtualBufferCaches;
         this.diskBufferCache = diskBufferCache;
         this.diskFileMapProvider = diskFileMapProvider;
@@ -82,9 +83,10 @@ public abstract class AbstractLSMIndex implements ILSMIndexInternal {
         this.filterFrameFactory = filterFrameFactory;
         this.filterManager = filterManager;
         this.filterFields = filterFields;
+        this.durable = durable;
         lsmHarness = new LSMHarness(this, mergePolicy, opTracker);
         isActivated = false;
-        diskComponents = new LinkedList<ILSMComponent>();
+        diskComponents = new ArrayList<ILSMComponent>();
         memoryComponents = new ArrayList<ILSMComponent>();
         currentMutableComponentId = new AtomicInteger();
         flushRequests = new AtomicBoolean[virtualBufferCaches.size()];
@@ -96,13 +98,15 @@ public abstract class AbstractLSMIndex implements ILSMIndexInternal {
     // The constructor used by external indexes
     public AbstractLSMIndex(IBufferCache diskBufferCache, ILSMIndexFileManager fileManager,
             IFileMapProvider diskFileMapProvider, double bloomFilterFalsePositiveRate, ILSMMergePolicy mergePolicy,
-            ILSMOperationTracker opTracker, ILSMIOOperationScheduler ioScheduler, ILSMIOOperationCallback ioOpCallback) {
+            ILSMOperationTracker opTracker, ILSMIOOperationScheduler ioScheduler, ILSMIOOperationCallback ioOpCallback,
+            boolean durable) {
         this.diskBufferCache = diskBufferCache;
         this.diskFileMapProvider = diskFileMapProvider;
         this.fileManager = fileManager;
         this.bloomFilterFalsePositiveRate = bloomFilterFalsePositiveRate;
         this.ioScheduler = ioScheduler;
         this.ioOpCallback = ioOpCallback;
+        this.durable = durable;
         lsmHarness = new ExternalIndexHarness(this, mergePolicy, opTracker);
         isActivated = false;
         diskComponents = new LinkedList<ILSMComponent>();
@@ -122,9 +126,9 @@ public abstract class AbstractLSMIndex implements ILSMIndexInternal {
         // Flush all dirty pages of the tree. 
         // By default, metadata and data are flushed asynchronously in the buffercache.
         // This means that the flush issues writes to the OS, but the data may still lie in filesystem buffers.
-        ITreeIndexMetaDataFrame metadataFrame = treeIndex.getMetaManager().getMetaDataFrameFactory().createFrame();
+        ITreeIndexMetaDataFrame metadataFrame = treeIndex.getFreePageManager().getMetaDataFrameFactory().createFrame();
         int startPage = 0;
-        int maxPage = treeIndex.getMetaManager().getMaxPage(metadataFrame);
+        int maxPage = treeIndex.getFreePageManager().getMaxPage(metadataFrame);
         forceFlushDirtyPages(bufferCache, fileId, startPage, maxPage);
     }
 
@@ -143,16 +147,31 @@ public abstract class AbstractLSMIndex implements ILSMIndexInternal {
             }
         }
         // Forces all pages of given file to disk. This guarantees the data makes it to disk.
-        bufferCache.force(fileId, true);
+        // If the index is not durable, then the flush is not necessary.
+        if (durable) {
+            bufferCache.force(fileId, true);
+        }
     }
 
     protected void markAsValidInternal(ITreeIndex treeIndex) throws HyracksDataException {
         int fileId = treeIndex.getFileId();
         IBufferCache bufferCache = treeIndex.getBufferCache();
-        int metaPageId = treeIndex.getMetaManager().closeGivePageId();
+        ITreeIndexMetaDataFrame metadataFrame = treeIndex.getFreePageManager().getMetaDataFrameFactory().createFrame();
+        // Mark the component as a valid component by flushing the metadata page to disk
+        int metadataPageId = treeIndex.getFreePageManager().getFirstMetadataPage();
+        ICachedPage metadataPage = bufferCache.pin(BufferedFileHandle.getDiskPageId(fileId, metadataPageId), false);
+        metadataPage.acquireWriteLatch();
+        try {
+            metadataFrame.setPage(metadataPage);
+            metadataFrame.setValid(true);
+        } finally {
+            metadataPage.releaseWriteLatch(true);
+            bufferCache.unpin(metadataPage);
+        }
+
         // WARNING: flushing the metadata page should be done after releasing the write latch; otherwise, the page 
         // won't be flushed to disk because it won't be dirty until the write latch has been released.
-        ICachedPage metadataPage = bufferCache.tryPin(BufferedFileHandle.getDiskPageId(fileId, metaPageId));
+        metadataPage = bufferCache.tryPin(BufferedFileHandle.getDiskPageId(fileId, metadataPageId));
         if (metadataPage != null) {
             try {
                 // Flush the single modified page to disk.
@@ -161,8 +180,12 @@ public abstract class AbstractLSMIndex implements ILSMIndexInternal {
                 bufferCache.unpin(metadataPage);
             }
         }
-        // Force everything if it hasn't been.
-        bufferCache.force(fileId, true);
+
+        // Force modified metadata page to disk.
+        // If the index is not durable, then the flush is not necessary.
+        if (durable) {
+            bufferCache.force(fileId, true);
+        }
     }
 
     @Override

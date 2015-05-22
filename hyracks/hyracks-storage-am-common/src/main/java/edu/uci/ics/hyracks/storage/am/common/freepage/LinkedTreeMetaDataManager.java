@@ -25,7 +25,7 @@ import edu.uci.ics.hyracks.storage.common.buffercache.IBufferCache;
 import edu.uci.ics.hyracks.storage.common.buffercache.ICachedPage;
 import edu.uci.ics.hyracks.storage.common.file.BufferedFileHandle;
 
-public class LinkedListFreePageManager implements ITreeMetaDataManager {
+public class LinkedTreeMetaDataManager implements ITreeMetaDataManager {
 
     private static final byte META_PAGE_LEVEL_INDICATOR = -1;
     private static final byte FREE_PAGE_LEVEL_INDICATOR = -2;
@@ -37,10 +37,9 @@ public class LinkedListFreePageManager implements ITreeMetaDataManager {
     ICachedPage confiscatedMetaNode;
     ICachedPage filterPage;
     private static Logger LOGGER = Logger
-            .getLogger("edu.uci.ics.hyracks.storage.am.common.freepage.LinkedListFreePageManager");
+            .getLogger("edu.uci.ics.hyracks.storage.am.common.freepage.LinkedTreeMetaDataManager");
 
-    public LinkedListFreePageManager(IBufferCache bufferCache, ITreeIndexMetaDataFrameFactory metaDataFrameFactory)
-            throws HyracksDataException {
+    public LinkedTreeMetaDataManager(IBufferCache bufferCache, ITreeIndexMetaDataFrameFactory metaDataFrameFactory) {
         this.bufferCache = bufferCache;
         this.metaDataFrameFactory = metaDataFrameFactory;
         this.confiscatedMetaNode = null;

@@ -39,9 +39,9 @@ public class RTreeMultiThreadTest extends AbstractRTreeMultiThreadTest {
         super(true, RTreeType.RTREE);
     }
 
-    private RTreeTestHarness harness = new RTreeTestHarness();
+    private final RTreeTestHarness harness = new RTreeTestHarness();
 
-    private RTreeTestWorkerFactory workerFactory = new RTreeTestWorkerFactory();
+    private final RTreeTestWorkerFactory workerFactory = new RTreeTestWorkerFactory();
 
     @Override
     protected void setUp() throws HyracksDataException {
@@ -57,12 +57,8 @@ public class RTreeMultiThreadTest extends AbstractRTreeMultiThreadTest {
     protected ITreeIndex createTreeIndex(ITypeTraits[] typeTraits, IBinaryComparatorFactory[] rtreeCmpFactories,
             IBinaryComparatorFactory[] btreeCmpFactories, IPrimitiveValueProviderFactory[] valueProviderFactories,
             RTreePolicyType rtreePolicyType, int[] btreeFields) throws TreeIndexException {
-        try {
-            return RTreeUtils.createRTree(harness.getBufferCache(), harness.getFileMapProvider(), typeTraits,
-                    valueProviderFactories, rtreeCmpFactories, rtreePolicyType, harness.getFileReference());
-        } catch (HyracksDataException e) {
-            throw new TreeIndexException(e);
-        }
+        return RTreeUtils.createRTree(harness.getBufferCache(), harness.getFileMapProvider(), typeTraits,
+                valueProviderFactories, rtreeCmpFactories, rtreePolicyType, harness.getFileReference(), true);
 
     }
 
