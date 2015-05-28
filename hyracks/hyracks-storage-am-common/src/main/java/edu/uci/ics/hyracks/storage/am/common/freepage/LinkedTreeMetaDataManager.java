@@ -398,7 +398,6 @@ public class LinkedTreeMetaDataManager implements ITreeMetaDataManager {
     @Override
     public long getLSN() throws HyracksDataException {
         ICachedPage metaNode;
-        int filterPageId = BufferCache.INVALID_DPID;
         if (!appendOnly) {
             metaNode = bufferCache.pin(BufferedFileHandle.getDiskPageId(fileId, getFirstMetadataPage()), false);
         } else {
@@ -420,7 +419,6 @@ public class LinkedTreeMetaDataManager implements ITreeMetaDataManager {
     @Override
     public void setLSN(long lsn) throws HyracksDataException {
         ICachedPage metaNode;
-        int filterPageId = BufferCache.INVALID_DPID;
         if (!appendOnly) {
             metaNode = bufferCache.pin(BufferedFileHandle.getDiskPageId(fileId, getFirstMetadataPage()), false);
         } else {

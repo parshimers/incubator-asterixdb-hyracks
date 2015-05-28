@@ -67,7 +67,7 @@ public interface ILSMIndexInternal extends ILSMIndex {
     public void getOperationalComponents(ILSMIndexOperationContext ctx) throws HyracksDataException;
 
     /**
-     * Persistent the LSM component
+     * Persist the LSM component
      * 
      * @param lsmComponent
      *            , the component to be persistent

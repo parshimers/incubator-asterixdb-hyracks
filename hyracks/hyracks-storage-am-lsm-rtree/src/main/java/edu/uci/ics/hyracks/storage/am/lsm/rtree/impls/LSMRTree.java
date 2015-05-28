@@ -617,6 +617,10 @@ public class LSMRTree extends AbstractLSMRTree {
         int startPage = 0;
         int maxPage = component.getBloomFilter().getNumPages();
         forceFlushDirtyPages(bufferCache, fileId, startPage, maxPage);
+        forceFlushDirtyPages(((LSMRTreeDiskComponent) lsmComponent).getBTree());
+        markAsValidInternal(((LSMRTreeDiskComponent) lsmComponent).getBTree());
+        forceFlushDirtyPages(((LSMRTreeDiskComponent) lsmComponent).getRTree());
+        markAsValidInternal(((LSMRTreeDiskComponent) lsmComponent).getRTree());
     }
 
     @Override

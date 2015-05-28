@@ -908,11 +908,11 @@ public class LSMInvertedIndex extends AbstractLSMIndex implements IInvertedIndex
         // Flush inverted index second.
         forceFlushDirtyPages(invIndex.getBTree());
         forceFlushInvListsFileDirtyPages(invIndex);
-        //markAsValidInternal(invIndex.getBTree());
+        markAsValidInternal(invIndex.getBTree());
 
         // Flush deleted keys BTree.
         forceFlushDirtyPages(invIndexComponent.getDeletedKeysBTree());
-        //markAsValidInternal(invIndexComponent.getDeletedKeysBTree());
+        markAsValidInternal(invIndexComponent.getDeletedKeysBTree());
     }
 
     @Override

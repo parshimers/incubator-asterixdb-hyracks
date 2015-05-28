@@ -410,7 +410,6 @@ public abstract class AbstractTreeIndex implements ITreeIndex {
                         }
                     }
                 }
-                freePageManager.close();
             }
         }
 
