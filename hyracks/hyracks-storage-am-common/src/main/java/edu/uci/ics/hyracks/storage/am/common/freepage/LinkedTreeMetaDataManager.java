@@ -241,6 +241,10 @@ public class LinkedTreeMetaDataManager implements ITreeMetaDataManager {
     @Override
     public void init(ITreeIndexMetaDataFrame metaFrame, int currentMaxPage) throws HyracksDataException {
         // initialize meta data page
+        int metaPage = getFirstMetadataPage();
+        if(metaPage == -1){
+            throw new HyracksDataException("No valid metadata found in this file.");
+        }
         ICachedPage metaNode = bufferCache.pin(BufferedFileHandle.getDiskPageId(fileId, getFirstMetadataPage()), true);
 
         metaNode.acquireWriteLatch();
@@ -376,23 +380,43 @@ public class LinkedTreeMetaDataManager implements ITreeMetaDataManager {
         ITreeIndexMetaDataFrame metaFrame = metaDataFrameFactory.createFrame();
 
         int pages = bufferCache.getNumPagesOfFile(fileId);
-        for (int page = pages - 1; page >= 0; page -= pages - 1) {
-            ICachedPage metaNode = bufferCache.pin(BufferedFileHandle.getDiskPageId(fileId, page), false);
-            try {
-                metaNode.acquireReadLatch();
-                metaFrame.setPage(metaNode);
+        //look at the front (modify in-place index)
+        int page = 0;
+        ICachedPage metaNode = bufferCache.pin(BufferedFileHandle.getDiskPageId(fileId, page), false);
+        try {
+            metaNode.acquireReadLatch();
+            metaFrame.setPage(metaNode);
 
-                if (isMetaPage(metaFrame)) {
-                    headPage = page;
-                    return headPage;
-                }
-            } finally {
-                metaNode.releaseReadLatch();
-                bufferCache.unpin(metaNode);
+            if (isMetaPage(metaFrame)) {
+                headPage = page;
+                return headPage;
             }
+        } finally {
+            metaNode.releaseReadLatch();
+            bufferCache.unpin(metaNode);
         }
-        headPage = 0;
-        return headPage;
+        //otherwise, look at the back. (append-only index)
+        page = pages-1 >0 ? pages -1 : 0;
+        metaNode = bufferCache.pin(BufferedFileHandle.getDiskPageId(fileId, page), false);
+        try {
+            metaNode.acquireReadLatch();
+            metaFrame.setPage(metaNode);
+
+            if (isMetaPage(metaFrame)) {
+                headPage = page;
+                return headPage;
+            }
+        } finally {
+            metaNode.releaseReadLatch();
+            bufferCache.unpin(metaNode);
+        }
+        //if we find nothing, this isn't a tree (or isn't one yet).
+        if(pages>0){
+            return -1;
+        }
+        else{
+            return 0;
+        }
     }
 
     @Override
