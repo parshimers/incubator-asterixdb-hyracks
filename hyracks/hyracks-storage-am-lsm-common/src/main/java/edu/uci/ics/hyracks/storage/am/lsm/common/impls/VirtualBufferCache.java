@@ -3,9 +3,9 @@
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * you may obtain a copy of the License from
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -346,6 +346,7 @@ public class VirtualBufferCache implements IVirtualBufferCache {
         }
 
     }
+
     //These 4 methods aren't applicable here.
     @Override
     public int createMemFile() throws HyracksDataException {
@@ -407,5 +408,10 @@ public class VirtualBufferCache implements IVirtualBufferCache {
     @Override
     public void returnPage(ICachedPage page, boolean reinsert) {
         throw new UnsupportedOperationException("Virtual buffer caches don't have FIFO writers");
+    }
+
+    @Override
+    public int getFileReferenceCount(int fileId) {
+        return 0;
     }
 }

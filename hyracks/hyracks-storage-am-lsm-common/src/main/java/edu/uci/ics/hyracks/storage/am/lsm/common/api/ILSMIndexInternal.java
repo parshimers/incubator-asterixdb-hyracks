@@ -66,6 +66,10 @@ public interface ILSMIndexInternal extends ILSMIndex {
      */
     public void getOperationalComponents(ILSMIndexOperationContext ctx) throws HyracksDataException;
 
+    public List<ILSMComponent> getInactiveDiskComponents();
+
+    public void addInactiveDiskComponent(ILSMComponent diskComponent);
+
     /**
      * Persist the LSM component
      * 

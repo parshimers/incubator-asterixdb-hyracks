@@ -18,10 +18,10 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.HashSet;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
@@ -680,8 +680,6 @@ public class BufferCache implements IBufferCacheInternal, ILifeCycleComponent {
             }
             fileInfoMap.clear();
         }
-
-        fifoWriter.destroyQueue();
     }
 
     @Override
@@ -857,7 +855,7 @@ public class BufferCache implements IBufferCacheInternal, ILifeCycleComponent {
         if (LOGGER.isLoggable(Level.INFO)) {
             LOGGER.info("Deleting file: " + fileId + " in cache: " + this);
         }
-        if (true) {
+        if (flushDirtyPages) {
             synchronized (fileInfoMap) {
                 sweepAndFlush(fileId, flushDirtyPages);
             }
@@ -885,8 +883,20 @@ public class BufferCache implements IBufferCacheInternal, ILifeCycleComponent {
     }
 
     @Override
+    public synchronized int getFileReferenceCount(int fileId) {
+        synchronized (fileInfoMap) {
+            BufferedFileHandle fInfo = fileInfoMap.get(fileId);
+            if (fInfo != null) {
+                return fInfo.getReferenceCount();
+            } else {
+                return 0;
+            }
+        }
+    }
+
+    @Override
     public synchronized void deleteMemFile(int fileId) throws HyracksDataException {
-        // TODO: possible sanity chcecking here like in above?
+        //TODO: possible sanity chcecking here like in above?
         if (LOGGER.isLoggable(Level.INFO)) {
             LOGGER.info("Deleting memory file: " + fileId + " in cache: " + this);
         }
@@ -918,6 +928,7 @@ public class BufferCache implements IBufferCacheInternal, ILifeCycleComponent {
         }
     }
 
+    @Override
     public void dumpState(OutputStream os) throws IOException {
         os.write(dumpState().getBytes());
     }
