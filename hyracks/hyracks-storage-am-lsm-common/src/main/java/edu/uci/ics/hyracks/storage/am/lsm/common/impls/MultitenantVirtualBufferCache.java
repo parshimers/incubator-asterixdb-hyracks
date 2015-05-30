@@ -184,4 +184,10 @@ public class MultitenantVirtualBufferCache implements IVirtualBufferCache {
     public void returnPage(ICachedPage page, boolean reinsert) {
         
     }
+    
+    @Override
+    public int getFileReferenceCount(int fileId){
+        return 0;
+    }
+
 }

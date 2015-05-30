@@ -83,6 +83,7 @@ public abstract class AbstractLSMIndex implements ILSMIndexInternal {
         this.filterFrameFactory = filterFrameFactory;
         this.filterManager = filterManager;
         this.filterFields = filterFields;
+        this.inactiveDiskComponents = new LinkedList<ILSMComponent>();
         this.durable = durable;
         lsmHarness = new LSMHarness(this, mergePolicy, opTracker);
         isActivated = false;
@@ -127,7 +128,7 @@ public abstract class AbstractLSMIndex implements ILSMIndexInternal {
         // Flush all dirty pages of the tree. 
         // By default, metadata and data are flushed asynchronously in the buffercache.
         // This means that the flush issues writes to the OS, but the data may still lie in filesystem buffers.
-        ITreeIndexMetaDataFrame metadataFrame = treeIndex.getFreePageManager().getMetaDataFrameFactory().createFrame();
+        ITreeIndexMetaDataFrame metadataFrame = treeIndex.getMetaManager().getMetaDataFrameFactory().createFrame();
         int startPage = 0;
         int maxPage = treeIndex.getMetaManager().getMaxPage(metadataFrame);
         forceFlushDirtyPages(bufferCache, fileId, startPage, maxPage);
@@ -160,7 +161,7 @@ public abstract class AbstractLSMIndex implements ILSMIndexInternal {
         int metaPageId = treeIndex.getMetaManager().closeGivePageId();
         // WARNING: flushing the metadata page should be done after releasing the write latch; otherwise, the page
         // won't be flushed to disk because it won't be dirty until the write latch has been released.
-        metadataPage = bufferCache.tryPin(BufferedFileHandle.getDiskPageId(fileId, metadataPageId));
+        ICachedPage metadataPage = bufferCache.tryPin(BufferedFileHandle.getDiskPageId(fileId, metaPageId));
         if (metadataPage != null) {
             try {
                 // Flush the single modified page to disk.
