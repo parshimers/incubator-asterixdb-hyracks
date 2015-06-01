@@ -79,7 +79,7 @@ public abstract class AbstractLSMIndexFileManager implements ILSMIndexFileManage
         treeIndex.activate();
         try {
             int metadataPage = treeIndex.getMetaManager().getFirstMetadataPage();
-            if(metadataPage == -1){
+            if(metadataPage <0 ){
                 return false;
             }
             ITreeIndexMetaDataFrame metadataFrame = treeIndex.getMetaManager().getMetaDataFrameFactory()

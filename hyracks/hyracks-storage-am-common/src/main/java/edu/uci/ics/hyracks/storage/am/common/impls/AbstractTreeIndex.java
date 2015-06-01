@@ -35,7 +35,7 @@ public abstract class AbstractTreeIndex implements ITreeIndex {
 
     protected final IBufferCache bufferCache;
     protected final IFileMapProvider fileMapProvider;
-    protected final ITreeMetaDataManager freePageManager;
+    protected final IMetaDataManager freePageManager;
 
     protected final ITreeIndexFrameFactory interiorFrameFactory;
     protected final ITreeIndexFrameFactory leafFrameFactory;
@@ -46,14 +46,14 @@ public abstract class AbstractTreeIndex implements ITreeIndex {
     protected FileReference file;
     protected int fileId = -1;
 
-    protected boolean isActivated = false;
+    protected boolean isActive = false;
     private boolean wasActivated = false;
     private boolean fileOpen = false;
 
     protected int BULKLOAD_LEAF_START = 0;
 
     public AbstractTreeIndex(IBufferCache bufferCache, IFileMapProvider fileMapProvider,
-            ITreeMetaDataManager freePageManager, ITreeIndexFrameFactory interiorFrameFactory,
+            IMetaDataManager freePageManager, ITreeIndexFrameFactory interiorFrameFactory,
             ITreeIndexFrameFactory leafFrameFactory, IBinaryComparatorFactory[] cmpFactories, int fieldCount,
             FileReference file) {
         this.bufferCache = bufferCache;
@@ -71,7 +71,7 @@ public abstract class AbstractTreeIndex implements ITreeIndex {
     }
 
     private synchronized void create(boolean appendOnly) throws HyracksDataException {
-        if (isActivated) {
+        if (isActive) {
             throw new HyracksDataException("Failed to create the index since it is activated.");
         }
 
@@ -95,7 +95,7 @@ public abstract class AbstractTreeIndex implements ITreeIndex {
         }
 
         freePageManager.open(fileId);
-        if (/*freePageManager.getFirstMetadataPage() < 1*/!appendOnly) {
+        if (!appendOnly) {
             // regular or empty tree
             rootPage = 1;
             BULKLOAD_LEAF_START = 2;
@@ -139,7 +139,7 @@ public abstract class AbstractTreeIndex implements ITreeIndex {
     }
 
     public synchronized void activate() throws HyracksDataException {
-        if (isActivated) {
+        if (isActive) {
             throw new HyracksDataException("Failed to activate the index since it is already activated.");
         }
 
@@ -181,25 +181,25 @@ public abstract class AbstractTreeIndex implements ITreeIndex {
         // TODO: Should probably have some way to check that the tree is physically consistent
         // or that the file we just opened actually is a tree
 
-        isActivated = true;
+        isActive = true;
         wasActivated = true;
     }
 
     public synchronized void deactivate() throws HyracksDataException {
-        if (!isActivated && wasActivated) {
+        if (!isActive && wasActivated) {
             throw new HyracksDataException("Failed to deactivate the index since it is already deactivated.");
         }
-        if (isActivated) {
+        if (isActive) {
             freePageManager.close();
             bufferCache.closeFile(fileId);
             fileOpen = false;
         }
 
-        isActivated = false;
+        isActive = false;
     }
 
     public synchronized void destroy() throws HyracksDataException {
-        if (isActivated) {
+        if (isActive) {
             throw new HyracksDataException("Failed to destroy the index since it is activated.");
         }
 
@@ -212,7 +212,7 @@ public abstract class AbstractTreeIndex implements ITreeIndex {
     }
 
     public synchronized void clear() throws HyracksDataException {
-        if (!isActivated) {
+        if (!isActive) {
             throw new HyracksDataException("Failed to clear the index since it is not activated.");
         }
         initEmptyTree();
@@ -272,7 +272,7 @@ public abstract class AbstractTreeIndex implements ITreeIndex {
         return cmpFactories;
     }
 
-    public ITreeMetaDataManager getMetaManager() {
+    public IMetaDataManager getMetaManager() {
         return freePageManager;
     }
 
@@ -415,7 +415,6 @@ public abstract class AbstractTreeIndex implements ITreeIndex {
 
         protected void addLevel() throws HyracksDataException {
             NodeFrontier frontier = new NodeFrontier(tupleWriter.createTupleReference());
-            //frontier.pageId = freePageManager.getFreePage(metaFrame);
             frontier.page = bufferCache.confiscatePage(-1);
             frontier.pageId = -1;
             frontier.page.acquireWriteLatch();

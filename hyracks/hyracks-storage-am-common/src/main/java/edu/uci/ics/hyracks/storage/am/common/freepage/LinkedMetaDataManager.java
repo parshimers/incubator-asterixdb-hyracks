@@ -17,7 +17,7 @@ package edu.uci.ics.hyracks.storage.am.common.freepage;
 import java.util.logging.Logger;
 
 import edu.uci.ics.hyracks.api.exceptions.HyracksDataException;
-import edu.uci.ics.hyracks.storage.am.common.api.ITreeMetaDataManager;
+import edu.uci.ics.hyracks.storage.am.common.api.IMetaDataManager;
 import edu.uci.ics.hyracks.storage.am.common.api.ITreeIndexMetaDataFrame;
 import edu.uci.ics.hyracks.storage.am.common.api.ITreeIndexMetaDataFrameFactory;
 import edu.uci.ics.hyracks.storage.common.buffercache.BufferCache;
@@ -25,10 +25,12 @@ import edu.uci.ics.hyracks.storage.common.buffercache.IBufferCache;
 import edu.uci.ics.hyracks.storage.common.buffercache.ICachedPage;
 import edu.uci.ics.hyracks.storage.common.file.BufferedFileHandle;
 
-public class LinkedTreeMetaDataManager implements ITreeMetaDataManager {
+public class LinkedMetaDataManager implements IMetaDataManager {
 
     private static final byte META_PAGE_LEVEL_INDICATOR = -1;
     private static final byte FREE_PAGE_LEVEL_INDICATOR = -2;
+    public static final int NO_FILTER_IN_PLACE = -1;
+    public static final int NO_FILTER_APPEND_ONLY = -2;
     private final IBufferCache bufferCache;
     private int headPage = -1;
     private int fileId = -1;
@@ -37,12 +39,11 @@ public class LinkedTreeMetaDataManager implements ITreeMetaDataManager {
     ICachedPage confiscatedMetaNode;
     ICachedPage filterPage;
     private static Logger LOGGER = Logger
-            .getLogger("edu.uci.ics.hyracks.storage.am.common.freepage.LinkedTreeMetaDataManager");
+            .getLogger("edu.uci.ics.hyracks.storage.am.common.freepage.LinkedMetaDataManager");
 
-    public LinkedTreeMetaDataManager(IBufferCache bufferCache, ITreeIndexMetaDataFrameFactory metaDataFrameFactory) {
+    public LinkedMetaDataManager(IBufferCache bufferCache, ITreeIndexMetaDataFrameFactory metaDataFrameFactory) {
         this.bufferCache = bufferCache;
         this.metaDataFrameFactory = metaDataFrameFactory;
-        this.confiscatedMetaNode = null;
     }
 
     @Override
@@ -214,7 +215,7 @@ public class LinkedTreeMetaDataManager implements ITreeMetaDataManager {
     @Override
     public int getFilterPageId() throws HyracksDataException {
         ICachedPage metaNode;
-        int filterPageId = BufferCache.INVALID_DPID;
+        int filterPageId = NO_FILTER_IN_PLACE;
         if (!appendOnly) {
             metaNode = bufferCache.pin(BufferedFileHandle.getDiskPageId(fileId, getFirstMetadataPage()), false);
         } else {
@@ -227,7 +228,7 @@ public class LinkedTreeMetaDataManager implements ITreeMetaDataManager {
             filterPageId = metaFrame.getLSMComponentFilterPageId();
             if(appendOnly && filterPageId == -1){
                 //hint to filter manager that we are in append-only mode
-                filterPageId = -2;
+                filterPageId = NO_FILTER_APPEND_ONLY;
             }
         } finally {
             metaNode.releaseReadLatch();

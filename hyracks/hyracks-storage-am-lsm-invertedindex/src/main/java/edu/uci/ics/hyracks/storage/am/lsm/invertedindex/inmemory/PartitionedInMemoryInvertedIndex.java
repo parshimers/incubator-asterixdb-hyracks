@@ -25,7 +25,7 @@ import edu.uci.ics.hyracks.dataflow.common.data.accessors.ITupleReference;
 import edu.uci.ics.hyracks.storage.am.btree.exceptions.BTreeException;
 import edu.uci.ics.hyracks.storage.am.btree.impls.BTree.BTreeAccessor;
 import edu.uci.ics.hyracks.storage.am.common.api.*;
-import edu.uci.ics.hyracks.storage.am.common.api.ITreeMetaDataManager;
+import edu.uci.ics.hyracks.storage.am.common.api.IMetaDataManager;
 import edu.uci.ics.hyracks.storage.am.common.ophelpers.IndexOperation;
 import edu.uci.ics.hyracks.storage.am.lsm.invertedindex.api.IInvertedIndexSearcher;
 import edu.uci.ics.hyracks.storage.am.lsm.invertedindex.api.IInvertedListCursor;
@@ -42,7 +42,7 @@ public class PartitionedInMemoryInvertedIndex extends InMemoryInvertedIndex impl
     protected short minPartitionIndex = Short.MAX_VALUE;
     protected short maxPartitionIndex = Short.MIN_VALUE;
 
-    public PartitionedInMemoryInvertedIndex(IBufferCache memBufferCache, ITreeMetaDataManager memFreePageManager,
+    public PartitionedInMemoryInvertedIndex(IBufferCache memBufferCache, IMetaDataManager memFreePageManager,
             ITypeTraits[] invListTypeTraits, IBinaryComparatorFactory[] invListCmpFactories,
             ITypeTraits[] tokenTypeTraits, IBinaryComparatorFactory[] tokenCmpFactories,
             IBinaryTokenizerFactory tokenizerFactory, FileReference btreeFileRef) throws BTreeException {

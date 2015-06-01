@@ -17,7 +17,7 @@ package edu.uci.ics.hyracks.storage.am.common.api;
 import edu.uci.ics.hyracks.api.exceptions.HyracksDataException;
 import edu.uci.ics.hyracks.storage.common.buffercache.ICachedPage;
 
-public interface ITreeMetaDataManager {
+public interface IMetaDataManager {
     public void open(int fileId);
 
     public void close() throws HyracksDataException;

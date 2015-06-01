@@ -161,16 +161,6 @@ public abstract class AbstractLSMIndex implements ILSMIndexInternal {
         int metaPageId = treeIndex.getMetaManager().closeGivePageId();
         // WARNING: flushing the metadata page should be done after releasing the write latch; otherwise, the page
         // won't be flushed to disk because it won't be dirty until the write latch has been released.
-        ICachedPage metadataPage = bufferCache.tryPin(BufferedFileHandle.getDiskPageId(fileId, metaPageId));
-        if (metadataPage != null) {
-            try {
-                // Flush the single modified page to disk.
-                bufferCache.flushDirtyPage(metadataPage);
-            } finally {
-                bufferCache.unpin(metadataPage);
-            }
-        }
-
         // Force modified metadata page to disk.
         // If the index is not durable, then the flush is not necessary.
         if (durable) {

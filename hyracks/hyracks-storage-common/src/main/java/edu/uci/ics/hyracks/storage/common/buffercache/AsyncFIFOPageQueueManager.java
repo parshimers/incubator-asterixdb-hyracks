@@ -83,17 +83,19 @@ public class AsyncFIFOPageQueueManager implements Runnable {
     }
 
     protected LinkedBlockingQueue<QueueEntry> queue = new LinkedBlockingQueue<QueueEntry>();
-    Thread writerThread;
+    volatile Thread writerThread;
     boolean haltWriter = true;
     AtomicBoolean sleeping = new AtomicBoolean();
 
-    public synchronized PageQueue createQueue(IBufferCache bufferCache, IFIFOPageWriter writer) {
+    public PageQueue createQueue(IBufferCache bufferCache, IFIFOPageWriter writer) {
         if (writerThread == null) {
-            if (writerThread == null) {
-                writerThread = new Thread(this);
-                writerThread.setName("FIFO Writer Thread");
-                haltWriter = false;
-                writerThread.start();
+            synchronized(this){
+                if (writerThread == null) {
+                    writerThread = new Thread(this);
+                    writerThread.setName("FIFO Writer Thread");
+                    haltWriter = false;
+                    writerThread.start();
+                }
             }
         }
         return new PageQueue(bufferCache, writer);
@@ -166,7 +168,7 @@ public class AsyncFIFOPageQueueManager implements Runnable {
                 try {
                     entry.writer.write(page, entry.bufferCache);
                 } catch (HyracksDataException e) {
-                    // TODO Auto-generated catch block
+                    //TODO: What do we do, if we could not write the page?
                     e.printStackTrace();
                 }
             } catch(InterruptedException e) {

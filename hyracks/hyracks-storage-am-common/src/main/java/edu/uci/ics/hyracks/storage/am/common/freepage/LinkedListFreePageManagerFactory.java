@@ -16,7 +16,7 @@
 package edu.uci.ics.hyracks.storage.am.common.freepage;
 
 import edu.uci.ics.hyracks.api.exceptions.HyracksDataException;
-import edu.uci.ics.hyracks.storage.am.common.api.ITreeMetaDataManager;
+import edu.uci.ics.hyracks.storage.am.common.api.IMetaDataManager;
 import edu.uci.ics.hyracks.storage.am.common.api.IFreePageManagerFactory;
 import edu.uci.ics.hyracks.storage.am.common.api.ITreeIndexMetaDataFrameFactory;
 import edu.uci.ics.hyracks.storage.common.buffercache.IBufferCache;
@@ -32,7 +32,7 @@ public class LinkedListFreePageManagerFactory implements IFreePageManagerFactory
         this.bufferCache = bufferCache;
     }
 
-    public ITreeMetaDataManager createFreePageManager() throws HyracksDataException {
-        return new LinkedTreeMetaDataManager(bufferCache, metaDataFrameFactory);
+    public IMetaDataManager createFreePageManager() throws HyracksDataException {
+        return new LinkedMetaDataManager(bufferCache, metaDataFrameFactory);
     }
 }

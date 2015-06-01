@@ -20,14 +20,14 @@ import java.util.List;
 import edu.uci.ics.hyracks.api.exceptions.HyracksDataException;
 import edu.uci.ics.hyracks.dataflow.common.data.accessors.ITupleReference;
 import edu.uci.ics.hyracks.storage.am.common.api.ITreeIndexMetaDataFrame;
-import edu.uci.ics.hyracks.storage.am.common.api.ITreeMetaDataManager;
+import edu.uci.ics.hyracks.storage.am.common.api.IMetaDataManager;
 import edu.uci.ics.hyracks.storage.am.common.api.ITreeIndex;
+import edu.uci.ics.hyracks.storage.am.common.freepage.LinkedMetaDataManager;
 import edu.uci.ics.hyracks.storage.am.common.ophelpers.MultiComparator;
 import edu.uci.ics.hyracks.storage.am.lsm.common.api.ILSMComponentFilter;
 import edu.uci.ics.hyracks.storage.am.lsm.common.api.ILSMComponentFilterFrame;
 import edu.uci.ics.hyracks.storage.am.lsm.common.api.ILSMComponentFilterFrameFactory;
 import edu.uci.ics.hyracks.storage.am.lsm.common.api.ILSMComponentFilterManager;
-import edu.uci.ics.hyracks.storage.common.buffercache.BufferCache;
 import edu.uci.ics.hyracks.storage.common.buffercache.IBufferCache;
 import edu.uci.ics.hyracks.storage.common.buffercache.ICachedPage;
 import edu.uci.ics.hyracks.storage.common.file.BufferedFileHandle;
@@ -53,12 +53,12 @@ public class LSMComponentFilterManager implements ILSMComponentFilterManager {
 
     @Override
     public void writeFilterInfo(ILSMComponentFilter filter, ITreeIndex treeIndex ) throws HyracksDataException {
-        ITreeMetaDataManager treeMetaManager = treeIndex.getMetaManager();
+        IMetaDataManager treeMetaManager = treeIndex.getMetaManager();
         ICachedPage filterPage = null;
         int componentFilterPageId = treeMetaManager.getFilterPageId();
         boolean appendOnly = false;
         int fileId = treeIndex.getFileId();
-        if(componentFilterPageId == -1){ //in-place mode, no filter page yet
+        if(componentFilterPageId == LinkedMetaDataManager.NO_FILTER_IN_PLACE){//in-place mode, no filter page yet
             ITreeIndexMetaDataFrame metadataFrame = treeIndex.getMetaManager().getMetaDataFrameFactory().createFrame();
             int metaPageId = treeMetaManager.getFirstMetadataPage();
             ICachedPage metadataPage = bufferCache.pin(BufferedFileHandle.getDiskPageId(fileId, metaPageId), false);
@@ -73,7 +73,7 @@ public class LSMComponentFilterManager implements ILSMComponentFilterManager {
                 bufferCache.unpin(metadataPage);
             }
         }
-        else if (componentFilterPageId < -1){//append-only mode
+        else if (componentFilterPageId < -1){//NO_FILTER_APPEND_ONLY){//append-only mode
             appendOnly = true;
             filterPage = treeMetaManager.getFilterPage();
             if(filterPage == null){
@@ -112,7 +112,7 @@ public class LSMComponentFilterManager implements ILSMComponentFilterManager {
     public boolean readFilterInfo(ILSMComponentFilter filter, ITreeIndex treeIndex) throws HyracksDataException {
         int fileId = treeIndex.getFileId();
 
-        ITreeMetaDataManager treeMetaManager = treeIndex.getMetaManager();
+        IMetaDataManager treeMetaManager = treeIndex.getMetaManager();
 
         int componentFilterPageId = treeMetaManager.getFilterPageId();
         if (componentFilterPageId < 0)

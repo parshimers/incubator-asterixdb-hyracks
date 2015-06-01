@@ -275,8 +275,6 @@ public class BloomFilter {
             MurmurHash128Bit.hash3_x64_128(tuple, keyFields, SEED, hashes);
             for (int i = 0; i < numHashes; ++i) {
                 long hash = Math.abs((hashes[0] + (long) i * hashes[1]) % numBits);
-
-                // we increment the page id by one, since the metadata page id of the filter is 0.
                 ICachedPage page = pages[((int) (hash / numBitsPerPage))];
                 page.acquireWriteLatch();
                 try {
