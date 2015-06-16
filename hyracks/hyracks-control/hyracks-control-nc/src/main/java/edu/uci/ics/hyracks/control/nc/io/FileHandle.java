@@ -16,14 +16,13 @@ package edu.uci.ics.hyracks.control.nc.io;
 
 import java.io.IOException;
 import java.io.RandomAccessFile;
-import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 
 import edu.uci.ics.hyracks.api.io.FileReference;
 import edu.uci.ics.hyracks.api.io.IFileHandle;
 import edu.uci.ics.hyracks.api.io.IIOManager;
 
-public class FileHandle implements IFileHandle, IFileHandleInternal {
+public class FileHandle implements IFileHandle {
     private final FileReference fileRef;
 
     private RandomAccessFile raf;
@@ -34,10 +33,6 @@ public class FileHandle implements IFileHandle, IFileHandleInternal {
         this.fileRef = fileRef;
     }
 
-    /* (non-Javadoc)
-     * @see edu.uci.ics.hyracks.control.nc.io.IFileHandleInternal#open(edu.uci.ics.hyracks.api.io.IIOManager.FileReadWriteMode, edu.uci.ics.hyracks.api.io.IIOManager.FileSyncMode)
-     */
-    @Override
     public void open(IIOManager.FileReadWriteMode rwMode, IIOManager.FileSyncMode syncMode) throws IOException {
         String mode;
         switch (rwMode) {
@@ -72,51 +67,24 @@ public class FileHandle implements IFileHandle, IFileHandleInternal {
         channel = raf.getChannel();
     }
 
-    /* (non-Javadoc)
-     * @see edu.uci.ics.hyracks.control.nc.io.IFileHandleInternal#close()
-     */
-    @Override
     public void close() throws IOException {
         channel.close();
         raf.close();
     }
 
-    /* (non-Javadoc)
-     * @see edu.uci.ics.hyracks.control.nc.io.IFileHandleInternal#getFileReference()
-     */
-    @Override
     public FileReference getFileReference() {
         return fileRef;
     }
 
-    /* (non-Javadoc)
-     * @see edu.uci.ics.hyracks.control.nc.io.IFileHandleInternal#getRandomAccessFile()
-     */
-    @Override
     public RandomAccessFile getRandomAccessFile() {
         return raf;
     }
 
-    /* (non-Javadoc)
-     * @see edu.uci.ics.hyracks.control.nc.io.IFileHandleInternal#sync(boolean)
-     */
-    @Override
+    public FileChannel getFileChannel() {
+        return channel;
+    }
+
     public void sync(boolean metadata) throws IOException {
         channel.force(metadata);
-    }
-
-    @Override
-    public long getSize() {
-        return getFileReference().getFile().length();
-    }
-
-    @Override
-    public int write(ByteBuffer data, long offset) throws IOException {
-        return channel.write(data, offset);
-    }
-
-    @Override
-    public int read(ByteBuffer data, long offset) throws IOException {
-        return channel.read(data, offset);
     }
 }

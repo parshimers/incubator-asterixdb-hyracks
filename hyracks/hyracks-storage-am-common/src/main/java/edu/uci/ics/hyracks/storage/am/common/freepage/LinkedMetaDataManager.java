@@ -17,7 +17,7 @@ package edu.uci.ics.hyracks.storage.am.common.freepage;
 import java.util.logging.Logger;
 
 import edu.uci.ics.hyracks.api.exceptions.HyracksDataException;
-import edu.uci.ics.hyracks.storage.am.common.api.IFreePageManager;
+import edu.uci.ics.hyracks.storage.am.common.api.IMetaDataManager;
 import edu.uci.ics.hyracks.storage.am.common.api.ITreeIndexMetaDataFrame;
 import edu.uci.ics.hyracks.storage.am.common.api.ITreeIndexMetaDataFrameFactory;
 import edu.uci.ics.hyracks.storage.common.buffercache.BufferCache;
@@ -25,24 +25,25 @@ import edu.uci.ics.hyracks.storage.common.buffercache.IBufferCache;
 import edu.uci.ics.hyracks.storage.common.buffercache.ICachedPage;
 import edu.uci.ics.hyracks.storage.common.file.BufferedFileHandle;
 
-public class LinkedListFreePageManager implements IFreePageManager {
+public class LinkedMetaDataManager implements IMetaDataManager {
 
     private static final byte META_PAGE_LEVEL_INDICATOR = -1;
     private static final byte FREE_PAGE_LEVEL_INDICATOR = -2;
+    public static final int NO_FILTER_IN_PLACE = -1;
+    public static final int NO_FILTER_APPEND_ONLY = -2;
     private final IBufferCache bufferCache;
     private int headPage = -1;
     private int fileId = -1;
     private final ITreeIndexMetaDataFrameFactory metaDataFrameFactory;
     private boolean appendOnly = false;
     ICachedPage confiscatedMetaNode;
+    ICachedPage filterPage;
     private static Logger LOGGER = Logger
-            .getLogger("edu.uci.ics.hyracks.storage.am.common.freepage.LinkedListFreePageManager");
+            .getLogger("edu.uci.ics.hyracks.storage.am.common.freepage.LinkedMetaDataManager");
 
-    public LinkedListFreePageManager(IBufferCache bufferCache, ITreeIndexMetaDataFrameFactory metaDataFrameFactory)
-            throws HyracksDataException {
+    public LinkedMetaDataManager(IBufferCache bufferCache, ITreeIndexMetaDataFrameFactory metaDataFrameFactory) {
         this.bufferCache = bufferCache;
         this.metaDataFrameFactory = metaDataFrameFactory;
-        this.confiscatedMetaNode = null;
     }
 
     @Override
@@ -137,9 +138,11 @@ public class LinkedListFreePageManager implements IFreePageManager {
                             metaFrame.addFreePage(nextPage);
                         }
                     } finally {
-                        nextNode.releaseWriteLatch(true);
                         if (!appendOnly) {
-                            bufferCache.unpin(nextNode);
+                            metaNode.releaseWriteLatch(true);
+                            bufferCache.unpin(metaNode);
+                        } else {
+                            metaNode.releaseWriteLatch(false);
                         }
                     }
                 } else {
@@ -153,9 +156,11 @@ public class LinkedListFreePageManager implements IFreePageManager {
                 }
             }
         } finally {
-            metaNode.releaseWriteLatch(true);
             if (!appendOnly) {
+                metaNode.releaseWriteLatch(true);
                 bufferCache.unpin(metaNode);
+            } else {
+                metaNode.releaseWriteLatch(false);
             }
         }
 
@@ -170,13 +175,13 @@ public class LinkedListFreePageManager implements IFreePageManager {
         } else {
             metaNode = confiscatedMetaNode;
         }
-        metaNode.acquireWriteLatch();
+        metaNode.acquireReadLatch();
         int maxPage = -1;
         try {
             metaFrame.setPage(metaNode);
             maxPage = metaFrame.getMaxPage();
         } finally {
-            metaNode.releaseWriteLatch(true);
+            metaNode.releaseReadLatch();
             if (!appendOnly) {
                 bufferCache.unpin(metaNode);
             }
@@ -198,9 +203,11 @@ public class LinkedListFreePageManager implements IFreePageManager {
             metaFrame.setPage(metaNode);
             metaFrame.setLSMComponentFilterPageId(filterPageId);
         } finally {
-            metaNode.releaseWriteLatch(true);
             if (!appendOnly) {
+                metaNode.releaseWriteLatch(true);
                 bufferCache.unpin(metaNode);
+            } else {
+                metaNode.releaseWriteLatch(false);
             }
         }
     }
@@ -208,19 +215,23 @@ public class LinkedListFreePageManager implements IFreePageManager {
     @Override
     public int getFilterPageId() throws HyracksDataException {
         ICachedPage metaNode;
-        int filterPageId = BufferCache.INVALID_DPID;
+        int filterPageId = NO_FILTER_IN_PLACE;
         if (!appendOnly) {
             metaNode = bufferCache.pin(BufferedFileHandle.getDiskPageId(fileId, getFirstMetadataPage()), false);
         } else {
             metaNode = confiscatedMetaNode;
         }
         ITreeIndexMetaDataFrame metaFrame = metaDataFrameFactory.createFrame();
-        metaNode.acquireWriteLatch();
+        metaNode.acquireReadLatch();
         try {
             metaFrame.setPage(metaNode);
             filterPageId = metaFrame.getLSMComponentFilterPageId();
+            if(appendOnly && filterPageId == -1){
+                //hint to filter manager that we are in append-only mode
+                filterPageId = NO_FILTER_APPEND_ONLY;
+            }
         } finally {
-            metaNode.releaseWriteLatch(true);
+            metaNode.releaseReadLatch();
             if (!appendOnly) {
                 bufferCache.unpin(metaNode);
             }
@@ -231,6 +242,10 @@ public class LinkedListFreePageManager implements IFreePageManager {
     @Override
     public void init(ITreeIndexMetaDataFrame metaFrame, int currentMaxPage) throws HyracksDataException {
         // initialize meta data page
+        int metaPage = getFirstMetadataPage();
+        if(metaPage == -1){
+            throw new HyracksDataException("No valid metadata found in this file.");
+        }
         ICachedPage metaNode = bufferCache.pin(BufferedFileHandle.getDiskPageId(fileId, getFirstMetadataPage()), true);
 
         metaNode.acquireWriteLatch();
@@ -297,9 +312,34 @@ public class LinkedListFreePageManager implements IFreePageManager {
         closeGivePageId();
     }
 
+    private void writeFilterPage() throws HyracksDataException {
+        if(filterPage != null) {
+            ITreeIndexMetaDataFrame metaFrame = metaDataFrameFactory.createFrame();
+            metaFrame.setPage(confiscatedMetaNode);
+            metaFrame.setValid(true);
+            int finalFilterPage = getMaxPage(metaFrame);
+            ICachedPage finalFilter = bufferCache.pin(BufferedFileHandle.getDiskPageId(fileId, finalFilterPage), true);
+            try {
+                filterPage.acquireReadLatch();
+                finalFilter.acquireWriteLatch();
+                bufferCache.copyPage(filterPage, finalFilter);
+                setFilterPageId(finalFilterPage);
+            }
+            finally {
+                finalFilter.releaseWriteLatch(true);
+                bufferCache.flushDirtyPage(finalFilter);
+                bufferCache.unpin(finalFilter);
+                filterPage.releaseReadLatch();
+                bufferCache.returnPage(filterPage,false);
+            }
+        }
+    }
+
+
     public int closeGivePageId() throws HyracksDataException {
         int finalPageId = 0;
         if (appendOnly && fileId > 0) {
+            writeFilterPage();
             ITreeIndexMetaDataFrame metaFrame = metaDataFrameFactory.createFrame();
             metaFrame.setPage(confiscatedMetaNode);
             metaFrame.setValid(true);
@@ -329,7 +369,7 @@ public class LinkedListFreePageManager implements IFreePageManager {
      * However, some implementations still write the meta data to the front. To deal with this as well
      * as to provide downward compatibility, this method tries to find the meta data page first in the
      * last and then in the first page of the file.
-     * 
+     *
      * @return The Id of the page holding the meta data
      * @throws HyracksDataException
      */
@@ -341,22 +381,97 @@ public class LinkedListFreePageManager implements IFreePageManager {
         ITreeIndexMetaDataFrame metaFrame = metaDataFrameFactory.createFrame();
 
         int pages = bufferCache.getNumPagesOfFile(fileId);
-        for (int page = pages - 1; page >= 0; page -= pages - 1) {
-            ICachedPage metaNode = bufferCache.pin(BufferedFileHandle.getDiskPageId(fileId, page), false);
-            try {
-                metaNode.acquireReadLatch();
-                metaFrame.setPage(metaNode);
+        //look at the front (modify in-place index)
+        int page = 0;
+        ICachedPage metaNode = bufferCache.pin(BufferedFileHandle.getDiskPageId(fileId, page), false);
+        try {
+            metaNode.acquireReadLatch();
+            metaFrame.setPage(metaNode);
 
-                if (isMetaPage(metaFrame)) {
-                    headPage = page;
-                    return headPage;
-                }
-            } finally {
-                metaNode.releaseReadLatch();
+            if (isMetaPage(metaFrame)) {
+                headPage = page;
+                return headPage;
+            }
+        } finally {
+            metaNode.releaseReadLatch();
+            bufferCache.unpin(metaNode);
+        }
+        //otherwise, look at the back. (append-only index)
+        page = pages-1 >0 ? pages -1 : 0;
+        metaNode = bufferCache.pin(BufferedFileHandle.getDiskPageId(fileId, page), false);
+        try {
+            metaNode.acquireReadLatch();
+            metaFrame.setPage(metaNode);
+
+            if (isMetaPage(metaFrame)) {
+                headPage = page;
+                return headPage;
+            }
+        } finally {
+            metaNode.releaseReadLatch();
+            bufferCache.unpin(metaNode);
+        }
+        //if we find nothing, this isn't a tree (or isn't one yet).
+        if(pages>0){
+            return -1;
+        }
+        else{
+            return 0;
+        }
+    }
+
+    @Override
+    public long getLSN() throws HyracksDataException {
+        ICachedPage metaNode;
+        if (!appendOnly) {
+            metaNode = bufferCache.pin(BufferedFileHandle.getDiskPageId(fileId, getFirstMetadataPage()), false);
+        } else {
+            metaNode = confiscatedMetaNode;
+        }
+        ITreeIndexMetaDataFrame metaFrame = metaDataFrameFactory.createFrame();
+        metaNode.acquireReadLatch();
+        try {
+            metaFrame.setPage(metaNode);
+            return metaFrame.getLSN();
+        } finally {
+            metaNode.releaseReadLatch();
+            if (!appendOnly) {
                 bufferCache.unpin(metaNode);
             }
         }
-        headPage = 0;
-        return headPage;
+    }
+
+    @Override
+    public void setLSN(long lsn) throws HyracksDataException {
+        ICachedPage metaNode;
+        if (!appendOnly) {
+            metaNode = bufferCache.pin(BufferedFileHandle.getDiskPageId(fileId, getFirstMetadataPage()), false);
+        } else {
+            metaNode = confiscatedMetaNode;
+        }
+        ITreeIndexMetaDataFrame metaFrame = metaDataFrameFactory.createFrame();
+        metaNode.acquireWriteLatch();
+        try {
+            metaFrame.setPage(metaNode);
+            metaFrame.setLSN(lsn);
+        } finally {
+            if (!appendOnly) {
+                metaNode.releaseWriteLatch(true);
+                bufferCache.unpin(metaNode);
+            } else {
+                metaNode.releaseWriteLatch(false);
+            }
+        }
+    }
+
+    @Override
+    public void setFilterPage(ICachedPage filterPage) {
+        this.filterPage = filterPage;
+    }
+
+    @Override
+    public ICachedPage getFilterPage() {
+        return this.filterPage;
     }
 }
+

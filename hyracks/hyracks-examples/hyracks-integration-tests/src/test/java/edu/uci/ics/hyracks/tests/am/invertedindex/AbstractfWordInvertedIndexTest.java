@@ -96,7 +96,7 @@ public abstract class AbstractfWordInvertedIndexTest extends AbstractIntegration
             DEFAULT_MEM_PAGE_SIZE, DEFAULT_MEM_NUM_PAGES);
     protected IStorageManagerInterface storageManager = new TestStorageManagerInterface();
     protected IIndexLifecycleManagerProvider lcManagerProvider = new TestIndexLifecycleManagerProvider();
-    protected IIndexDataflowHelperFactory btreeDataflowHelperFactory = new BTreeDataflowHelperFactory();
+    protected IIndexDataflowHelperFactory btreeDataflowHelperFactory = new BTreeDataflowHelperFactory(true);
     protected IIndexDataflowHelperFactory invertedIndexDataflowHelperFactory;
 
     protected final static SimpleDateFormat simpleDateFormat = new SimpleDateFormat("ddMMyy-hhmmssSS");
@@ -106,9 +106,9 @@ public abstract class AbstractfWordInvertedIndexTest extends AbstractIntegration
     protected final String btreeFileName = "invIndexBtree" + dateString;
 
     protected IFileSplitProvider primaryFileSplitProvider = new ConstantFileSplitProvider(
-            new FileSplit[] { new FileSplit(NC1_ID, new FileReference(primaryFileName)) });
+            new FileSplit[] { new FileSplit(NC1_ID, new FileReference(new File(primaryFileName))) });
     protected IFileSplitProvider btreeFileSplitProvider = new ConstantFileSplitProvider(
-            new FileSplit[] { new FileSplit(NC1_ID, new FileReference(btreeFileName)) });
+            new FileSplit[] { new FileSplit(NC1_ID, new FileReference(new File(btreeFileName))) });
 
     // Primary BTree index.
     protected int primaryFieldCount = 2;
@@ -194,8 +194,8 @@ public abstract class AbstractfWordInvertedIndexTest extends AbstractIntegration
     }
 
     private IOperatorDescriptor createFileScanOp(JobSpecification spec) {
-        FileSplit[] dblpTitleFileSplits = new FileSplit[] { new FileSplit(NC1_ID, new FileReference("data"
-                + File.separator + "cleanednumbereddblptitles.txt")) };
+        FileSplit[] dblpTitleFileSplits = new FileSplit[] { new FileSplit(NC1_ID, new FileReference(new File("data"
+                + File.separator + "cleanednumbereddblptitles.txt"))) };
         IFileSplitProvider dblpTitleSplitProvider = new ConstantFileSplitProvider(dblpTitleFileSplits);
         RecordDescriptor dblpTitleRecDesc = new RecordDescriptor(new ISerializerDeserializer[] {
                 IntegerSerializerDeserializer.INSTANCE, UTF8StringSerializerDeserializer.INSTANCE });

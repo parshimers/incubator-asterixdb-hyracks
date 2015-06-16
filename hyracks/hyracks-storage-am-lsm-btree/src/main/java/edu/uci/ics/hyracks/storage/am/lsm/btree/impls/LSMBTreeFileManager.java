@@ -3,9 +3,9 @@
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * you may obtain a copy of the License from
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -22,15 +22,12 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Date;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 
 import edu.uci.ics.hyracks.api.exceptions.HyracksDataException;
 import edu.uci.ics.hyracks.api.io.FileReference;
-import edu.uci.ics.hyracks.api.io.FileReference.FileReferenceType;
-import edu.uci.ics.hyracks.api.io.IIOManager;
 import edu.uci.ics.hyracks.storage.am.common.api.ITreeIndex;
 import edu.uci.ics.hyracks.storage.am.common.api.IndexException;
 import edu.uci.ics.hyracks.storage.am.lsm.common.impls.AbstractLSMIndexFileManager;
@@ -44,15 +41,14 @@ public class LSMBTreeFileManager extends AbstractLSMIndexFileManager {
     private final TreeIndexFactory<? extends ITreeIndex> btreeFactory;
 
     public LSMBTreeFileManager(IFileMapProvider fileMapProvider, FileReference file,
-            TreeIndexFactory<? extends ITreeIndex> btreeFactory, IIOManager ioManager) {
-        super(fileMapProvider, file, null, ioManager);
+            TreeIndexFactory<? extends ITreeIndex> btreeFactory) {
+        super(fileMapProvider, file, null);
         this.btreeFactory = btreeFactory;
     }
 
     @Override
     public LSMComponentFileReferences getRelFlushFileReference() {
-        Date date = new Date();
-        String ts = formatter.format(date);
+        String ts = getCurrentTimestamp();
         String baseName = baseDir + ts + SPLIT_STRING + ts;
         // Begin timestamp and end timestamp are identical since it is a flush
         return new LSMComponentFileReferences(createFlushFile(baseName + SPLIT_STRING + BTREE_STRING), null,
@@ -72,6 +68,7 @@ public class LSMBTreeFileManager extends AbstractLSMIndexFileManager {
     }
 
     private static FilenameFilter btreeFilter = new FilenameFilter() {
+        @Override
         public boolean accept(File dir, String name) {
             return !name.startsWith(".") && name.endsWith(BTREE_STRING);
         }
@@ -170,8 +167,7 @@ public class LSMBTreeFileManager extends AbstractLSMIndexFileManager {
 
     @Override
     public LSMComponentFileReferences getNewTransactionFileReference() throws IOException {
-        Date date = new Date();
-        String ts = formatter.format(date);
+        String ts = getCurrentTimestamp();
         // Create transaction lock file
         Files.createFile(Paths.get(baseDir + TRANSACTION_PREFIX + ts));
 
@@ -205,20 +201,20 @@ public class LSMBTreeFileManager extends AbstractLSMIndexFileManager {
                 throw new HyracksDataException("Failed to delete transaction lock :" + txnFileName);
             }
         }
-        String bTreeFileName = null;
-        String bloomFilterFileName = null;
+        File bTreeFile = null;
+        File bloomFilterFile = null;
 
         for (String fileName : files) {
             if (fileName.endsWith(BTREE_STRING)) {
-                bTreeFileName = dir.getPath() + File.separator + fileName;
+                bTreeFile = new File(dir.getPath() + File.separator + fileName);
             } else if (fileName.endsWith(BLOOM_FILTER_STRING)) {
-                bloomFilterFileName = dir.getPath() + File.separator + fileName;
+                bloomFilterFile = new File(dir.getPath() + File.separator + fileName);
             } else {
                 throw new HyracksDataException("unrecognized file found = " + fileName);
             }
         }
-        FileReference bTreeFileRef = new FileReference(bTreeFileName, FileReferenceType.DISTRIBUTED_IF_AVAIL);
-        FileReference bloomFilterFileRef = new FileReference(bloomFilterFileName);
+        FileReference bTreeFileRef = new FileReference(bTreeFile);
+        FileReference bloomFilterFileRef = new FileReference(bloomFilterFile);
 
         return new LSMComponentFileReferences(bTreeFileRef, null, bloomFilterFileRef);
     }

@@ -50,6 +50,22 @@ public class LSMRTreeFlushOperation implements ILSMIOOperation, Comparable<LSMRT
     }
 
     @Override
+    public Set<IODeviceHandle> getReadDevices() {
+        return Collections.emptySet();
+    }
+
+    @Override
+    public Set<IODeviceHandle> getWriteDevices() {
+        Set<IODeviceHandle> devs = new HashSet<IODeviceHandle>();
+        devs.add(rtreeFlushTarget.getDeviceHandle());
+        if (btreeFlushTarget != null) {
+            devs.add(btreeFlushTarget.getDeviceHandle());
+            devs.add(bloomFilterFlushTarget.getDeviceHandle());
+        }
+        return devs;
+    }
+
+    @Override
     public Boolean call() throws HyracksDataException, IndexException {
         accessor.flush(this);
         return true;

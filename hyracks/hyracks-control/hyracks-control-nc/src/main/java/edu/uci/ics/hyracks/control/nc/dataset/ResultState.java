@@ -97,7 +97,7 @@ public class ResultState implements IStateObject {
             }
         }
         if (fileRef != null) {
-            ioManager.delete(fileRef);
+            fileRef.delete();
         }
     }
 

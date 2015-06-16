@@ -24,7 +24,6 @@ import edu.uci.ics.hyracks.api.context.IHyracksTaskContext;
 import edu.uci.ics.hyracks.api.dataflow.TaskId;
 import edu.uci.ics.hyracks.api.exceptions.HyracksDataException;
 import edu.uci.ics.hyracks.api.io.FileReference;
-import edu.uci.ics.hyracks.api.io.IIOManager;
 import edu.uci.ics.hyracks.api.job.JobId;
 import edu.uci.ics.hyracks.dataflow.common.io.RunFileReader;
 import edu.uci.ics.hyracks.dataflow.common.io.RunFileWriter;
@@ -32,7 +31,6 @@ import edu.uci.ics.hyracks.dataflow.std.base.AbstractStateObject;
 
 public class MaterializerTaskState extends AbstractStateObject {
     private RunFileWriter out;
-    private IIOManager ioManager;
 
     public MaterializerTaskState(JobId jobId, TaskId taskId) {
         super(jobId, taskId);
@@ -53,8 +51,6 @@ public class MaterializerTaskState extends AbstractStateObject {
                 MaterializerTaskState.class.getSimpleName());
         out = new RunFileWriter(file, ctx.getIOManager());
         out.open();
-        ioManager = ctx.getIOManager();
-        // TODO I really don't like this
     }
 
     public void close() throws HyracksDataException {
@@ -85,6 +81,6 @@ public class MaterializerTaskState extends AbstractStateObject {
     }
     
     public void deleteFile() {
-        ioManager.delete(out.getFileReference());
+        out.getFileReference().delete();
     }
 }

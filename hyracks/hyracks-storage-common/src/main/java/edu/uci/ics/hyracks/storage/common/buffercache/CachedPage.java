@@ -17,7 +17,6 @@ package edu.uci.ics.hyracks.storage.common.buffercache;
 import java.nio.ByteBuffer;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 /**
@@ -34,7 +33,7 @@ public class CachedPage implements ICachedPageInternal {
     volatile long dpid; // disk page id (composed of file id and page id)
     CachedPage next;
     volatile boolean valid;
-    volatile boolean virtual;
+    final AtomicBoolean virtual;
 
     public CachedPage(int cpid, ByteBuffer buffer, IPageReplacementStrategy pageReplacementStrategy) {
         this.cpid = cpid;
@@ -46,14 +45,15 @@ public class CachedPage implements ICachedPageInternal {
         replacementStrategyObject = pageReplacementStrategy.createPerPageStrategyObject(cpid);
         dpid = -1;
         valid = false;
-        virtual = false;
+        virtual = new AtomicBoolean();
+        virtual.set(false);
     }
 
     public void reset(long dpid) {
         this.dpid = dpid;
         dirty.set(false);
         valid = false;
-        this.virtual = false;
+        virtual.set(false);
         pageReplacementStrategy.notifyCachePageReset(this);
     }
 
@@ -73,10 +73,11 @@ public class CachedPage implements ICachedPageInternal {
 
     @Override
     public boolean pinIfGoodVictim() {
-        if (virtual)
+        if (virtual.get())
             return false; //i am not a good victim because i cant flush!
-        else
+        else {
             return pinCount.compareAndSet(0, 1);
+        }
     }
 
     @Override
@@ -116,9 +117,11 @@ public class CachedPage implements ICachedPageInternal {
     public long getDiskPageId() {
         return dpid;
     }
+
     CachedPage getNext() {
         return next;
     }
+
     void setNext(CachedPage next) {
         this.next = next;
     }

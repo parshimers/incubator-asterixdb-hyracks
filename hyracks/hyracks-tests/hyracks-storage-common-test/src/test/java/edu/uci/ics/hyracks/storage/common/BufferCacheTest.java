@@ -63,7 +63,7 @@ public class BufferCacheTest {
         IBufferCache bufferCache = TestStorageManagerComponentHolder.getBufferCache(ctx);
         IFileMapProvider fmp = TestStorageManagerComponentHolder.getFileMapProvider(ctx);
         String fileName = getFileName();
-        FileReference file = new FileReference(fileName);
+        FileReference file = new FileReference(new File(fileName));
         bufferCache.createFile(file);
         int fileId = fmp.lookupFileId(file);
         int num = 10;
@@ -148,7 +148,7 @@ public class BufferCacheTest {
 
         for (int i = 0; i < MAX_OPEN_FILES; i++) {
             String fileName = getFileName();
-            FileReference file = new FileReference(fileName);
+            FileReference file = new FileReference(new File(fileName));
             bufferCache.createFile(file);
             int fileId = fmp.lookupFileId(file);
             bufferCache.openFile(fileId);
@@ -160,7 +160,7 @@ public class BufferCacheTest {
         // since all files are open, next open should fail
         try {
             String fileName = getFileName();
-            FileReference file = new FileReference(fileName);
+            FileReference file = new FileReference(new File(fileName));
             bufferCache.createFile(file);
             int fileId = fmp.lookupFileId(file);
             bufferCache.openFile(fileId);
@@ -178,7 +178,7 @@ public class BufferCacheTest {
         exceptionThrown = false;
         try {
             String fileName = getFileName();
-            FileReference file = new FileReference(fileName);
+            FileReference file = new FileReference(new File(fileName));
             bufferCache.createFile(file);
             int fileId = fmp.lookupFileId(file);
             bufferCache.openFile(fileId);
@@ -210,7 +210,7 @@ public class BufferCacheTest {
         // open max number of files and write some stuff into their first page
         for (int i = 0; i < MAX_OPEN_FILES; i++) {
             String fileName = getFileName();
-            FileReference file = new FileReference(fileName);
+            FileReference file = new FileReference(new File(fileName));
             bufferCache.createFile(file);
             int fileId = fmp.lookupFileId(file);
             bufferCache.openFile(fileId);
@@ -238,7 +238,7 @@ public class BufferCacheTest {
         // since all files are open, next open should fail
         try {
             String fileName = getFileName();
-            FileReference file = new FileReference(fileName);
+            FileReference file = new FileReference(new File(fileName));
             bufferCache.createFile(file);
             int fileId = fmp.lookupFileId(file);
             bufferCache.openFile(fileId);
@@ -260,7 +260,7 @@ public class BufferCacheTest {
         // now open a few new files
         for (int i = 0; i < filesToClose; i++) {
             String fileName = getFileName();
-            FileReference file = new FileReference(fileName);
+            FileReference file = new FileReference(new File(fileName));
             bufferCache.createFile(file);
             int fileId = fmp.lookupFileId(file);
             bufferCache.openFile(fileId);
@@ -270,7 +270,7 @@ public class BufferCacheTest {
         // since all files are open, next open should fail
         try {
             String fileName = getFileName();
-            FileReference file = new FileReference(fileName);
+            FileReference file = new FileReference(new File(fileName));
             bufferCache.createFile(file);
             int fileId = fmp.lookupFileId(file);
             bufferCache.openFile(fileId);
@@ -313,102 +313,6 @@ public class BufferCacheTest {
         }
 
         bufferCache.close();
-    }
-
-    @Test
-    public void virtualPageTest() throws HyracksDataException {
-        TestStorageManagerComponentHolder.init(PAGE_SIZE, NUM_PAGES, MAX_OPEN_FILES);
-        IBufferCache bufferCache = TestStorageManagerComponentHolder.getBufferCache(ctx);
-        IFileMapProvider fmp = TestStorageManagerComponentHolder.getFileMapProvider(ctx);
-
-        List<Integer> fileIds = new ArrayList<Integer>();
-        Map<Integer, ArrayList<Integer>> pageContents = new HashMap<Integer, ArrayList<Integer>>();
-        ArrayList<Integer> memVals;
-        int num = 10;
-        int testPageId = 0;
-        int lastRealPage = 0;
-        String fileName = getFileName();
-        FileReference file = new FileReference(fileName);
-        bufferCache.createFile(file);
-        int memFileId = bufferCache.createMemFile();
-        int fileId = fmp.lookupFileId(file);
-        bufferCache.openFile(fileId);
-        fileIds.add(fileId);
-
-        // try and write a few somethings into an on-disk paged file
-        ICachedPage page = null;
-        for (; lastRealPage < 10; lastRealPage++) {
-            page = bufferCache.pin(BufferedFileHandle.getDiskPageId(fileId, lastRealPage), true);
-            page.acquireWriteLatch();
-            try {
-                ArrayList<Integer> values = new ArrayList<Integer>();
-                for (int j = 0; j < num; j++) {
-                    int x = Math.abs(rnd.nextInt());
-                    page.getBuffer().putInt(j * 4, x);
-                    values.add(x);
-                }
-                pageContents.put(lastRealPage, values);
-            } finally {
-                page.releaseWriteLatch(true);
-                bufferCache.unpin(page);
-            }
-        }
-        //now try the same thing, but for a virtual page
-        page = bufferCache.pinVirtual(BufferedFileHandle.getDiskPageId(memFileId, testPageId));
-        page.acquireWriteLatch();
-        try {
-            ArrayList<Integer> values = new ArrayList<Integer>();
-            for (int j = 0; j < num; j++) {
-                int x = Math.abs(rnd.nextInt());
-                page.getBuffer().putInt(j * 4, x);
-                values.add(x);
-            }
-            memVals = values;
-        } finally {
-            page.releaseWriteLatch(true);
-            //no unpin here.
-        }
-        //write some more stuff...
-        for (; lastRealPage < 20; lastRealPage++) {
-            page = bufferCache.pin(BufferedFileHandle.getDiskPageId(fileId, lastRealPage), true);
-            page.acquireWriteLatch();
-            try {
-                ArrayList<Integer> values = new ArrayList<Integer>();
-                for (int j = 0; j < num; j++) {
-                    int x = Math.abs(rnd.nextInt());
-                    page.getBuffer().putInt(j * 4, x);
-                    values.add(x);
-                }
-                pageContents.put(lastRealPage, values);
-            } finally {
-                page.releaseWriteLatch(true);
-                bufferCache.unpin(page);
-            }
-        }
-        //now try putting the virtual page after the other pages
-        ICachedPage realPage = bufferCache.unpinVirtual(BufferedFileHandle.getDiskPageId(memFileId, testPageId),
-                BufferedFileHandle.getDiskPageId(fileId, lastRealPage));
-        bufferCache.unpin(realPage);
-        pageContents.put(lastRealPage, memVals);
-
-        bufferCache.closeFile(fileId);
-
-        //now try reading it back!
-        bufferCache.openFile(fileId);
-        for (int i : pageContents.keySet()) {
-            page = bufferCache.pin(BufferedFileHandle.getDiskPageId(fileId, i), false);
-            page.acquireReadLatch();
-            try {
-                ArrayList<Integer> values = pageContents.get(i);
-                for (int j = 0; j < values.size(); j++) {
-                    Assert.assertEquals(values.get(j).intValue(), page.getBuffer().getInt(j * 4));
-                }
-            } finally {
-                page.releaseReadLatch();
-                bufferCache.unpin(page);
-            }
-        }
-        bufferCache.closeFile(fileId);
     }
 
     @AfterClass

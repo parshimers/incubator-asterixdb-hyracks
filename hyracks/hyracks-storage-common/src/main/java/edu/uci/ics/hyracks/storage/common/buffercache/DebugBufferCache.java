@@ -3,9 +3,9 @@
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * you may obtain a copy of the License from
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -15,13 +15,10 @@
 
 package edu.uci.ics.hyracks.storage.common.buffercache;
 
-import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicLong;
 
 import edu.uci.ics.hyracks.api.exceptions.HyracksDataException;
 import edu.uci.ics.hyracks.api.io.FileReference;
-import edu.uci.ics.hyracks.api.io.IFileHandle;
-import edu.uci.ics.hyracks.api.io.IIOManager;
 
 /**
  * Implementation of an IBufferCache that counts the number of pins/unpins,
@@ -176,19 +173,7 @@ public class DebugBufferCache implements IBufferCache {
 
     @Override
     public void deleteMemFile(int fileId) throws HyracksDataException {
-        bufferCache.deleteMemFile(fileId); 
-    }
-
-    @Override
-    public ICachedPage pinVirtual(long vpid) throws HyracksDataException {
-        pinCount.addAndGet(1);
-        return bufferCache.pinVirtual(vpid);
-    }
-
-    @Override
-    public ICachedPage unpinVirtual(long vpid, long dpid) throws HyracksDataException {
-        unpinCount.addAndGet(1);
-        return bufferCache.unpinVirtual(vpid, dpid);
+        bufferCache.deleteMemFile(fileId);
     }
 
     @Override
@@ -199,16 +184,6 @@ public class DebugBufferCache implements IBufferCache {
     @Override
     public void adviseWontNeed(ICachedPage page) {
         bufferCache.adviseWontNeed(page);
-    }
-
-    @Override
-    public ICachedPage unpinVirtual(ICachedPage vp, long dpid) throws HyracksDataException {
-        return bufferCache.unpinVirtual(vp, dpid);
-    }
-
-    @Override
-    public boolean isVirtual(long vpid) throws HyracksDataException {
-        return bufferCache.isVirtual(vpid);
     }
 
     @Override
@@ -232,8 +207,8 @@ public class DebugBufferCache implements IBufferCache {
     }
 
     @Override
-    public void finishQueue(IFIFOPageQueue queue) {
-        bufferCache.finishQueue(queue);
+    public void finishQueue() {
+        bufferCache.finishQueue();
     }
 
     @Override
@@ -255,8 +230,8 @@ public class DebugBufferCache implements IBufferCache {
     }
 
     @Override
-    public IIOManager getIOManager() {
-        return bufferCache.getIOManager();
+    public int getFileReferenceCount(int fileId) {
+        return bufferCache.getFileReferenceCount(fileId);
     }
 
 }

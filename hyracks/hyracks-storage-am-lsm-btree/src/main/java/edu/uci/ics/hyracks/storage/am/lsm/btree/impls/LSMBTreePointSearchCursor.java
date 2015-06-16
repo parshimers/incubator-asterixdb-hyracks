@@ -68,6 +68,7 @@ public class LSMBTreePointSearchCursor implements ITreeIndexCursor {
         }
         boolean reconciled = false;
         for (int i = 0; i < numBTrees; ++i) {
+            //System.out.println("Searching disk component: "+btreeAccessors[i].hashCode());
             btreeAccessors[i].search(rangeCursors[i], predicate);
             if (rangeCursors[i].hasNext()) {
                 rangeCursors[i].next();

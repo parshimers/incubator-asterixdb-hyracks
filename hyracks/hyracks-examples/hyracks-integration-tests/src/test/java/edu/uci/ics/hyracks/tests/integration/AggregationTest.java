@@ -70,7 +70,7 @@ import edu.uci.ics.hyracks.tests.util.ResultSerializerFactoryProvider;
 public class AggregationTest extends AbstractIntegrationTest {
 
     final IFileSplitProvider splitProvider = new ConstantFileSplitProvider(new FileSplit[] { new FileSplit(NC2_ID,
-            new FileReference("data/tpch0.001/lineitem.tbl")) });
+            new FileReference(new File("data/tpch0.001/lineitem.tbl"))) });
 
     final RecordDescriptor desc = new RecordDescriptor(new ISerializerDeserializer[] {
             UTF8StringSerializerDeserializer.INSTANCE, IntegerSerializerDeserializer.INSTANCE,

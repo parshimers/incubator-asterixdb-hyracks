@@ -74,6 +74,7 @@ public class LSMTreeRunner implements IExperimentRunner {
     private final int onDiskPageSize;
     private final int onDiskNumPages;
     private final static ThreadFactory threadFactory = new ThreadFactory() {
+        @Override
         public Thread newThread(Runnable r) {
             return new Thread(r);
         }
@@ -88,7 +89,7 @@ public class LSMTreeRunner implements IExperimentRunner {
         this.onDiskNumPages = onDiskNumPages;
 
         onDiskDir = classDir + sep + simpleDateFormat.format(new Date()) + sep;
-        file = new FileReference(onDiskDir);
+        file = new FileReference(new File(onDiskDir));
         ctx = TestUtils.create(HYRACKS_FRAME_SIZE);
 
         TestStorageManagerComponentHolder.init(this.onDiskPageSize, this.onDiskNumPages, MAX_OPEN_FILES);
@@ -100,7 +101,7 @@ public class LSMTreeRunner implements IExperimentRunner {
         List<IVirtualBufferCache> virtualBufferCaches = new ArrayList<IVirtualBufferCache>();
         for (int i = 0; i < 2; i++) {
             IVirtualBufferCache virtualBufferCache = new VirtualBufferCache(new HeapBufferAllocator(), inMemPageSize,
-                    inMemNumPages / 2, ioManager);
+                    inMemNumPages / 2);
             virtualBufferCaches.add(virtualBufferCache);
         }
 
@@ -108,9 +109,8 @@ public class LSMTreeRunner implements IExperimentRunner {
         AsynchronousScheduler.INSTANCE.init(threadFactory);
 
         lsmtree = LSMBTreeUtils.createLSMTree(virtualBufferCaches, file, bufferCache, fmp, typeTraits, cmpFactories,
-                bloomFilterKeyFields, bloomFilterFalsePositiveRate, new NoMergePolicy(),
-                new ThreadCountingTracker(), ioScheduler, NoOpIOOperationCallback.INSTANCE, true, null, null, null,
-                null);
+                bloomFilterKeyFields, bloomFilterFalsePositiveRate, new NoMergePolicy(), new ThreadCountingTracker(),
+                ioScheduler, NoOpIOOperationCallback.INSTANCE, true, null, null, null, null, true);
     }
 
     @Override

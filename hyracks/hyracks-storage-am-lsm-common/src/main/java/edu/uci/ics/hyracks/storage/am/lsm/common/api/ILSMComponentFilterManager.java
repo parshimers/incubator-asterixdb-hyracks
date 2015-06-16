@@ -29,7 +29,7 @@ public interface ILSMComponentFilterManager {
 
     public boolean readFilterInfo(ILSMComponentFilter filter, ITreeIndex treeIndex) throws HyracksDataException;
 
-    public void writeFilterInfo(ILSMComponentFilter filter, ITreeIndex treeIndex, AbstractTreeIndexBulkLoader bulkLoader)
+    public void writeFilterInfo(ILSMComponentFilter filter, ITreeIndex treeIndex)
             throws HyracksDataException;
 
 }

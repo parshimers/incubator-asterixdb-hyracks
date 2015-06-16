@@ -28,6 +28,10 @@ public interface ILSMIOOperation extends Callable<Boolean> {
         MERGE
     }
 
+    public Set<IODeviceHandle> getReadDevices();
+
+    public Set<IODeviceHandle> getWriteDevices();
+
     public Boolean call() throws HyracksDataException, IndexException;
 
     public ILSMIOOperationCallback getCallback();

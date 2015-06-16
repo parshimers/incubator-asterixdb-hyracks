@@ -31,13 +31,7 @@ public interface IPageReplacementStrategy {
 
     public int addPage();
 
-//    public int subtractPage();
-    
-//    public ICachedPageInternal allocateAndConfiscate();
-
     public int getPageSize();
 
     public int getMaxAllowedNumPages();
-
-//    public void returnPage();
 }

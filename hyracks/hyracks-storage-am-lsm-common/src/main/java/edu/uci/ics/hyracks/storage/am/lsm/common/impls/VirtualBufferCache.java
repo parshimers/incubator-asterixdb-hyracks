@@ -3,9 +3,9 @@
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * you may obtain a copy of the License from
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -17,7 +17,6 @@ package edu.uci.ics.hyracks.storage.am.lsm.common.impls;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
@@ -26,8 +25,6 @@ import java.util.logging.Logger;
 
 import edu.uci.ics.hyracks.api.exceptions.HyracksDataException;
 import edu.uci.ics.hyracks.api.io.FileReference;
-import edu.uci.ics.hyracks.api.io.IFileHandle;
-import edu.uci.ics.hyracks.api.io.IIOManager;
 import edu.uci.ics.hyracks.storage.am.lsm.common.api.IVirtualBufferCache;
 import edu.uci.ics.hyracks.storage.common.buffercache.ICacheMemoryAllocator;
 import edu.uci.ics.hyracks.storage.common.buffercache.ICachedPage;
@@ -52,15 +49,12 @@ public class VirtualBufferCache implements IVirtualBufferCache {
     private volatile int nextFree;
 
     private boolean open;
-    
-    protected IIOManager ioManager;
 
-    public VirtualBufferCache(ICacheMemoryAllocator allocator, int pageSize, int numPages, IIOManager ioManager) {
+    public VirtualBufferCache(ICacheMemoryAllocator allocator, int pageSize, int numPages) {
         this.allocator = allocator;
         this.fileMapManager = new TransientFileMapManager();
         this.pageSize = pageSize;
         this.numPages = numPages;
-        this.ioManager = ioManager;
 
         buckets = new CacheBucket[numPages];
         pages = new ArrayList<VirtualPage>();
@@ -352,6 +346,7 @@ public class VirtualBufferCache implements IVirtualBufferCache {
         }
 
     }
+
     //These 4 methods aren't applicable here.
     @Override
     public int createMemFile() throws HyracksDataException {
@@ -360,16 +355,6 @@ public class VirtualBufferCache implements IVirtualBufferCache {
 
     @Override
     public void deleteMemFile(int fileId) throws HyracksDataException {
-    }
-
-    @Override
-    public ICachedPage pinVirtual(long vpid) throws HyracksDataException {
-        return null;
-    }
-
-    @Override
-    public ICachedPage unpinVirtual(long vpid, long dpid) throws HyracksDataException {
-        return null;
     }
 
     @Override
@@ -383,16 +368,6 @@ public class VirtualBufferCache implements IVirtualBufferCache {
             LOGGER.log(Level.INFO, "Calling adviseWontNeed on " + this.getClass().getName()
                     + " makes no sense as this BufferCache cannot evict pages");
         }
-    }
-
-    @Override
-    public ICachedPage unpinVirtual(ICachedPage vp, long dpid) throws HyracksDataException {
-        return null;
-    }
-
-    @Override
-    public boolean isVirtual(long vpid) throws HyracksDataException {
-        return false;
     }
 
     @Override
@@ -411,7 +386,7 @@ public class VirtualBufferCache implements IVirtualBufferCache {
     }
 
     @Override
-    public void finishQueue(IFIFOPageQueue queue) {
+    public void finishQueue() {
         throw new UnsupportedOperationException("Virtual buffer caches don't have FIFO writers");
     }
 
@@ -436,7 +411,7 @@ public class VirtualBufferCache implements IVirtualBufferCache {
     }
 
     @Override
-    public IIOManager getIOManager() {
-        return ioManager;
+    public int getFileReferenceCount(int fileId) {
+        return 0;
     }
 }

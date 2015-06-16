@@ -14,9 +14,6 @@
  */
 package edu.uci.ics.hyracks.api.io;
 
-import java.io.File;
-import java.io.FilenameFilter;
-import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.List;
 import java.util.concurrent.Executor;
@@ -54,11 +51,5 @@ public interface IIOManager {
 
     public void setExecutor(Executor executor);
     
-    public long getSize(IFileHandle fileHandle) throws HyracksDataException;
-    
-    public void delete(FileReference fileReference);
-
-    public void mkdirs(FileReference fileReference);
-
-    public String[] listFiles(FileReference fileReference, FilenameFilter transactionFileNameFilter) throws HyracksDataException;
+    public long getSize(IFileHandle fileHandle);
 }

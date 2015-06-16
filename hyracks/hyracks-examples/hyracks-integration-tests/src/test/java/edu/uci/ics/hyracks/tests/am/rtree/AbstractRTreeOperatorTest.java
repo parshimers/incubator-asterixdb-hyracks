@@ -87,7 +87,7 @@ public abstract class AbstractRTreeOperatorTest extends AbstractIntegrationTest 
     protected final IStorageManagerInterface storageManager = new TestStorageManagerInterface();
     protected final IIndexLifecycleManagerProvider lcManagerProvider = new TestIndexLifecycleManagerProvider();
     protected IIndexDataflowHelperFactory rtreeDataflowHelperFactory;
-    protected IIndexDataflowHelperFactory btreeDataflowHelperFactory = new BTreeDataflowHelperFactory();
+    protected IIndexDataflowHelperFactory btreeDataflowHelperFactory = new BTreeDataflowHelperFactory(true);
 
     // field, type and key declarations for primary index
     protected final int primaryFieldCount = 10;
@@ -137,10 +137,10 @@ public abstract class AbstractRTreeOperatorTest extends AbstractIntegrationTest 
 
         primaryFileName = testHelper.getPrimaryIndexName();
         primarySplitProvider = new ConstantFileSplitProvider(new FileSplit[] { new FileSplit(NC1_ID, new FileReference(
-                primaryFileName)) });
+                new File(primaryFileName))) });
         secondaryFileName = testHelper.getSecondaryIndexName();
         secondarySplitProvider = new ConstantFileSplitProvider(new FileSplit[] { new FileSplit(NC1_ID,
-                new FileReference(secondaryFileName)) });
+                new FileReference(new File(secondaryFileName))) });
 
         // field, type and key declarations for primary index
         primaryTypeTraits[0] = UTF8StringPointable.TYPE_TRAITS;
@@ -212,8 +212,8 @@ public abstract class AbstractRTreeOperatorTest extends AbstractIntegrationTest 
     protected void loadPrimaryIndex() throws Exception {
         JobSpecification spec = new JobSpecification();
 
-        FileSplit[] ordersSplits = new FileSplit[] { new FileSplit(NC1_ID, new FileReference(
-                "data/orders-with-locations-part1.txt")) };
+        FileSplit[] ordersSplits = new FileSplit[] { new FileSplit(NC1_ID, new FileReference(new File(
+                "data/orders-with-locations-part1.txt"))) };
         IFileSplitProvider ordersSplitProvider = new ConstantFileSplitProvider(ordersSplits);
         RecordDescriptor ordersDesc = new RecordDescriptor(new ISerializerDeserializer[] {
                 UTF8StringSerializerDeserializer.INSTANCE, UTF8StringSerializerDeserializer.INSTANCE,
@@ -323,8 +323,8 @@ public abstract class AbstractRTreeOperatorTest extends AbstractIntegrationTest 
 
         JobSpecification spec = new JobSpecification();
 
-        FileSplit[] ordersSplits = new FileSplit[] { new FileSplit(NC1_ID, new FileReference(
-                "data/orders-with-locations-part2.txt")) };
+        FileSplit[] ordersSplits = new FileSplit[] { new FileSplit(NC1_ID, new FileReference(new File(
+                "data/orders-with-locations-part2.txt"))) };
         IFileSplitProvider ordersSplitProvider = new ConstantFileSplitProvider(ordersSplits);
         RecordDescriptor ordersDesc = new RecordDescriptor(new ISerializerDeserializer[] {
                 UTF8StringSerializerDeserializer.INSTANCE, UTF8StringSerializerDeserializer.INSTANCE,

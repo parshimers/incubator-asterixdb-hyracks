@@ -106,7 +106,7 @@ public class LSMInvertedIndexTestHarness {
         virtualBufferCaches = new ArrayList<IVirtualBufferCache>();
         for (int i = 0; i < numMutableComponents; i++) {
             IVirtualBufferCache virtualBufferCache = new MultitenantVirtualBufferCache(new VirtualBufferCache(
-                    new HeapBufferAllocator(), memPageSize, memNumPages / numMutableComponents, ioManager));
+                    new HeapBufferAllocator(), memPageSize, memNumPages / numMutableComponents));
             virtualBufferCaches.add(virtualBufferCache);
             virtualBufferCache.open();
         }

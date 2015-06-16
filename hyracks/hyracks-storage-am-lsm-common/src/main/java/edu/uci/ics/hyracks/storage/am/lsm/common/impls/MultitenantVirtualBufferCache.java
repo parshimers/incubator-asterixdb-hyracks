@@ -14,14 +14,11 @@
  */
 package edu.uci.ics.hyracks.storage.am.lsm.common.impls;
 
-import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import edu.uci.ics.hyracks.api.exceptions.HyracksDataException;
 import edu.uci.ics.hyracks.api.io.FileReference;
-import edu.uci.ics.hyracks.api.io.IFileHandle;
-import edu.uci.ics.hyracks.api.io.IIOManager;
 import edu.uci.ics.hyracks.storage.am.lsm.common.api.IVirtualBufferCache;
 import edu.uci.ics.hyracks.storage.common.buffercache.ICachedPage;
 import edu.uci.ics.hyracks.storage.common.buffercache.IFIFOPageQueue;
@@ -136,16 +133,6 @@ public class MultitenantVirtualBufferCache implements IVirtualBufferCache {
     }
 
     @Override
-    public ICachedPage pinVirtual(long vpid) throws HyracksDataException {
-        throw new UnsupportedOperationException("Virtual Pages are not a valid concept in this context");
-    }
-
-    @Override
-    public ICachedPage unpinVirtual(long vpid, long dpid) throws HyracksDataException {
-        throw new UnsupportedOperationException("Virtual Pages are not a valid concept in this context");
-    }
-
-    @Override
     public int getNumPagesOfFile(int fileId) throws HyracksDataException {
         throw new UnsupportedOperationException();
     }
@@ -156,16 +143,6 @@ public class MultitenantVirtualBufferCache implements IVirtualBufferCache {
             LOGGER.log(Level.INFO, "Calling adviseWontNeed on " + this.getClass().getName()
                     + " makes no sense as this BufferCache cannot evict pages");
         }
-    }
-
-    @Override
-    public ICachedPage unpinVirtual(ICachedPage vp, long dpid) throws HyracksDataException {
-        throw new UnsupportedOperationException("Virtual Pages are not a valid concept in this context");
-    }
-
-    @Override
-    public boolean isVirtual(long vpid) throws HyracksDataException {
-        throw new UnsupportedOperationException("Virtual Pages are not a valid concept in this context");
     }
 
     @Override
@@ -189,7 +166,7 @@ public class MultitenantVirtualBufferCache implements IVirtualBufferCache {
     }
 
     @Override
-    public void finishQueue(IFIFOPageQueue queue) {
+    public void finishQueue() {
         throw new UnsupportedOperationException("Virtual buffer caches don't have FIFO writers");
     }
 
@@ -207,9 +184,10 @@ public class MultitenantVirtualBufferCache implements IVirtualBufferCache {
     public void returnPage(ICachedPage page, boolean reinsert) {
         
     }
-
+    
     @Override
-    public IIOManager getIOManager() {
-        return vbc.getIOManager();
+    public int getFileReferenceCount(int fileId){
+        return 0;
     }
+
 }

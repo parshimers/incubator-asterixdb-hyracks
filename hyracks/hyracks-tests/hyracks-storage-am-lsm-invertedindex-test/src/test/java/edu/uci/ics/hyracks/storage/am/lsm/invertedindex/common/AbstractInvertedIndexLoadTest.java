@@ -38,16 +38,12 @@ public abstract class AbstractInvertedIndexLoadTest extends AbstractInvertedInde
     protected void runTest(LSMInvertedIndexTestContext testCtx, TupleGenerator tupleGen) throws IOException,
             IndexException {
         IIndex invIndex = testCtx.getIndex();
-        if ((invIndexType != InvertedIndexType.LSM && invIndexType != InvertedIndexType.PARTITIONED_LSM) || !bulkLoad) {
+        if(invIndexType != InvertedIndexType.PARTITIONED_ONDISK && invIndexType != InvertedIndexType.ONDISK) {
             invIndex.create();
             invIndex.activate();
         }
         if (bulkLoad) {
-            if (invIndexType != InvertedIndexType.LSM && invIndexType != InvertedIndexType.PARTITIONED_LSM) {
-                LSMInvertedIndexTestUtils.bulkLoadInvIndex(testCtx, tupleGen, NUM_DOCS_TO_INSERT, false);
-            } else {
                 LSMInvertedIndexTestUtils.bulkLoadInvIndex(testCtx, tupleGen, NUM_DOCS_TO_INSERT, true);
-            }
         } else {
             LSMInvertedIndexTestUtils.insertIntoInvIndex(testCtx, tupleGen, NUM_DOCS_TO_INSERT);
         }

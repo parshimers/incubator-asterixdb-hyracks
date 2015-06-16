@@ -33,7 +33,6 @@ public class ClockPageReplacementStrategy implements IPageReplacementStrategy {
     private final int realMaxAllowedNumPages;
     private AtomicInteger maxAllowedNumPages;
     private AtomicInteger cpIdCounter;
-    private AtomicInteger numConfiscatedPages;
     //DEBUG
 
     public ClockPageReplacementStrategy(ICacheMemoryAllocator allocator, int pageSize, int maxAllowedNumPages) {
@@ -44,10 +43,6 @@ public class ClockPageReplacementStrategy implements IPageReplacementStrategy {
         this.clockPtr = new AtomicInteger(0);
         this.numPages = new AtomicInteger(0);
         this.cpIdCounter = new AtomicInteger(0);
-        this.numConfiscatedPages = new AtomicInteger(0);
-
-
-    
     }
 
     @Override
@@ -101,7 +96,7 @@ public class ClockPageReplacementStrategy implements IPageReplacementStrategy {
             AtomicBoolean accessedFlag = getPerPageObject(cPage);
             if (!accessedFlag.compareAndSet(true, false)) {
                 if (cPage.pinIfGoodVictim()) {
-                    return cPage;
+                        return cPage;
                 }
             }
             clockPtr.set(clockPtr.incrementAndGet() % (numPages.get()-1));
@@ -117,26 +112,10 @@ public class ClockPageReplacementStrategy implements IPageReplacementStrategy {
         return numPages.get();
     }
 
-//    public int subtractPage() {
-//        //if we're at the edge, push the clock pointer forward
-//        if (clockPtr.get() == numPages.get() - 1) {
-//            clockPtr.set(0);
-//        }
-//        numConfiscatedPages.incrementAndGet();
-//        maxAllowedNumPages.decrementAndGet();
-//        return numPages.decrementAndGet();
-//    }
 
     public int addPage() {
         return numPages.incrementAndGet();
     }
-
-//    @Override
-//    public void returnPage() {
-//        numPages.incrementAndGet();
-//        maxAllowedNumPages.incrementAndGet();
-//        numConfiscatedPages.decrementAndGet();
-//    }
 
     private ICachedPageInternal allocatePage() {
         CachedPage cPage = new CachedPage(cpIdCounter.getAndIncrement(), allocator.allocate(pageSize, 1)[0], this);
@@ -150,16 +129,6 @@ public class ClockPageReplacementStrategy implements IPageReplacementStrategy {
         }
         return null;
     }
-
-//    public ICachedPageInternal allocateAndConfiscate() {
-//        if (numPages.get() < maxAllowedNumPages.get() && maxAllowedNumPages.get() > 5) {
-//            maxAllowedNumPages.decrementAndGet();
-//            CachedPage cPage = new CachedPage(cpIdCounter.getAndIncrement(), allocator.allocate(pageSize, 1)[0], this);
-//            numConfiscatedPages.incrementAndGet();
-//            return cPage;
-//        } else
-//            return null;
-//    }
 
     private AtomicBoolean getPerPageObject(ICachedPageInternal cPage) {
         return (AtomicBoolean) cPage.getReplacementStrategyObject();

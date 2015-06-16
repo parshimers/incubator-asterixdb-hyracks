@@ -40,7 +40,7 @@ public class FileSplit implements Serializable {
 
     public FileSplit(String nodeName, String path) {
         this.nodeName = nodeName;
-        this.file = new FileReference(path);
+        this.file = new FileReference(new File(path));
         this.ioDeviceId = 0;
     }
 
@@ -54,5 +54,10 @@ public class FileSplit implements Serializable {
 
     public int getIODeviceId() {
         return ioDeviceId;
+    }
+
+    @Override
+    public String toString() {
+        return file.toString();
     }
 }

@@ -46,23 +46,24 @@ public abstract class AbstractLSMIndex implements ILSMIndexInternal {
     protected final ILSMIOOperationScheduler ioScheduler;
     protected final ILSMIOOperationCallback ioOpCallback;
 
-    // In-memory components.   
+    // In-memory components.
     protected final List<ILSMComponent> memoryComponents;
     protected final List<IVirtualBufferCache> virtualBufferCaches;
     protected AtomicInteger currentMutableComponentId;
 
-    // On-disk components.    
+    // On-disk components.
     protected final IBufferCache diskBufferCache;
     protected final ILSMIndexFileManager fileManager;
     protected final IFileMapProvider diskFileMapProvider;
     protected final List<ILSMComponent> diskComponents;
+    protected final List<ILSMComponent> inactiveDiskComponents;
     protected final double bloomFilterFalsePositiveRate;
     protected final ILSMComponentFilterFrameFactory filterFrameFactory;
     protected final LSMComponentFilterManager filterManager;
     protected final int[] filterFields;
+    protected final boolean durable;
 
     protected boolean isActivated;
-
     protected final AtomicBoolean[] flushRequests;
 
     public AbstractLSMIndex(List<IVirtualBufferCache> virtualBufferCaches, IBufferCache diskBufferCache,
@@ -70,7 +71,7 @@ public abstract class AbstractLSMIndex implements ILSMIndexInternal {
             double bloomFilterFalsePositiveRate, ILSMMergePolicy mergePolicy, ILSMOperationTracker opTracker,
             ILSMIOOperationScheduler ioScheduler, ILSMIOOperationCallback ioOpCallback,
             ILSMComponentFilterFrameFactory filterFrameFactory, LSMComponentFilterManager filterManager,
-            int[] filterFields) {
+            int[] filterFields, boolean durable) {
         this.virtualBufferCaches = virtualBufferCaches;
         this.diskBufferCache = diskBufferCache;
         this.diskFileMapProvider = diskFileMapProvider;
@@ -82,9 +83,11 @@ public abstract class AbstractLSMIndex implements ILSMIndexInternal {
         this.filterFrameFactory = filterFrameFactory;
         this.filterManager = filterManager;
         this.filterFields = filterFields;
+        this.inactiveDiskComponents = new LinkedList<ILSMComponent>();
+        this.durable = durable;
         lsmHarness = new LSMHarness(this, mergePolicy, opTracker);
         isActivated = false;
-        diskComponents = new LinkedList<ILSMComponent>();
+        diskComponents = new ArrayList<ILSMComponent>();
         memoryComponents = new ArrayList<ILSMComponent>();
         currentMutableComponentId = new AtomicInteger();
         flushRequests = new AtomicBoolean[virtualBufferCaches.size()];
@@ -96,16 +99,19 @@ public abstract class AbstractLSMIndex implements ILSMIndexInternal {
     // The constructor used by external indexes
     public AbstractLSMIndex(IBufferCache diskBufferCache, ILSMIndexFileManager fileManager,
             IFileMapProvider diskFileMapProvider, double bloomFilterFalsePositiveRate, ILSMMergePolicy mergePolicy,
-            ILSMOperationTracker opTracker, ILSMIOOperationScheduler ioScheduler, ILSMIOOperationCallback ioOpCallback) {
+            ILSMOperationTracker opTracker, ILSMIOOperationScheduler ioScheduler, ILSMIOOperationCallback ioOpCallback,
+            boolean durable) {
         this.diskBufferCache = diskBufferCache;
         this.diskFileMapProvider = diskFileMapProvider;
         this.fileManager = fileManager;
         this.bloomFilterFalsePositiveRate = bloomFilterFalsePositiveRate;
         this.ioScheduler = ioScheduler;
         this.ioOpCallback = ioOpCallback;
+        this.durable = durable;
         lsmHarness = new ExternalIndexHarness(this, mergePolicy, opTracker);
         isActivated = false;
         diskComponents = new LinkedList<ILSMComponent>();
+        this.inactiveDiskComponents = new LinkedList<ILSMComponent>();
         // Memory related objects are nulled
         this.virtualBufferCaches = null;
         memoryComponents = null;
@@ -122,9 +128,9 @@ public abstract class AbstractLSMIndex implements ILSMIndexInternal {
         // Flush all dirty pages of the tree. 
         // By default, metadata and data are flushed asynchronously in the buffercache.
         // This means that the flush issues writes to the OS, but the data may still lie in filesystem buffers.
-        ITreeIndexMetaDataFrame metadataFrame = treeIndex.getFreePageManager().getMetaDataFrameFactory().createFrame();
+        ITreeIndexMetaDataFrame metadataFrame = treeIndex.getMetaManager().getMetaDataFrameFactory().createFrame();
         int startPage = 0;
-        int maxPage = treeIndex.getFreePageManager().getMaxPage(metadataFrame);
+        int maxPage = treeIndex.getMetaManager().getMaxPage(metadataFrame);
         forceFlushDirtyPages(bufferCache, fileId, startPage, maxPage);
     }
 
@@ -143,26 +149,23 @@ public abstract class AbstractLSMIndex implements ILSMIndexInternal {
             }
         }
         // Forces all pages of given file to disk. This guarantees the data makes it to disk.
-        bufferCache.force(fileId, true);
+        // If the index is not durable, then the flush is not necessary.
+        if (durable) {
+            bufferCache.force(fileId, true);
+        }
     }
 
     protected void markAsValidInternal(ITreeIndex treeIndex) throws HyracksDataException {
         int fileId = treeIndex.getFileId();
         IBufferCache bufferCache = treeIndex.getBufferCache();
-        int metaPageId = treeIndex.getFreePageManager().closeGivePageId();
-        // WARNING: flushing the metadata page should be done after releasing the write latch; otherwise, the page 
+        int metaPageId = treeIndex.getMetaManager().closeGivePageId();
+        // WARNING: flushing the metadata page should be done after releasing the write latch; otherwise, the page
         // won't be flushed to disk because it won't be dirty until the write latch has been released.
-        ICachedPage metadataPage = bufferCache.tryPin(BufferedFileHandle.getDiskPageId(fileId, metaPageId));
-        if (metadataPage != null) {
-            try {
-                // Flush the single modified page to disk.
-                bufferCache.flushDirtyPage(metadataPage);
-            } finally {
-                bufferCache.unpin(metadataPage);
-            }
+        // Force modified metadata page to disk.
+        // If the index is not durable, then the flush is not necessary.
+        if (durable) {
+            bufferCache.force(fileId, true);
         }
-        // Force everything if it hasn't been.
-        bufferCache.force(fileId, true);
     }
 
     @Override
@@ -235,19 +238,37 @@ public abstract class AbstractLSMIndex implements ILSMIndexInternal {
     public String toString() {
         return "LSMIndex [" + fileManager.getBaseDir() + "]";
     }
-    
+
     @Override
     public boolean hasMemoryComponents() {
         return true;
     }
-    
+
     @Override
     public boolean isCurrentMutableComponentEmpty() throws HyracksDataException {
         //check if the current memory component has been modified
         return !((AbstractMemoryLSMComponent) memoryComponents.get(currentMutableComponentId.get())).isModified();
     }
-    
-    public void makeCurrentMutableComponentUnWritable() throws HyracksDataException {
-        ((AbstractMemoryLSMComponent) memoryComponents.get(currentMutableComponentId.get())).setState(ComponentState.READABLE_UNWRITABLE);
+
+    public void setCurrentMutableComponentState(ComponentState componentState) {
+        ((AbstractMemoryLSMComponent) memoryComponents.get(currentMutableComponentId.get())).setState(componentState);
+    }
+
+    public ComponentState getCurrentMutableComponentState() {
+        return ((AbstractMemoryLSMComponent) memoryComponents.get(currentMutableComponentId.get())).getState();
+    }
+
+    public int getCurrentMutableComponentWriterCount() {
+        return ((AbstractMemoryLSMComponent) memoryComponents.get(currentMutableComponentId.get())).getWriterCount();
+    }
+
+    @Override
+    public List<ILSMComponent> getInactiveDiskComponents() {
+        return inactiveDiskComponents;
+    }
+
+    @Override
+    public void addInactiveDiskComponent(ILSMComponent diskComponent) {
+        inactiveDiskComponents.add(diskComponent);
     }
 }

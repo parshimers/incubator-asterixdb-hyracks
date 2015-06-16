@@ -14,16 +14,13 @@
  */
 package edu.uci.ics.hyracks.storage.common.buffercache;
 
-import java.util.concurrent.ConcurrentLinkedQueue;
-
 import edu.uci.ics.hyracks.api.exceptions.HyracksDataException;
-import edu.uci.ics.hyracks.api.io.FileReference;
 import edu.uci.ics.hyracks.api.io.IFileHandle;
-import edu.uci.ics.hyracks.api.io.IIOManager;
+import edu.uci.ics.hyracks.api.io.FileReference;
 
 public interface IBufferCache {
     public void createFile(FileReference fileRef) throws HyracksDataException;
-
+    
     public int createMemFile() throws HyracksDataException;
 
     public void openFile(int fileId) throws HyracksDataException;
@@ -37,14 +34,6 @@ public interface IBufferCache {
     public ICachedPage tryPin(long dpid) throws HyracksDataException;
 
     public ICachedPage pin(long dpid, boolean newPage) throws HyracksDataException;
-
-    public ICachedPage pinVirtual(long vpid) throws HyracksDataException;
-
-    public ICachedPage unpinVirtual(long vpid, long dpid) throws HyracksDataException;
-
-    public ICachedPage unpinVirtual(ICachedPage vp, long dpid) throws HyracksDataException;
-
-    public boolean isVirtual(long vpid) throws HyracksDataException;
 
     public boolean isVirtual(ICachedPage vp) throws HyracksDataException;
 
@@ -68,16 +57,16 @@ public interface IBufferCache {
 
     public int getNumPagesOfFile(int fileId) throws HyracksDataException;
 
+    public int getFileReferenceCount(int fileId);
+
     public void close() throws HyracksDataException;
 
     public IFIFOPageQueue createFIFOQueue();
 
-    public void finishQueue(IFIFOPageQueue queue);
+    public void finishQueue();
 
     void copyPage(ICachedPage src, ICachedPage dst);
 
     void setPageDiskId(ICachedPage page, long dpid);
-    
-    public IIOManager getIOManager();
 
 }

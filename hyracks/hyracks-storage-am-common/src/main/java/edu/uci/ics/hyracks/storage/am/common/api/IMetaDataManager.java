@@ -15,12 +15,13 @@
 package edu.uci.ics.hyracks.storage.am.common.api;
 
 import edu.uci.ics.hyracks.api.exceptions.HyracksDataException;
+import edu.uci.ics.hyracks.storage.common.buffercache.ICachedPage;
 
-public interface IFreePageManager {
+public interface IMetaDataManager {
     public void open(int fileId);
 
     public void close() throws HyracksDataException;
-    
+
     public int closeGivePageId() throws HyracksDataException;
 
     public int getFreePage(ITreeIndexMetaDataFrame metaFrame) throws HyracksDataException;
@@ -50,4 +51,13 @@ public interface IFreePageManager {
     int getFilterPageId() throws HyracksDataException;
 
     void setFilterPageId(int filterPageId) throws HyracksDataException;
+
+    long getLSN() throws HyracksDataException;
+
+    void setLSN(long lsn) throws HyracksDataException;
+
+    void setFilterPage(ICachedPage page);
+
+    ICachedPage getFilterPage();
+
 }

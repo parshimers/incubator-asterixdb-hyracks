@@ -16,39 +16,34 @@ package edu.uci.ics.hyracks.api.io;
 
 import java.io.File;
 import java.io.Serializable;
-import java.net.URI;
 
 public final class FileReference implements Serializable {
-    public enum FileReferenceType {LOCAL, DISTRIBUTED_IF_AVAIL};
-    
     private static final long serialVersionUID = 1L;
 
-    private final String path;
-    private final FileReferenceType type;
+    private final File file;
+    private final IODeviceHandle dev;
 
-    private File file;
+    public FileReference(IODeviceHandle dev, String devRelPath) {
+        file = new File(dev.getPath(), devRelPath);
+        this.dev = dev;
+    }
 
-    public FileReference(String path) {
-        this.path = path;
-        this.type = FileReferenceType.LOCAL;
+    public FileReference(File file) {
+        this.file = file;
+        this.dev = null;
     }
-    
-    public FileReference(String path, FileReferenceType type) {
-        this.path = path;
-        this.type = type;
+
+    public File getFile() {
+        return file;
     }
-    
-    public String getPath() {
-        return path;
-    }
-    
-    public FileReferenceType getType() {
-        return type;
+
+    public IODeviceHandle getDeviceHandle() {
+        return dev;
     }
 
     @Override
     public String toString() {
-        return path.toString();
+        return file.getAbsolutePath();
     }
 
     @Override
@@ -56,18 +51,15 @@ public final class FileReference implements Serializable {
         if (!(o instanceof FileReference)) {
             return false;
         }
-        return path.equals(((FileReference) o).path);
+        return file.equals(((FileReference) o).file);
     }
 
     @Override
     public int hashCode() {
-        return path.hashCode();
+        return file.hashCode();
     }
 
-    @Deprecated
-    public File getFile() {
-        if(type != FileReferenceType.LOCAL) throw new IllegalStateException("Cannot use getFile for non-local files");
-        if(file == null) file = new File(path);
-        return file;
+    public void delete() {
+        file.delete();
     }
 }
