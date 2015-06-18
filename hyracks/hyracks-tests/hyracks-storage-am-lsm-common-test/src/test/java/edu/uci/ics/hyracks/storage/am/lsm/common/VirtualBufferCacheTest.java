@@ -77,7 +77,7 @@ public class VirtualBufferCacheTest {
     @Test
     public void test01() throws Exception {
         ICacheMemoryAllocator allocator = new HeapBufferAllocator();
-        vbc = new VirtualBufferCache(allocator, PAGE_SIZE, NUM_PAGES, TestStorageManagerComponentHolder.getIOManager());
+        vbc = new VirtualBufferCache(allocator, PAGE_SIZE, NUM_PAGES);
         vbc.open();
         createFiles();
 

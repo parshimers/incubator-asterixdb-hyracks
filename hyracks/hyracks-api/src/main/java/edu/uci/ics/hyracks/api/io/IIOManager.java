@@ -44,6 +44,8 @@ public interface IIOManager {
 
     public int syncRead(IFileHandle fHandle, long offset, ByteBuffer data) throws HyracksDataException;
 
+    public int append(IFileHandle fhandle, ByteBuffer data) throws HyracksDataException;
+
     public IIOFuture asyncWrite(IFileHandle fHandle, long offset, ByteBuffer data);
 
     public IIOFuture asyncRead(IFileHandle fHandle, long offset, ByteBuffer data);
@@ -56,9 +58,11 @@ public interface IIOManager {
     
     public long getSize(IFileHandle fileHandle) throws HyracksDataException;
     
-    public void delete(FileReference fileReference);
+    public boolean delete(FileReference fileReference);
 
-    public void mkdirs(FileReference fileReference);
+    public boolean exists(FileReference fileReference);
+
+    public boolean mkdirs(FileReference fileReference);
 
     public String[] listFiles(FileReference fileReference, FilenameFilter transactionFileNameFilter) throws HyracksDataException;
 }

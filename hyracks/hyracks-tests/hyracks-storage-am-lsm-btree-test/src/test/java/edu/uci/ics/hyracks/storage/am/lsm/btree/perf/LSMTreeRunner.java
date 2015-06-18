@@ -101,7 +101,7 @@ public class LSMTreeRunner implements IExperimentRunner {
         List<IVirtualBufferCache> virtualBufferCaches = new ArrayList<IVirtualBufferCache>();
         for (int i = 0; i < 2; i++) {
             IVirtualBufferCache virtualBufferCache = new VirtualBufferCache(new HeapBufferAllocator(), inMemPageSize,
-                    inMemNumPages / 2, ioManager);
+                    inMemNumPages / 2);
             virtualBufferCaches.add(virtualBufferCache);
         }
 

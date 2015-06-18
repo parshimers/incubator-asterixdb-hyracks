@@ -3,9 +3,9 @@
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * you may obtain a copy of the License from
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -57,6 +57,7 @@ public abstract class AbstractLSMIndexFileManager implements ILSMIndexFileManage
     protected final Comparator<ComparableFileName> recencyCmp = new RecencyComparator();
 
     protected final TreeIndexFactory<? extends ITreeIndex> treeFactory;
+    private String prevTimestamp = null;
     protected final IIOManager ioManager;
 
     public AbstractLSMIndexFileManager(IFileMapProvider fileMapProvider, FileReference file,
@@ -67,6 +68,7 @@ public abstract class AbstractLSMIndexFileManager implements ILSMIndexFileManage
         }
         this.fileMapProvider = fileMapProvider;
         this.treeFactory = treeFactory;
+        this.ioManager = ioManager;
     }
 
     private static FilenameFilter fileNameFilter = new FilenameFilter() {
@@ -388,5 +390,27 @@ public abstract class AbstractLSMIndexFileManager implements ILSMIndexFileManage
                 return (filter1.accept(dir, name) && filter2.accept(dir, name));
             }
         };
+    }
+    /**
+     * @return The string format of the current timestamp.
+     *         The returned results of this method are guaranteed to not have duplicates.
+     */
+    protected String getCurrentTimestamp() {
+        Date date = new Date();
+        String ts = formatter.format(date);
+        /**
+         * prevent a corner case where the same timestamp can be given.
+         */
+        while (prevTimestamp != null && ts.compareTo(prevTimestamp) == 0) {
+            try {
+                Thread.sleep(1);
+                date = new Date();
+                ts = formatter.format(date);
+            } catch (InterruptedException e) {
+                //ignore
+            }
+        }
+        prevTimestamp = ts;
+        return ts;
     }
 }

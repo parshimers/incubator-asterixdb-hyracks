@@ -512,8 +512,8 @@ public class LSMInvertedIndex extends AbstractLSMIndex implements IInvertedIndex
             filterTuples.add(flushingComponent.getLSMComponentFilter().getMaxTuple());
             filterManager.updateFilterInfo(component.getLSMComponentFilter(), filterTuples);
             filterManager.writeFilterInfo(component.getLSMComponentFilter(),
-                    ((OnDiskInvertedIndex) component.getInvIndex()).getBTree(),
-                    (AbstractTreeIndexBulkLoader) invIndexBulkLoader);
+                    ((OnDiskInvertedIndex) component.getInvIndex()).getBTree()
+            );
         }
         invIndexBulkLoader.end();
 

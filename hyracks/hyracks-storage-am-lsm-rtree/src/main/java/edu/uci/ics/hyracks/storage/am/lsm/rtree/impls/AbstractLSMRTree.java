@@ -89,12 +89,12 @@ public abstract class AbstractLSMRTree extends AbstractLSMIndex implements ITree
         int i = 0;
         for (IVirtualBufferCache virtualBufferCache : virtualBufferCaches) {
             RTree memRTree = new RTree(virtualBufferCache,
-                    (virtualBufferCache).getFileMapProvider(), new VirtualFreePageManager(
+                    (virtualBufferCache).getFileMapProvider(), new VirtualMetaDataManager(
                             virtualBufferCache.getNumPages()), rtreeInteriorFrameFactory, rtreeLeafFrameFactory,
                     rtreeCmpFactories, fieldCount, new FileReference(fileManager.getBaseDir() + "_virtual_r_"
                             + i));
             BTree memBTree = new BTree(virtualBufferCache,
-                    (virtualBufferCache).getFileMapProvider(), new VirtualFreePageManager(
+                    (virtualBufferCache).getFileMapProvider(), new VirtualMetaDataManager(
                             virtualBufferCache.getNumPages()), btreeInteriorFrameFactory, btreeLeafFrameFactory,
                     btreeCmpFactories, btreeCmpFactories.length, new FileReference(fileManager.getBaseDir()
                             + "_virtual_b_" + i));
@@ -128,9 +128,9 @@ public abstract class AbstractLSMRTree extends AbstractLSMIndex implements ITree
             IBinaryComparatorFactory[] rtreeCmpFactories, IBinaryComparatorFactory[] btreeCmpFactories,
             ILinearizeComparatorFactory linearizer, int[] comparatorFields, IBinaryComparatorFactory[] linearizerArray,
             double bloomFilterFalsePositiveRate, ILSMMergePolicy mergePolicy, ILSMOperationTracker opTracker,
-            ILSMIOOperationScheduler ioScheduler, ILSMIOOperationCallback ioOpCallback) {
+            ILSMIOOperationScheduler ioScheduler, ILSMIOOperationCallback ioOpCallback, boolean durable) {
         super(componentFactory.getBufferCache(), fileManager, diskFileMapProvider, bloomFilterFalsePositiveRate,
-                mergePolicy, opTracker, ioScheduler, ioOpCallback);
+                mergePolicy, opTracker, ioScheduler, ioOpCallback, durable);
         this.rtreeInteriorFrameFactory = rtreeInteriorFrameFactory;
         this.rtreeLeafFrameFactory = rtreeLeafFrameFactory;
         this.btreeInteriorFrameFactory = btreeInteriorFrameFactory;

@@ -23,8 +23,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.Executor;
 
-import org.apache.commons.lang.NotImplementedException;
-
 import edu.uci.ics.hyracks.api.exceptions.HyracksDataException;
 import edu.uci.ics.hyracks.api.exceptions.HyracksException;
 import edu.uci.ics.hyracks.api.io.FileReference;
@@ -103,6 +101,28 @@ public class IOManager implements IIOManager {
                 }
                 remaining -= len;
                 offset += len;
+                n += len;
+            }
+            return n;
+        } catch (HyracksDataException e) {
+            throw e;
+        } catch (IOException e) {
+            throw new HyracksDataException(e);
+        }
+    }
+
+    @Override
+    public int append(IFileHandle fHandle, ByteBuffer data) throws HyracksDataException{
+        try {
+            int n = 0;
+            int remaining = data.remaining();
+            while (remaining > 0) {
+                int len = ((IFileHandleInternal) fHandle).append(data);
+                if (len < 0) {
+                    throw new HyracksDataException("Error writing to file: "
+                            + ((IFileHandleInternal) fHandle).getFileReference().toString());
+                }
+                remaining -= len;
                 n += len;
             }
             return n;
@@ -262,7 +282,7 @@ public class IOManager implements IIOManager {
             throw new HyracksDataException(e);
         }
     }
-
+    @Override
     public boolean exists(FileReference fileReference) {
         try {
             return getIOSubSystem(fileReference).exists(fileReference);
@@ -272,18 +292,18 @@ public class IOManager implements IIOManager {
     }
 
     @Override
-    public void mkdirs(FileReference fileReference) {
+    public boolean mkdirs(FileReference fileReference) {
         try {
-            getIOSubSystem(fileReference).mkdirs(fileReference);
+            return getIOSubSystem(fileReference).mkdirs(fileReference);
         } catch (IllegalArgumentException | IOException e) {
             throw new IllegalStateException(e);
         }
     }
 
     @Override
-    public void delete(FileReference fileReference) {
+    public boolean delete(FileReference fileReference) {
         try {
-            getIOSubSystem(fileReference).delete(fileReference, true);
+            return getIOSubSystem(fileReference).delete(fileReference, true);
         } catch (IllegalArgumentException | IOException e) {
             throw new IllegalStateException(e);
         }

@@ -475,8 +475,12 @@ public class BufferCache implements IBufferCacheInternal, ILifeCycleComponent {
     private void read(CachedPage cPage) throws HyracksDataException {
         BufferedFileHandle fInfo = getFileInfo(cPage);
         cPage.buffer.clear();
-        ioManager.syncRead(fInfo.getFileHandle(), (long) BufferedFileHandle.getPageId(cPage.dpid) * pageSize,
-                cPage.buffer);
+        int read = ioManager.syncRead(fInfo.getFileHandle(), (long) BufferedFileHandle.getPageId(cPage.dpid) * pageSize,
+                   cPage.buffer);
+        if(read != pageSize){
+            throw new HyracksDataException("Underfull page");
+        }
+
     }
 
     BufferedFileHandle getFileInfo(CachedPage cPage) throws HyracksDataException {

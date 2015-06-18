@@ -42,7 +42,7 @@ public class HDFSFileHandle implements IFileHandle, IFileHandleInternal {
         conf.addResource(new Path("config/mapred-site.xml"));
         System.out.println("SHORTCIRCUIT " + conf.get("dfs.client.read.shortcircuit"));
         try {
-            fs = FileSystem.get(new URI("hdfs://localhost:8020/"), conf);
+            fs = FileSystem.get(new URI("hdfs://127.0.1.1:9000"), conf);
         } catch (IOException | URISyntaxException e) {
             // TODO Auto-generated catch block
             e.printStackTrace();
@@ -56,7 +56,7 @@ public class HDFSFileHandle implements IFileHandle, IFileHandleInternal {
 
     public HDFSFileHandle(FileReference fileRef) {
         try {
-            this.uri = new URI("hdfs://localhost:8020/" + fileRef.getPath());
+            this.uri = new URI("hdfs://127.0.1.1:9000/" + fileRef.getPath());
             this.fileRef = fileRef;
             path = new Path(uri.getPath());
         } catch (URISyntaxException e) {
@@ -68,7 +68,13 @@ public class HDFSFileHandle implements IFileHandle, IFileHandleInternal {
     public void open(FileReadWriteMode rwMode, FileSyncMode syncMode) throws IOException {
         if(syncMode != FileSyncMode.METADATA_ASYNC_DATA_ASYNC) throw new IOException("Sync I/O not (yet) supported for HDFS");
         
-        if(rwMode == FileReadWriteMode.READ_WRITE) out = fs.create(path, false);
+        if(rwMode == FileReadWriteMode.READ_WRITE){
+                if(fs.exists(path)){
+                    out = fs.append(path);
+                }else{
+                    out = fs.create(path, false);
+                }
+        }
     }
 
     @Override
@@ -105,6 +111,13 @@ public class HDFSFileHandle implements IFileHandle, IFileHandleInternal {
     public int write(ByteBuffer data, long offset) throws IOException {
         System.out.println("WRITE " + path + " @ " + offset);
         assert(out.getPos() == offset);
+        out.write(data.array(), 0, data.limit());
+        in = null;
+        return data.limit();
+    }
+
+    @Override
+    public int append(ByteBuffer data) throws IOException {
         out.write(data.array(), 0, data.limit());
         in = null;
         return data.limit();

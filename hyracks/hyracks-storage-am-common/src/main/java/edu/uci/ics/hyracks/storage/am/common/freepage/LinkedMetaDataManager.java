@@ -317,7 +317,7 @@ public class LinkedMetaDataManager implements IMetaDataManager {
             ITreeIndexMetaDataFrame metaFrame = metaDataFrameFactory.createFrame();
             metaFrame.setPage(confiscatedMetaNode);
             metaFrame.setValid(true);
-            int finalFilterPage = getMaxPage(metaFrame);
+            int finalFilterPage = getFreePage(metaFrame);
             ICachedPage finalFilter = bufferCache.pin(BufferedFileHandle.getDiskPageId(fileId, finalFilterPage), true);
             try {
                 filterPage.acquireReadLatch();

@@ -19,12 +19,13 @@ import edu.uci.ics.hyracks.api.io.FileReference;
 public class IOHDFSSubSystem implements IIOSubSystem {
     private static URI uri = null;
     static {
+        System.setProperty("HADOOP_USER_NAME", "root");
         Configuration conf = new Configuration();
         conf.addResource(new Path("config/core-site.xml"));
         conf.addResource(new Path("config/hdfs-site.xml"));
         conf.addResource(new Path("config/mapred-site.xml"));
         try {
-            uri = new URI("hdfs://localhost:8020/");
+            uri = new URI("hdfs://127.0.1.1:9000/");
             fs = FileSystem.get(uri, conf);
         } catch (IOException | URISyntaxException e) {
             // TODO Auto-generated catch block

@@ -116,6 +116,11 @@ public class FileHandle implements IFileHandle, IFileHandleInternal {
     }
 
     @Override
+    public int append(ByteBuffer data) throws IOException {
+        return channel.write(data);
+    }
+
+    @Override
     public int read(ByteBuffer data, long offset) throws IOException {
         return channel.read(data, offset);
     }

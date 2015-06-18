@@ -14,10 +14,12 @@
  */
 package edu.uci.ics.hyracks.storage.am.lsm.common.impls;
 
+import java.io.FilenameFilter;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.List;
+import java.util.concurrent.Executor;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
@@ -25,9 +27,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import edu.uci.ics.hyracks.api.exceptions.HyracksDataException;
-import edu.uci.ics.hyracks.api.io.FileReference;
-import edu.uci.ics.hyracks.api.io.IFileHandle;
-import edu.uci.ics.hyracks.api.io.IIOManager;
+import edu.uci.ics.hyracks.api.io.*;
 import edu.uci.ics.hyracks.storage.am.lsm.common.api.IVirtualBufferCache;
 import edu.uci.ics.hyracks.storage.common.buffercache.ICacheMemoryAllocator;
 import edu.uci.ics.hyracks.storage.common.buffercache.ICachedPage;
@@ -45,6 +45,7 @@ public class VirtualBufferCache implements IVirtualBufferCache {
     private final IFileMapManager fileMapManager;
     private final int pageSize;
     private final int numPages;
+    private final IIOManager virtIOManager;
 
     private final CacheBucket[] buckets;
     private final ArrayList<VirtualPage> pages;
@@ -52,21 +53,99 @@ public class VirtualBufferCache implements IVirtualBufferCache {
     private volatile int nextFree;
 
     private boolean open;
-    
-    protected IIOManager ioManager;
 
-    public VirtualBufferCache(ICacheMemoryAllocator allocator, int pageSize, int numPages, IIOManager ioManager) {
+    public VirtualBufferCache(ICacheMemoryAllocator allocator, int pageSize, int numPages) {
         this.allocator = allocator;
         this.fileMapManager = new TransientFileMapManager();
         this.pageSize = pageSize;
         this.numPages = numPages;
-        this.ioManager = ioManager;
+
 
         buckets = new CacheBucket[numPages];
         pages = new ArrayList<VirtualPage>();
         nextFree = 0;
         open = false;
+        virtIOManager = new VirtualIOManager();
     }
+    //This is just boilerplate. Unsurprisingly, an IOManager really serves no purpose here.
+    class VirtualIOManager implements IIOManager{
+
+        @Override
+        public List<IODeviceHandle> getIODevices() {
+            return null;
+        }
+
+        @Override
+        public IFileHandle open(FileReference fileRef, FileReadWriteMode rwMode, FileSyncMode syncMode) throws HyracksDataException {
+            return null;
+        }
+
+        @Override
+        public int syncWrite(IFileHandle fHandle, long offset, ByteBuffer data) throws HyracksDataException {
+            return 0;
+        }
+
+        @Override
+        public int syncRead(IFileHandle fHandle, long offset, ByteBuffer data) throws HyracksDataException {
+            return 0;
+        }
+
+        @Override
+        public int append(IFileHandle fhandle, ByteBuffer data) throws HyracksDataException {
+            return 0;
+        }
+
+        @Override
+        public IIOFuture asyncWrite(IFileHandle fHandle, long offset, ByteBuffer data) {
+            return null;
+        }
+
+        @Override
+        public IIOFuture asyncRead(IFileHandle fHandle, long offset, ByteBuffer data) {
+            return null;
+        }
+
+        @Override
+        public void close(IFileHandle fHandle) throws HyracksDataException {
+
+        }
+
+        @Override
+        public void sync(IFileHandle fileHandle, boolean metadata) throws HyracksDataException {
+
+        }
+
+        @Override
+        public void setExecutor(Executor executor) {
+
+        }
+
+        @Override
+        public long getSize(IFileHandle fileHandle) throws HyracksDataException {
+            return 0;
+        }
+
+        @Override
+        public boolean delete(FileReference fileReference) {
+            return false;
+        }
+
+        @Override
+        public boolean mkdirs(FileReference fileReference) {
+            return false;
+        }
+
+        @Override
+        public boolean exists(FileReference fileReference) {
+            return false;
+        }
+
+        @Override
+        public String[] listFiles(FileReference fileReference, FilenameFilter transactionFileNameFilter) throws HyracksDataException {
+            return new String[0];
+        }
+    }
+
 
     @Override
     public void createFile(FileReference fileRef) throws HyracksDataException {
@@ -366,20 +445,13 @@ public class VirtualBufferCache implements IVirtualBufferCache {
     }
 
     @Override
-    public ICachedPage pinVirtual(long vpid) throws HyracksDataException {
-        // TODO Auto-generated method stub
-        return null;
-    }
-
-    @Override
-    public ICachedPage unpinVirtual(long vpid, long dpid) throws HyracksDataException {
-        // TODO Auto-generated method stub
-        return null;
-    }
-
-    @Override
     public int getNumPagesOfFile(int fileId) throws HyracksDataException {
         throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public int getFileReferenceCount(int fileId) {
+        return 0;
     }
 
     @Override
@@ -388,18 +460,6 @@ public class VirtualBufferCache implements IVirtualBufferCache {
             LOGGER.log(Level.INFO, "Calling adviseWontNeed on " + this.getClass().getName()
                     + " makes no sense as this BufferCache cannot evict pages");
         }
-    }
-
-    @Override
-    public ICachedPage unpinVirtual(ICachedPage vp, long dpid) throws HyracksDataException {
-        // TODO Auto-generated method stub
-        return null;
-    }
-
-    @Override
-    public boolean isVirtual(long vpid) throws HyracksDataException {
-        // TODO Auto-generated method stub
-        return false;
     }
 
     @Override
@@ -420,8 +480,8 @@ public class VirtualBufferCache implements IVirtualBufferCache {
     }
 
     @Override
-    public void finishQueue(IFIFOPageQueue queue) {
-        throw new UnsupportedOperationException("Virtual buffer caches don't have FIFO writers");
+    public void finishQueue() {
+
     }
 
     @Override
@@ -450,6 +510,6 @@ public class VirtualBufferCache implements IVirtualBufferCache {
 
     @Override
     public IIOManager getIOManager() {
-        return ioManager;
+        return virtIOManager;
     }
 }

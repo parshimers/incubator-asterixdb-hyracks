@@ -106,7 +106,7 @@ public class LSMRTreeTestHarness {
         virtualBufferCaches = new ArrayList<IVirtualBufferCache>();
         for (int i = 0; i < numMutableComponents; i++) {
             IVirtualBufferCache virtualBufferCache = new VirtualBufferCache(new HeapBufferAllocator(), memPageSize,
-                    memNumPages / numMutableComponents, ioManager);
+                    memNumPages / numMutableComponents);
             virtualBufferCaches.add(virtualBufferCache);
         }
         rnd.setSeed(RANDOM_SEED);

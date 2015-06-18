@@ -25,6 +25,8 @@ public interface IFileHandleInternal extends IFileHandle {
 
     abstract int write(ByteBuffer data, long offset) throws IOException;
 
+    abstract int append(ByteBuffer data) throws IOException;
+
     abstract int read(ByteBuffer data, long offset) throws IOException;
 
 }

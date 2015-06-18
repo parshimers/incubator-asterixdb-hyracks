@@ -180,18 +180,6 @@ public class DebugBufferCache implements IBufferCache {
     }
 
     @Override
-    public ICachedPage pinVirtual(long vpid) throws HyracksDataException {
-        pinCount.addAndGet(1);
-        return bufferCache.pinVirtual(vpid);
-    }
-
-    @Override
-    public ICachedPage unpinVirtual(long vpid, long dpid) throws HyracksDataException {
-        unpinCount.addAndGet(1);
-        return bufferCache.unpinVirtual(vpid, dpid);
-    }
-
-    @Override
     public int getNumPagesOfFile(int fileId) throws HyracksDataException {
         return bufferCache.getNumPagesOfFile(fileId);
     }
@@ -199,16 +187,6 @@ public class DebugBufferCache implements IBufferCache {
     @Override
     public void adviseWontNeed(ICachedPage page) {
         bufferCache.adviseWontNeed(page);
-    }
-
-    @Override
-    public ICachedPage unpinVirtual(ICachedPage vp, long dpid) throws HyracksDataException {
-        return bufferCache.unpinVirtual(vp, dpid);
-    }
-
-    @Override
-    public boolean isVirtual(long vpid) throws HyracksDataException {
-        return bufferCache.isVirtual(vpid);
     }
 
     @Override
@@ -232,8 +210,8 @@ public class DebugBufferCache implements IBufferCache {
     }
 
     @Override
-    public void finishQueue(IFIFOPageQueue queue) {
-        bufferCache.finishQueue(queue);
+    public void finishQueue() {
+        bufferCache.finishQueue();
     }
 
     @Override
