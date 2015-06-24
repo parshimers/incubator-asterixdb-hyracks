@@ -570,7 +570,7 @@ public class OnDiskInvertedIndex implements IInvertedIndex {
         private final int FRAME_SIZE = 32768;
 
         @Override
-        public int getFrameSize() {
+        public int getInitialFrameSize() {
             return FRAME_SIZE;
         }
 
@@ -584,8 +584,16 @@ public class OnDiskInvertedIndex implements IInvertedIndex {
             return ByteBuffer.allocate(FRAME_SIZE);
         }
 
+        @Override public ByteBuffer allocateFrame(int bytes) throws HyracksDataException {
+            return ByteBuffer.allocate(bytes);
+        }
+
+        @Override public ByteBuffer reallocateFrame(ByteBuffer bytes, int newSizeInBytes, boolean copyOldData) throws HyracksDataException {
+            throw new HyracksDataException("TODO");
+        }
+
         @Override
-        public void deallocateFrames(int frameCount) {
+        public void deallocateFrames(int bytes) {
             // TODO Auto-generated method stub
 
         }

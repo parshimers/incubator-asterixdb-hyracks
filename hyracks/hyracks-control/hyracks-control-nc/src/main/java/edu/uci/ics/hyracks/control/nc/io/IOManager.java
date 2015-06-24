@@ -111,6 +111,15 @@ public class IOManager implements IIOManager {
         }
     }
 
+    /**
+     * Please do check the return value of this read!
+     *
+     * @param fHandle
+     * @param offset
+     * @param data
+     * @return The number of bytes read, possibly zero, or -1 if the given offset is greater than or equal to the file's current size
+     * @throws HyracksDataException
+     */
     @Override
     public int append(IFileHandle fHandle, ByteBuffer data) throws HyracksDataException{
         try {
@@ -141,7 +150,7 @@ public class IOManager implements IIOManager {
             while (remaining > 0) {
                 int len = ((IFileHandleInternal) fHandle).read(data, offset);
                 if (len < 0) {
-                    return -1;
+                    return n == 0 ? -1 : n;
                 }
                 remaining -= len;
                 offset += len;
