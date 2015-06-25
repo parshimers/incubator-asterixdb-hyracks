@@ -9,10 +9,7 @@ import java.net.URISyntaxException;
 import java.util.ArrayList;
 
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.fs.FileSystem;
-import org.apache.hadoop.fs.LocatedFileStatus;
-import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.fs.RemoteIterator;
+import org.apache.hadoop.fs.*;
 
 import edu.uci.ics.hyracks.api.io.FileReference;
 
@@ -50,12 +47,17 @@ public class IOHDFSSubSystem implements IIOSubSystem {
     }
 
     @Override
+    public boolean isDirectory(FileReference fileRef) throws IllegalArgumentException, IOException {
+        return fs.isDirectory(new Path(uri.toString()+fileRef.getPath()));
+    }
+
+    @Override
     public String[] listFiles(FileReference fileRef, FilenameFilter filter) throws FileNotFoundException, IllegalArgumentException, IOException {
         ArrayList<String> files = new ArrayList<>();
         RemoteIterator<LocatedFileStatus> it = fs.listFiles(new Path(uri.toString() + fileRef.getPath()), false);
         while(it.hasNext()) {
             LocatedFileStatus fileStatus = it.next();
-            if(filter.accept(new File(fileStatus.getPath().getParent().toString()), fileStatus.getPath().getName())) files.add(fileRef.getPath());
+            if(filter.accept(new File(fileStatus.getPath().getParent().toString()), fileStatus.getPath().getName())) files.add(fileStatus.getPath().getName());
         }
         String tmp[] = new String[files.size()];
         tmp = files.toArray(tmp);

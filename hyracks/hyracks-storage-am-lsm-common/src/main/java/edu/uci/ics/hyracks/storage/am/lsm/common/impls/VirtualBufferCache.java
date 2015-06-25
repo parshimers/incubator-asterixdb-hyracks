@@ -15,6 +15,7 @@
 package edu.uci.ics.hyracks.storage.am.lsm.common.impls;
 
 import java.io.FilenameFilter;
+import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -136,6 +137,11 @@ public class VirtualBufferCache implements IVirtualBufferCache {
         }
 
         @Override
+        public boolean isDirectory(FileReference fileReference) {
+            return false;
+        }
+
+        @Override
         public boolean exists(FileReference fileReference) {
             return false;
         }
@@ -143,6 +149,11 @@ public class VirtualBufferCache implements IVirtualBufferCache {
         @Override
         public String[] listFiles(FileReference fileReference, FilenameFilter transactionFileNameFilter) throws HyracksDataException {
             return new String[0];
+        }
+
+        @Override
+        public InputStream getInputStream(IFileHandle fileHandle) {
+            return null;
         }
     }
 

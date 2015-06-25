@@ -10,5 +10,6 @@ public interface IIOSubSystem {
     public boolean exists(FileReference fileRef) throws IllegalArgumentException, IOException;
     public boolean mkdirs(FileReference fileRef) throws IllegalArgumentException, IOException;
     public boolean delete(FileReference fileRef, boolean recursive) throws IllegalArgumentException, IOException;
+    public boolean isDirectory(FileReference fileRef) throws IllegalArgumentException, IOException;
     public String[] listFiles(FileReference fileRef, FilenameFilter filter) throws FileNotFoundException, IllegalArgumentException, IOException;
 }

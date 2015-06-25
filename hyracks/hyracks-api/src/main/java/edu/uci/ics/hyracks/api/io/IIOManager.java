@@ -17,6 +17,7 @@ package edu.uci.ics.hyracks.api.io;
 import java.io.File;
 import java.io.FilenameFilter;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.util.List;
 import java.util.concurrent.Executor;
@@ -64,5 +65,9 @@ public interface IIOManager {
 
     public boolean mkdirs(FileReference fileReference);
 
+    public boolean isDirectory(FileReference fileReference);
+
     public String[] listFiles(FileReference fileReference, FilenameFilter transactionFileNameFilter) throws HyracksDataException;
+
+    public InputStream getInputStream(IFileHandle fileHandle);
 }

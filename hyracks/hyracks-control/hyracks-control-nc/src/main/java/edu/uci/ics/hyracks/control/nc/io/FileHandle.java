@@ -15,8 +15,10 @@
 package edu.uci.ics.hyracks.control.nc.io;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
+import java.nio.channels.Channels;
 import java.nio.channels.FileChannel;
 
 import edu.uci.ics.hyracks.api.io.FileReference;
@@ -123,5 +125,10 @@ public class FileHandle implements IFileHandle, IFileHandleInternal {
     @Override
     public int read(ByteBuffer data, long offset) throws IOException {
         return channel.read(data, offset);
+    }
+
+    @Override
+    public InputStream getInputStream(){
+        return Channels.newInputStream(raf.getChannel());
     }
 }

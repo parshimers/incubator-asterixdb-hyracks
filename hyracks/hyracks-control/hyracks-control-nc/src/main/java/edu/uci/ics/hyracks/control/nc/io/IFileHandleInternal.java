@@ -1,6 +1,7 @@
 package edu.uci.ics.hyracks.control.nc.io;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
@@ -28,5 +29,7 @@ public interface IFileHandleInternal extends IFileHandle {
     abstract int append(ByteBuffer data) throws IOException;
 
     abstract int read(ByteBuffer data, long offset) throws IOException;
+
+    abstract InputStream getInputStream() throws IOException;
 
 }

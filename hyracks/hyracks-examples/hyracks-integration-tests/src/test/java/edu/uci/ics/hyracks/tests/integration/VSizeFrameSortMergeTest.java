@@ -50,8 +50,8 @@ public class VSizeFrameSortMergeTest extends AbstractIntegrationTest {
     public static String[] INPUTS = { "data/tpch0.001/orders-part1.tbl", "data/tpch0.001/orders-part2.tbl" };
 
     FileSplit[] ordersSplits = new FileSplit[] {
-            new FileSplit(NC1_ID, new FileReference(new File(INPUTS[0]))),
-            new FileSplit(NC2_ID, new FileReference(new File(INPUTS[1]))) };
+            new FileSplit(NC1_ID, new FileReference(INPUTS[0])),
+            new FileSplit(NC2_ID, new FileReference(INPUTS[1])) };
     IFileSplitProvider ordersSplitProvider = new ConstantFileSplitProvider(ordersSplits);
     RecordDescriptor ordersDesc = new RecordDescriptor(new ISerializerDeserializer[] {
             UTF8StringSerializerDeserializer.INSTANCE, UTF8StringSerializerDeserializer.INSTANCE,

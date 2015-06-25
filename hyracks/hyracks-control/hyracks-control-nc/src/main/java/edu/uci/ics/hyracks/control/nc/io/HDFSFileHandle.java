@@ -15,6 +15,7 @@
 package edu.uci.ics.hyracks.control.nc.io;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.RandomAccessFile;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -133,6 +134,15 @@ public class HDFSFileHandle implements IFileHandle, IFileHandleInternal {
         
         in.seek(offset);
         return in.read(data);
+    }
+
+    @Override
+    public InputStream getInputStream() throws IOException{
+        if(in == null) {
+            out.hflush();
+            in = fs.open(path);
+        }
+        return in;
     }
 
     

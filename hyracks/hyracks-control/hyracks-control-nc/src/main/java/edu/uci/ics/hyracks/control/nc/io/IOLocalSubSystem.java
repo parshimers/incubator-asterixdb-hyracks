@@ -28,6 +28,11 @@ public class IOLocalSubSystem implements IIOSubSystem {
         }
     }
 
+    @Override
+    public boolean isDirectory(FileReference fileRef) throws IllegalArgumentException, IOException {
+        return fileRef.getFile().isDirectory();
+    }
+
     private boolean deleteRecursive(File f) {
         if (f.isDirectory()) {
             for (File c : f.listFiles()) {

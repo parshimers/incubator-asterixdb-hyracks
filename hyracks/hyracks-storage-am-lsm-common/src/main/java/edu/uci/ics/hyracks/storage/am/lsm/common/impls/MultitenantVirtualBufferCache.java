@@ -187,7 +187,7 @@ public class MultitenantVirtualBufferCache implements IVirtualBufferCache {
 
     @Override
     public IIOManager getIOManager() {
-        throw new UnsupportedOperationException("Not implemented");
+        return vbc.getIOManager();
     }
 
     @Override

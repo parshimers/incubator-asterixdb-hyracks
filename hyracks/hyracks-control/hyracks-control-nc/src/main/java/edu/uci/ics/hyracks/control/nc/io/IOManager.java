@@ -17,6 +17,7 @@ package edu.uci.ics.hyracks.control.nc.io;
 import java.io.File;
 import java.io.FilenameFilter;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -310,6 +311,15 @@ public class IOManager implements IIOManager {
     }
 
     @Override
+    public boolean isDirectory(FileReference fileReference) {
+        try {
+            return getIOSubSystem(fileReference).isDirectory(fileReference);
+        } catch (IllegalArgumentException | IOException e) {
+            throw new IllegalStateException(e);
+        }
+    }
+
+    @Override
     public boolean delete(FileReference fileReference) {
         try {
             return getIOSubSystem(fileReference).delete(fileReference, true);
@@ -344,5 +354,15 @@ public class IOManager implements IIOManager {
             throw new HyracksDataException(e);
         }
     }
+
+    @Override
+    public InputStream getInputStream(IFileHandle fileHandle) {
+        try {
+            return ((IFileHandleInternal)fileHandle).getInputStream();
+        } catch (IllegalArgumentException | IOException e) {
+            throw new IllegalStateException(e);
+        }
+    }
+
 
 }

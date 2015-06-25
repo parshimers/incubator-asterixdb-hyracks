@@ -59,6 +59,10 @@ public final class FileReference implements Serializable {
         return path.equals(((FileReference) o).path);
     }
 
+    public String getAbsolutePath(){
+        return path;
+    }
+
     @Override
     public int hashCode() {
         return path.hashCode();
