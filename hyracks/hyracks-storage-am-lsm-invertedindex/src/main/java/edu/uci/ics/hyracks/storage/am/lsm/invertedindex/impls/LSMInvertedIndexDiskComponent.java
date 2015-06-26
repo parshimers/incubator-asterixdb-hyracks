@@ -15,6 +15,8 @@
 package edu.uci.ics.hyracks.storage.am.lsm.invertedindex.impls;
 
 import edu.uci.ics.hyracks.api.exceptions.HyracksDataException;
+import edu.uci.ics.hyracks.api.io.IFileHandle;
+import edu.uci.ics.hyracks.api.io.IIOManager;
 import edu.uci.ics.hyracks.storage.am.bloomfilter.impls.BloomFilter;
 import edu.uci.ics.hyracks.storage.am.btree.impls.BTree;
 import edu.uci.ics.hyracks.storage.am.lsm.common.api.ILSMComponentFilter;
@@ -60,10 +62,31 @@ public class LSMInvertedIndexDiskComponent extends AbstractDiskLSMComponent {
 
     @Override
     public long getComponentSize() {
-        return ((OnDiskInvertedIndex) invIndex).getInvListsFile().getFile().length()
-                + ((OnDiskInvertedIndex) invIndex).getBTree().getFileReference().getFile().length()
-                + deletedKeysBTree.getFileReference().getFile().length()
-                + bloomFilter.getFileReference().getFile().length();
+        IIOManager iomanager = invIndex.getBufferCache().getIOManager();
+        long postingSize = 0, btreeSize=0, delKeyBTreeSize =0, bloomSize =0;
+        try {
+            IFileHandle postingHandle = iomanager.open(((OnDiskInvertedIndex) invIndex).getInvListsFile(),
+                    IIOManager.FileReadWriteMode.READ_ONLY, IIOManager.FileSyncMode.METADATA_ASYNC_DATA_ASYNC);
+
+            IFileHandle btreeHandle = iomanager.open(((OnDiskInvertedIndex) invIndex).getBTree().getFileReference(),
+                    IIOManager.FileReadWriteMode.READ_ONLY, IIOManager.FileSyncMode.METADATA_ASYNC_DATA_ASYNC);
+
+            IFileHandle delKeyBTreeHandle = iomanager.open(deletedKeysBTree.getFileReference(),
+                    IIOManager.FileReadWriteMode.READ_ONLY,
+                    IIOManager.FileSyncMode.METADATA_ASYNC_DATA_ASYNC);
+
+            IFileHandle bloomHandle = iomanager.open(bloomFilter.getFileReference(),
+                    IIOManager.FileReadWriteMode.READ_ONLY,
+                    IIOManager.FileSyncMode.METADATA_ASYNC_DATA_ASYNC);
+
+            btreeSize = iomanager.getSize(btreeHandle);
+            postingSize = iomanager.getSize(postingHandle);
+            delKeyBTreeSize = iomanager.getSize(delKeyBTreeHandle);
+            bloomSize = iomanager.getSize(bloomHandle);
+        } catch (HyracksDataException e) {
+            btreeSize = -1;
+        }
+        return postingSize + btreeSize + delKeyBTreeSize + bloomSize ;
     }
 
     @Override

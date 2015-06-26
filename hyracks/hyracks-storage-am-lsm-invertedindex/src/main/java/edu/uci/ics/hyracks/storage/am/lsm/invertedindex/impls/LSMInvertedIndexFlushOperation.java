@@ -88,6 +88,6 @@ public class LSMInvertedIndexFlushOperation implements ILSMIOOperation, Comparab
 
     @Override
     public int compareTo(LSMInvertedIndexFlushOperation o) {
-        return dictBTreeFlushTarget.getFile().getName().compareTo(o.getDictBTreeFlushTarget().getFile().getName());
+        return dictBTreeFlushTarget.getName().compareTo(o.getDictBTreeFlushTarget().getName());
     }
 }

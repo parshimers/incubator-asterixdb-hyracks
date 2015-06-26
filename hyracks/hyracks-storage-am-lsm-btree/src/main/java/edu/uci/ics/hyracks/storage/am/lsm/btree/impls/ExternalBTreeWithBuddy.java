@@ -336,8 +336,8 @@ public class ExternalBTreeWithBuddy extends AbstractLSMIndex implements ITreeInd
                 .getBTree();
         FileReference firstFile = diskFileMapProvider.lookupFileName(firstTree.getFileId());
         FileReference lastFile = diskFileMapProvider.lookupFileName(lastTree.getFileId());
-        LSMComponentFileReferences fileRefs = fileManager.getRelMergeFileReference(firstFile.getFile().getName(),
-                lastFile.getFile().getName());
+        LSMComponentFileReferences fileRefs = fileManager.getRelMergeFileReference(firstFile.getName(),
+                lastFile.getName());
         return fileRefs;
     }
 

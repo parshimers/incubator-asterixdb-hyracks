@@ -52,7 +52,7 @@ public class OnDiskInvertedIndexFactory extends IndexFactory<IInvertedIndex> {
 
     @Override
     public IInvertedIndex createIndexInstance(FileReference dictBTreeFile) throws IndexException {
-        String invListsFilePath = fileNameMapper.getInvListsFilePath(dictBTreeFile.getFile().getPath());
+        String invListsFilePath = fileNameMapper.getInvListsFilePath(dictBTreeFile.getPath());
         FileReference invListsFile = new FileReference(invListsFilePath);
         IInvertedListBuilder invListBuilder = invListBuilderFactory.create();
         return new OnDiskInvertedIndex(bufferCache, fileMapProvider, invListBuilder, invListTypeTraits,

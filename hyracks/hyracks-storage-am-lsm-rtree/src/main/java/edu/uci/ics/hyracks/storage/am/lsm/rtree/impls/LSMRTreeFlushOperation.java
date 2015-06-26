@@ -88,6 +88,6 @@ public class LSMRTreeFlushOperation implements ILSMIOOperation, Comparable<LSMRT
 
     @Override
     public int compareTo(LSMRTreeFlushOperation o) {
-        return rtreeFlushTarget.getFile().getName().compareTo(o.getRTreeFlushTarget().getFile().getName());
+        return rtreeFlushTarget.getName().compareTo(o.getRTreeFlushTarget().getName());
     }
 }

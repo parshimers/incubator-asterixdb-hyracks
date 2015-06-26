@@ -20,6 +20,7 @@ import java.io.File;
 import edu.uci.ics.hyracks.api.dataflow.value.IBinaryComparatorFactory;
 import edu.uci.ics.hyracks.api.dataflow.value.ITypeTraits;
 import edu.uci.ics.hyracks.api.io.FileReference;
+import edu.uci.ics.hyracks.api.io.IIOManager;
 import edu.uci.ics.hyracks.data.std.accessors.PointableBinaryComparatorFactory;
 import edu.uci.ics.hyracks.data.std.primitive.IntegerPointable;
 import edu.uci.ics.hyracks.data.std.primitive.UTF8StringPointable;
@@ -35,8 +36,10 @@ public class OnDiskInvertedIndexLifecycleTest extends AbstractIndexLifecycleTest
 
     @Override
     protected boolean persistentStateExists() throws Exception {
-        return harness.getInvListsFileRef().getFile().exists()
-                && ((OnDiskInvertedIndex) index).getBTree().getFileReference().getFile().exists();
+        IIOManager ioManager = harness.getDiskBufferCache().getIOManager();
+        boolean postingFileExists = ioManager.exists(harness.getInvListsFileRef());
+        boolean indexExists = ioManager.exists(((OnDiskInvertedIndex)index).getBTree().getFileReference());
+        return postingFileExists && indexExists;
     }
 
     @Override
@@ -57,7 +60,7 @@ public class OnDiskInvertedIndexLifecycleTest extends AbstractIndexLifecycleTest
         IBinaryComparatorFactory[] invListCmpFactories = new IBinaryComparatorFactory[] { PointableBinaryComparatorFactory
                 .of(IntegerPointable.FACTORY) };
         IInvertedListBuilder invListBuilder = new FixedSizeElementInvertedListBuilder(invListTypeTraits);
-        FileReference btreeFile = new FileReference(harness.getInvListsFileRef().getFile().getPath() + "_btree");
+        FileReference btreeFile = new FileReference(harness.getInvListsFileRef().getPath() + "_btree");
         index = new OnDiskInvertedIndex(harness.getDiskBufferCache(), harness.getDiskFileMapProvider(), invListBuilder,
                 invListTypeTraits, invListCmpFactories, tokenTypeTraits, tokenCmpFactories,
                 harness.getInvListsFileRef(), btreeFile);

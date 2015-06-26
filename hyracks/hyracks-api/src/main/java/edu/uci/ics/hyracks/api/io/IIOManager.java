@@ -67,6 +67,8 @@ public interface IIOManager {
 
     public boolean isDirectory(FileReference fileReference);
 
+    boolean deleteOnExit(FileReference fileReference);
+
     public String[] listFiles(FileReference fileReference, FilenameFilter transactionFileNameFilter) throws HyracksDataException;
 
     public InputStream getInputStream(IFileHandle fileHandle);

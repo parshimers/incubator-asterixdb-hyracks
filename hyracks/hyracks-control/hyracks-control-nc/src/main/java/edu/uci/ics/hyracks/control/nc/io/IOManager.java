@@ -327,6 +327,16 @@ public class IOManager implements IIOManager {
             throw new IllegalStateException(e);
         }
     }
+
+    @Override
+    public boolean deleteOnExit(FileReference fileReference){
+        try{
+            return getIOSubSystem(fileReference).deleteOnExit(fileReference);
+        }
+        catch(IllegalArgumentException | IOException e){
+            throw new IllegalStateException(e);
+        }
+    }
     
     private IIOSubSystem getIOSubSystem(FileReference fileReference) {
         IIOSubSystem ioSubSystem = ioSubSystems[fileReference.getType().ordinal()];

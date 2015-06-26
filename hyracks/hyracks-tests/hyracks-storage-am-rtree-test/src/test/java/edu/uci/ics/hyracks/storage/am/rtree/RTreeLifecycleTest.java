@@ -67,7 +67,7 @@ public class RTreeLifecycleTest extends AbstractIndexLifecycleTest {
 
     @Override
     protected boolean persistentStateExists() {
-        return harness.getFileReference().getFile().exists();
+        return harness.getBufferCache().getIOManager().exists(harness.getFileReference());
     }
 
     @Override

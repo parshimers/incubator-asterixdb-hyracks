@@ -86,6 +86,6 @@ public class LSMBTreeFlushOperation implements ILSMIOOperation, Comparable<LSMBT
 
     @Override
     public int compareTo(LSMBTreeFlushOperation o) {
-        return btreeFlushTarget.getFile().getName().compareTo(o.getBTreeFlushTarget().getFile().getName());
+        return btreeFlushTarget.getName().compareTo(o.getBTreeFlushTarget().getName());
     }
 }

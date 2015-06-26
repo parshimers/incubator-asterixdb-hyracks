@@ -142,6 +142,11 @@ public class VirtualBufferCache implements IVirtualBufferCache {
         }
 
         @Override
+        public boolean deleteOnExit(FileReference fileReference) {
+            return true;
+        }
+
+        @Override
         public boolean exists(FileReference fileReference) {
             return false;
         }

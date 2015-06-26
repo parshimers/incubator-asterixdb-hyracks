@@ -77,7 +77,7 @@ public final class PartitionedLSMInvertedIndexDataflowHelper extends AbstractLSM
                     virtualBufferCaches, diskFileMapProvider, invIndexOpDesc.getInvListsTypeTraits(),
                     invIndexOpDesc.getInvListsComparatorFactories(), invIndexOpDesc.getTokenTypeTraits(),
                     invIndexOpDesc.getTokenComparatorFactories(), invIndexOpDesc.getTokenizerFactory(),
-                    diskBufferCache, file.getFile().getPath(), bloomFilterFalsePositiveRate, mergePolicy,
+                    diskBufferCache, file.getPath(), bloomFilterFalsePositiveRate, mergePolicy,
                     opTrackerFactory.getOperationTracker(ctx), ioScheduler,
                     ioOpCallbackFactory.createIOOperationCallback(), invertedIndexFields, filterTypeTraits,
                     filterCmpFactories, filterFields, filterFieldsForNonBulkLoadOps,

@@ -47,6 +47,11 @@ public class IOHDFSSubSystem implements IIOSubSystem {
     }
 
     @Override
+    public boolean deleteOnExit(FileReference fileRef) throws IllegalArgumentException, IOException {
+        return fs.deleteOnExit(new Path(uri.toString() + fileRef.getPath()));
+    }
+
+    @Override
     public boolean isDirectory(FileReference fileRef) throws IllegalArgumentException, IOException {
         return fs.isDirectory(new Path(uri.toString()+fileRef.getPath()));
     }

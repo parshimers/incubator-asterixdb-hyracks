@@ -54,7 +54,7 @@ public abstract class IndexDataflowHelper implements IIndexDataflowHelper {
         this.partition = partition;
         this.ioDeviceId = opDesc.getFileSplitProvider().getFileSplits()[partition].getIODeviceId();
         this.file = new FileReference(IndexFileNameUtil.prepareFileName(opDesc.getFileSplitProvider()
-                .getFileSplits()[partition].getLocalFile().getFile().getPath(), ioDeviceId));
+                .getFileSplits()[partition].getLocalFile().getPath(), ioDeviceId));
 	this.durable = durable;
     }
 
@@ -80,7 +80,7 @@ public abstract class IndexDataflowHelper implements IIndexDataflowHelper {
             // any physical artifact that the LocalResourceRepository is managing (e.g. a file containing the resource ID). 
             // Once the index has been created, a new resource ID can be generated.
             if (resourceID != -1) {
-                localResourceRepository.deleteResourceByName(file.getFile().getPath());
+                localResourceRepository.deleteResourceByName(file.getPath());
             }
             index.create();
             try {
@@ -88,7 +88,7 @@ public abstract class IndexDataflowHelper implements IIndexDataflowHelper {
                 resourceID = resourceIdFactory.createId();
                 ILocalResourceFactory localResourceFactory = opDesc.getLocalResourceFactoryProvider()
                         .getLocalResourceFactory();
-                localResourceRepository.insert(localResourceFactory.createLocalResource(resourceID, file.getFile()
+                localResourceRepository.insert(localResourceFactory.createLocalResource(resourceID, file
                         .getPath(), partition));
             } catch (IOException e) {
                 throw new HyracksDataException(e);
@@ -134,7 +134,7 @@ public abstract class IndexDataflowHelper implements IIndexDataflowHelper {
             }
 
             if (resourceID != -1) {
-                localResourceRepository.deleteResourceByName(file.getFile().getPath());
+                localResourceRepository.deleteResourceByName(file.getPath());
             }
             index.destroy();
         }
@@ -147,7 +147,7 @@ public abstract class IndexDataflowHelper implements IIndexDataflowHelper {
 
     @Override
     public long getResourceID() throws HyracksDataException {
-        LocalResource localResource = localResourceRepository.getResourceByName(file.getFile().getPath());
+        LocalResource localResource = localResourceRepository.getResourceByName(file.getPath());
         if (localResource == null) {
             return -1;
         } else {

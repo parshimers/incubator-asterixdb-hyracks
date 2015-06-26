@@ -574,12 +574,12 @@ public class LSMInvertedIndex extends AbstractLSMIndex implements IInvertedIndex
 
         LSMInvertedIndexDiskComponent firstComponent = (LSMInvertedIndexDiskComponent) mergingComponents.get(0);
         OnDiskInvertedIndex firstInvIndex = (OnDiskInvertedIndex) firstComponent.getInvIndex();
-        String firstFileName = firstInvIndex.getBTree().getFileReference().getFile().getName();
+        String firstFileName = firstInvIndex.getBTree().getFileReference().getName();
 
         LSMInvertedIndexDiskComponent lastComponent = (LSMInvertedIndexDiskComponent) mergingComponents
                 .get(mergingComponents.size() - 1);
         OnDiskInvertedIndex lastInvIndex = (OnDiskInvertedIndex) lastComponent.getInvIndex();
-        String lastFileName = lastInvIndex.getBTree().getFileReference().getFile().getName();
+        String lastFileName = lastInvIndex.getBTree().getFileReference().getName();
 
         LSMComponentFileReferences relMergeFileRefs = fileManager.getRelMergeFileReference(firstFileName, lastFileName);
         ILSMIndexAccessorInternal accessor = new LSMInvertedIndexAccessor(lsmHarness, ictx);

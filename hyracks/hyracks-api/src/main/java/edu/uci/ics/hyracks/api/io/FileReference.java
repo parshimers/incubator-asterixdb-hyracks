@@ -41,6 +41,10 @@ public final class FileReference implements Serializable {
     public String getPath() {
         return path;
     }
+
+    public String getName() {
+        return path.split(File.separator)[path.split(File.separator).length-1];
+    }
     
     public FileReferenceType getType() {
         return type;

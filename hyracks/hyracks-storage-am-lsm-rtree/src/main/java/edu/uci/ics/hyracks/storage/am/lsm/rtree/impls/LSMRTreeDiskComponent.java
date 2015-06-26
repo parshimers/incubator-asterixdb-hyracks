@@ -15,6 +15,8 @@
 package edu.uci.ics.hyracks.storage.am.lsm.rtree.impls;
 
 import edu.uci.ics.hyracks.api.exceptions.HyracksDataException;
+import edu.uci.ics.hyracks.api.io.IFileHandle;
+import edu.uci.ics.hyracks.api.io.IIOManager;
 import edu.uci.ics.hyracks.storage.am.bloomfilter.impls.BloomFilter;
 import edu.uci.ics.hyracks.storage.am.btree.impls.BTree;
 import edu.uci.ics.hyracks.storage.am.lsm.common.api.ILSMComponentFilter;
@@ -59,12 +61,28 @@ public class LSMRTreeDiskComponent extends AbstractDiskLSMComponent {
 
     @Override
     public long getComponentSize() {
-        long size = rtree.getFileReference().getFile().length();
-        if (btree != null) {
-            size += btree.getFileReference().getFile().length();
-            size += bloomFilter.getFileReference().getFile().length();
+        IIOManager iomanager = rtree.getBufferCache().getIOManager();
+        long rtreeSize = 0 , btreeSize =0, bloomSize = 0;
+
+        try {
+            IFileHandle rtreeHandle = iomanager.open(rtree.getFileReference(),
+                    IIOManager.FileReadWriteMode.READ_ONLY,
+                    IIOManager.FileSyncMode.METADATA_ASYNC_DATA_ASYNC);
+
+            IFileHandle btreeHandle = iomanager.open(btree.getFileReference(),
+                    IIOManager.FileReadWriteMode.READ_ONLY,
+                    IIOManager.FileSyncMode.METADATA_ASYNC_DATA_ASYNC);
+
+            IFileHandle bloomHandle = iomanager.open(bloomFilter.getFileReference(),
+                    IIOManager.FileReadWriteMode.READ_ONLY,
+                    IIOManager.FileSyncMode.METADATA_ASYNC_DATA_ASYNC);
+            btreeSize = iomanager.getSize(btreeHandle);
+            rtreeSize = iomanager.getSize(rtreeHandle);
+            bloomSize = iomanager.getSize(bloomHandle);
+        } catch (HyracksDataException e) {
+            rtreeSize = -1;
         }
-        return size;
+        return rtreeSize + btreeSize + bloomSize ;
     }
 
     @Override

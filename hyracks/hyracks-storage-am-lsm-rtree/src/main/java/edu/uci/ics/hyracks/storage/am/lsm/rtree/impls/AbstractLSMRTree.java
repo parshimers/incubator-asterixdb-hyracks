@@ -290,8 +290,8 @@ public abstract class AbstractLSMRTree extends AbstractLSMIndex implements ITree
                 .getRTree();
         FileReference firstFile = diskFileMapProvider.lookupFileName(firstTree.getFileId());
         FileReference lastFile = diskFileMapProvider.lookupFileName(lastTree.getFileId());
-        LSMComponentFileReferences fileRefs = fileManager.getRelMergeFileReference(firstFile.getFile().getName(),
-                lastFile.getFile().getName());
+        LSMComponentFileReferences fileRefs = fileManager.getRelMergeFileReference(firstFile.getName(),
+                lastFile.getName());
         return fileRefs;
     }
 

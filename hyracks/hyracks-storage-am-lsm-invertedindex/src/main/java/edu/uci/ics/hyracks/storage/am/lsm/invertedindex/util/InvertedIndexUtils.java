@@ -101,7 +101,7 @@ public class InvertedIndexUtils {
     }
 
     public static FileReference getBTreeFile(FileReference invListsFile) {
-        return new FileReference(invListsFile.getFile().getPath() + "_btree");
+        return new FileReference(invListsFile.getPath() + "_btree");
     }
 
     public static BTreeFactory createDeletedKeysBTreeFactory(IFileMapProvider diskFileMapProvider,

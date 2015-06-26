@@ -15,6 +15,8 @@
 package edu.uci.ics.hyracks.storage.am.lsm.btree.impls;
 
 import edu.uci.ics.hyracks.api.exceptions.HyracksDataException;
+import edu.uci.ics.hyracks.api.io.IFileHandle;
+import edu.uci.ics.hyracks.api.io.IIOManager;
 import edu.uci.ics.hyracks.storage.am.bloomfilter.impls.BloomFilter;
 import edu.uci.ics.hyracks.storage.am.btree.impls.BTree;
 import edu.uci.ics.hyracks.storage.am.lsm.common.impls.AbstractDiskLSMComponent;
@@ -55,10 +57,32 @@ public class LSMBTreeWithBuddyDiskComponent extends AbstractDiskLSMComponent {
 
     @Override
     public long getComponentSize() {
-        long size = btree.getFileReference().getFile().length();
-        size += buddyBtree.getFileReference().getFile().length();
-        size += bloomFilter.getFileReference().getFile().length();
-        return size;
+//        long size = btree.getFileReference().getFile().length();
+//        size += buddyBtree.getFileReference().getFile().length();
+//        size += bloomFilter.getFileReference().getFile().length();
+//        return size;
+        IIOManager iomanager = btree.getBufferCache().getIOManager();
+        long btreeSize = 0, buddyBTreeSize =0, bloomSize = 0;
+        try {
+            IFileHandle btreeHandle = iomanager.open(btree.getFileReference(),
+                    IIOManager.FileReadWriteMode.READ_ONLY,
+                    IIOManager.FileSyncMode.METADATA_ASYNC_DATA_ASYNC);
+
+            IFileHandle buddyBtreeHandle = iomanager.open(buddyBtree.getFileReference(),
+                    IIOManager.FileReadWriteMode.READ_ONLY,
+                    IIOManager.FileSyncMode.METADATA_ASYNC_DATA_ASYNC);
+
+            IFileHandle bloomHandle = iomanager.open(bloomFilter.getFileReference(),
+                    IIOManager.FileReadWriteMode.READ_ONLY,
+                    IIOManager.FileSyncMode.METADATA_ASYNC_DATA_ASYNC);
+
+            btreeSize = iomanager.getSize(btreeHandle);
+            buddyBTreeSize = iomanager.getSize(btreeHandle);
+            bloomSize = iomanager.getSize(bloomHandle);
+        } catch (HyracksDataException e) {
+            btreeSize = -1;
+        }
+        return btreeSize + buddyBTreeSize + bloomSize ;
     }
 
     @Override

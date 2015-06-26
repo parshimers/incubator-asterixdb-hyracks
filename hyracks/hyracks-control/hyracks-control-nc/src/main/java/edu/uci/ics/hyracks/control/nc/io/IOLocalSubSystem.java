@@ -29,6 +29,12 @@ public class IOLocalSubSystem implements IIOSubSystem {
     }
 
     @Override
+    public boolean deleteOnExit(FileReference fileRef) throws IllegalArgumentException, IOException {
+        fileRef.getFile().deleteOnExit();
+        return true;
+    }
+
+    @Override
     public boolean isDirectory(FileReference fileRef) throws IllegalArgumentException, IOException {
         return fileRef.getFile().isDirectory();
     }

@@ -281,8 +281,8 @@ public abstract class AbstractLSMIndexFileManager implements ILSMIndexFileManage
 
         public ComparableFileName(FileReference fileRef) {
             this.fileRef = fileRef;
-            this.fullPath = fileRef.getFile().getAbsolutePath();
-            this.fileName = fileRef.getFile().getName();
+            this.fullPath = fileRef.getAbsolutePath();
+            this.fileName = fileRef.getName();
             interval = fileName.split(SPLIT_STRING);
         }
 
