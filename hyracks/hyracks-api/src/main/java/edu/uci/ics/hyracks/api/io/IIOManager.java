@@ -61,6 +61,8 @@ public interface IIOManager {
     
     public boolean delete(FileReference fileReference);
 
+    public boolean delete(FileReference fileReference, boolean recursive);
+
     public boolean exists(FileReference fileReference);
 
     public boolean mkdirs(FileReference fileReference);

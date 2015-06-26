@@ -322,6 +322,15 @@ public class IOManager implements IIOManager {
     @Override
     public boolean delete(FileReference fileReference) {
         try {
+            return getIOSubSystem(fileReference).delete(fileReference, false);
+        } catch (IllegalArgumentException | IOException e) {
+            throw new IllegalStateException(e);
+        }
+    }
+
+    @Override
+    public boolean delete(FileReference fileReference, boolean recursive) {
+        try {
             return getIOSubSystem(fileReference).delete(fileReference, true);
         } catch (IllegalArgumentException | IOException e) {
             throw new IllegalStateException(e);

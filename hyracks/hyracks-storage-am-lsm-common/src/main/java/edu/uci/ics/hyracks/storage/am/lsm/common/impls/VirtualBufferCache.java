@@ -132,6 +132,11 @@ public class VirtualBufferCache implements IVirtualBufferCache {
         }
 
         @Override
+        public boolean delete(FileReference fileReference, boolean recursive) {
+            return false;
+        }
+
+        @Override
         public boolean mkdirs(FileReference fileReference) {
             return false;
         }
