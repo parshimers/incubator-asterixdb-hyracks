@@ -210,7 +210,7 @@ public class BloomFilter {
 
         public BloomFilterBuilder(long numElements, int numHashes, int numBitsPerElement) throws HyracksDataException {
             if (!isActivated) {
-                throw new HyracksDataException("Failed to create the bloom filter builder since it is not activated.");
+                activate();
             }
             queue = bufferCache.createFIFOQueue();
             this.numElements = numElements;

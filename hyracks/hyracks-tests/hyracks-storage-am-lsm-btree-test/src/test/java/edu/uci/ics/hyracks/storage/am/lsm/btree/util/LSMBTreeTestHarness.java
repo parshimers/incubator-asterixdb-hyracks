@@ -100,7 +100,7 @@ public class LSMBTreeTestHarness {
     public void setUp() throws HyracksException {
         ioManager = TestStorageManagerComponentHolder.getIOManager();
         ioDeviceId = 0;
-        onDiskDir = /*ioManager.getIODevices().get(ioDeviceId).getPath() + sep + */"lsm_btree_"
+        onDiskDir = ioManager.getIODevices().get(ioDeviceId).getPath() + sep + "lsm_btree_"
                 // TODO: Why do we need an absolute path here?
                 + simpleDateFormat.format(new Date()) + sep;
         file = new FileReference(onDiskDir, FileReferenceType.DISTRIBUTED_IF_AVAIL);

@@ -184,7 +184,7 @@ public class IOManager implements IIOManager {
         try {
             ((IFileHandleInternal) fHandle).close();
         } catch (IOException e) {
-            throw new HyracksDataException(e);
+//            throw new HyracksDataException(e);
         }
     }
 

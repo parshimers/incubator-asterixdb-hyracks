@@ -833,6 +833,7 @@ public class BufferCache implements IBufferCacheInternal, ILifeCycleComponent {
             if (fInfo.decReferenceCount() < 0) {
                 throw new HyracksDataException("Closed fileId: " + fileId + " more times than it was opened.");
             }
+            ioManager.close(fInfo.getFileHandle());
         }
         if (LOGGER.isLoggable(Level.INFO)) {
             LOGGER.info("Closed file: " + fileId + " in cache: " + this);

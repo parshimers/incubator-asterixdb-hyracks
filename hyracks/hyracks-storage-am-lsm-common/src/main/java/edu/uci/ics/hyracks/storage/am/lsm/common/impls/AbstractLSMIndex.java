@@ -151,7 +151,7 @@ public abstract class AbstractLSMIndex implements ILSMIndexInternal {
         // Forces all pages of given file to disk. This guarantees the data makes it to disk.
         // If the index is not durable, then the flush is not necessary.
         if (durable) {
-            bufferCache.force(fileId, true);
+//            bufferCache.force(fileId, true);
         }
     }
 

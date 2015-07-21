@@ -106,7 +106,7 @@ public abstract class AbstractLSMIndexFileManager implements ILSMIndexFileManage
     protected void cleanupAndGetValidFilesInternal(FilenameFilter filter,
             TreeIndexFactory<? extends ITreeIndex> treeFactory, ArrayList<ComparableFileName> allFiles)
             throws HyracksDataException, IndexException {
-        String[] files = ioManager.listFiles(new FileReference(baseDir, FileReferenceType.DISTRIBUTED_IF_AVAIL), transactionFileNameFilter);
+        String[] files = ioManager.listFiles(new FileReference(baseDir, FileReferenceType.DISTRIBUTED_IF_AVAIL), filter);
         for (String fileName : files) {
             FileReference fileRef = new FileReference(baseDir + File.separator + fileName, FileReferenceType.DISTRIBUTED_IF_AVAIL);
             if (treeFactory == null || isValidTreeIndex(treeFactory.createIndexInstance(fileRef))) {
@@ -141,7 +141,7 @@ public abstract class AbstractLSMIndexFileManager implements ILSMIndexFileManage
 
     @Override
     public void deleteDirs() {
-        ioManager.delete(new FileReference(baseDir, FileReferenceType.DISTRIBUTED_IF_AVAIL));
+        ioManager.delete(new FileReference(baseDir, FileReferenceType.DISTRIBUTED_IF_AVAIL), true);
     }
 
     protected static FilenameFilter bloomFilterFilter = new FilenameFilter() {

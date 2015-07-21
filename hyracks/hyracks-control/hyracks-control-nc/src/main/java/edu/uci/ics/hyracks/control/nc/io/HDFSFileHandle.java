@@ -38,6 +38,8 @@ public class HDFSFileHandle implements IFileHandle, IFileHandleInternal {
     private URI uri;
     static {
         Configuration conf = new Configuration();
+        conf.set("dfs.datanode.socket.write.timeout","0");
+        conf.set("dfs.replication", "1");
         conf.addResource(new Path("config/core-site.xml"));
         conf.addResource(new Path("config/hdfs-site.xml"));
         conf.addResource(new Path("config/mapred-site.xml"));
@@ -54,10 +56,11 @@ public class HDFSFileHandle implements IFileHandle, IFileHandleInternal {
     private FSDataInputStream in = null;
     private Path path;
     private FileReference fileRef;
+    private FileReadWriteMode rwMode;
 
     public HDFSFileHandle(FileReference fileRef) {
         try {
-            this.uri = new URI("hdfs://127.0.1.1:9000/" + fileRef.getPath());
+            this.uri = new URI("hdfs://127.0.1.1:9000" + fileRef.getPath());
             this.fileRef = fileRef;
             path = new Path(uri.getPath());
         } catch (URISyntaxException e) {
@@ -68,14 +71,27 @@ public class HDFSFileHandle implements IFileHandle, IFileHandleInternal {
     @Override
     public void open(FileReadWriteMode rwMode, FileSyncMode syncMode) throws IOException {
         if(syncMode != FileSyncMode.METADATA_ASYNC_DATA_ASYNC) throw new IOException("Sync I/O not (yet) supported for HDFS");
-        
-        if(rwMode == FileReadWriteMode.READ_WRITE){
-                if(fs.exists(path)){
-                    out = fs.append(path);
-                }else{
-                    out = fs.create(path, false);
-                }
-        }
+//       try {
+           if (rwMode == FileReadWriteMode.READ_WRITE) {
+               if (fs.exists(path)) {
+                   out = fs.append(path);
+               } else {
+                   out = fs.create(path, false);
+               }
+           }
+//       }
+//       catch(IOException e){
+//           if(e.getCause().getClass().equals(org.apache.hadoop.hdfs.protocol.AlreadyBeingCreatedException.class)){
+//              System.out.println("recover lease on: "+path.toString());
+//               throw e;
+//           }
+//           else throw e;
+//       }
+        else if(rwMode == FileReadWriteMode.READ_ONLY){
+               in = fs.open(path);
+           }
+        this.rwMode = rwMode;
+
     }
 
     @Override
@@ -100,7 +116,6 @@ public class HDFSFileHandle implements IFileHandle, IFileHandleInternal {
     @Override
     public void sync(boolean metadata) throws IOException {
         out.hsync();
-        in = null;
     }
 
     @Override
@@ -111,35 +126,33 @@ public class HDFSFileHandle implements IFileHandle, IFileHandleInternal {
     @Override
     public int write(ByteBuffer data, long offset) throws IOException {
         System.out.println("WRITE " + path + " @ " + offset);
+        if(in !=null){in.close();}
         assert(out.getPos() == offset);
         out.write(data.array(), 0, data.limit());
-        in = null;
         return data.limit();
     }
 
     @Override
     public int append(ByteBuffer data) throws IOException {
         out.write(data.array(), 0, data.limit());
-        in = null;
         return data.limit();
     }
 
     @Override
     public int read(ByteBuffer data, long offset) throws IOException {
-        if(in == null) {
-            out.hflush();
+        if(in == null && rwMode == FileReadWriteMode.READ_WRITE){
+            if(out!=null) out.hsync();
             in = fs.open(path);
         }
         System.out.println("READ " + path + " @ " + offset);
-        
         in.seek(offset);
         return in.read(data);
     }
 
     @Override
     public InputStream getInputStream() throws IOException{
-        if(in == null) {
-            out.hflush();
+        if(in == null && rwMode == FileReadWriteMode.READ_WRITE){
+            if(out!=null) out.hsync();
             in = fs.open(path);
         }
         return in;

@@ -18,11 +18,12 @@ public class IOHDFSSubSystem implements IIOSubSystem {
     static {
         System.setProperty("HADOOP_USER_NAME", "root");
         Configuration conf = new Configuration();
+        conf.set("dfs.replication", "1");
         conf.addResource(new Path("config/core-site.xml"));
         conf.addResource(new Path("config/hdfs-site.xml"));
         conf.addResource(new Path("config/mapred-site.xml"));
         try {
-            uri = new URI("hdfs://127.0.1.1:9000/");
+            uri = new URI("hdfs://127.0.1.1:9000");
             fs = FileSystem.get(uri, conf);
         } catch (IOException | URISyntaxException e) {
             // TODO Auto-generated catch block
@@ -62,7 +63,7 @@ public class IOHDFSSubSystem implements IIOSubSystem {
         RemoteIterator<LocatedFileStatus> it = fs.listFiles(new Path(uri.toString() + fileRef.getPath()), false);
         while(it.hasNext()) {
             LocatedFileStatus fileStatus = it.next();
-            if(filter.accept(new File(fileStatus.getPath().getParent().toString()), fileStatus.getPath().getName())) files.add(fileStatus.getPath().getName());
+            if(filter.accept(new File(Path.getPathWithoutSchemeAndAuthority(fileStatus.getPath().getParent()).toString()), fileStatus.getPath().getName())) files.add(fileStatus.getPath().getName());
         }
         String tmp[] = new String[files.size()];
         tmp = files.toArray(tmp);
