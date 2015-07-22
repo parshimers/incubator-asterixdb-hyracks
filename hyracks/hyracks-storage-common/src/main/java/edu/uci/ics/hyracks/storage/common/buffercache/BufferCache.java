@@ -477,10 +477,6 @@ public class BufferCache implements IBufferCacheInternal, ILifeCycleComponent {
         cPage.buffer.clear();
         int read = ioManager.syncRead(fInfo.getFileHandle(), (long) BufferedFileHandle.getPageId(cPage.dpid) * pageSize,
                    cPage.buffer);
-        if(read != pageSize){
-            throw new HyracksDataException("Underfull page");
-        }
-
     }
 
     BufferedFileHandle getFileInfo(CachedPage cPage) throws HyracksDataException {
@@ -500,7 +496,7 @@ public class BufferCache implements IBufferCacheInternal, ILifeCycleComponent {
     private void write(CachedPage cPage) throws HyracksDataException {
         BufferedFileHandle fInfo = getFileInfo(cPage);
         if (fInfo.fileHasBeenDeleted()) {
-            return;
+            throw new HyracksDataException("Attempted to write back a dirty page to a deleted file");
         }
         cPage.buffer.position(0);
         cPage.buffer.limit(pageSize);
@@ -755,6 +751,7 @@ public class BufferCache implements IBufferCacheInternal, ILifeCycleComponent {
                 fInfo = new BufferedFileHandle(fileId, fh);
                 fileInfoMap.put(fileId, fInfo);
             }
+            //refresh the handle
             fInfo.incReferenceCount();
         }
     }
@@ -833,7 +830,6 @@ public class BufferCache implements IBufferCacheInternal, ILifeCycleComponent {
             if (fInfo.decReferenceCount() < 0) {
                 throw new HyracksDataException("Closed fileId: " + fileId + " more times than it was opened.");
             }
-            ioManager.close(fInfo.getFileHandle());
         }
         if (LOGGER.isLoggable(Level.INFO)) {
             LOGGER.info("Closed file: " + fileId + " in cache: " + this);
@@ -879,7 +875,6 @@ public class BufferCache implements IBufferCacheInternal, ILifeCycleComponent {
                     // such that when its pages are reclaimed in openFile(),
                     // the pages are not flushed to disk but only invalidated.
                     if (!fInfo.fileHasBeenDeleted()) {
-                        ioManager.close(fInfo.getFileHandle());
                         fInfo.markAsDeleted();
                     }
                 }
@@ -1152,6 +1147,17 @@ public class BufferCache implements IBufferCacheInternal, ILifeCycleComponent {
     @Override
     public IIOManager getIOManager() {
         return ioManager;
+    }
+
+    @Override
+    public void purgeHandle(int fileId) throws HyracksDataException {
+        synchronized(fileInfoMap){
+            BufferedFileHandle fh = fileInfoMap.get(fileId);
+            if(fh != null) {
+                ioManager.close(fh.getFileHandle());
+                fileInfoMap.remove(fileId);
+            }
+        }
     }
 
 }

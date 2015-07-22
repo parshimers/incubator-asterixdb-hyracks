@@ -156,8 +156,8 @@ public class LSMRTree extends AbstractLSMRTree {
             RTree rtree = component.getRTree();
             BTree btree = component.getBTree();
             BloomFilter bloomFilter = component.getBloomFilter();
-            rtree.deactivate();
-            btree.deactivate();
+            rtree.deactivateCloseHandle();
+            btree.deactivateCloseHandle();
             bloomFilter.deactivate();
         }
         isActivated = false;

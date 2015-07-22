@@ -98,7 +98,7 @@ public class LSMRTreeTestHarness {
         ioDeviceId = 0;
         onDiskDir = ioManager.getIODevices().get(ioDeviceId).getPath() + sep + "lsm_rtree_"
                 + simpleDateFormat.format(new Date()) + sep;
-        file = new FileReference(onDiskDir);
+        file = new FileReference(onDiskDir, FileReference.FileReferenceType.DISTRIBUTED_IF_AVAIL);
         ctx = TestUtils.create(getHyracksFrameSize());
         TestStorageManagerComponentHolder.init(diskPageSize, diskNumPages, diskMaxOpenFiles);
         diskBufferCache = TestStorageManagerComponentHolder.getBufferCache(ctx);

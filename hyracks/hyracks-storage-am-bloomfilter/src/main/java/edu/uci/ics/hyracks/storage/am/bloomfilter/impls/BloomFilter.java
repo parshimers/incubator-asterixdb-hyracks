@@ -177,6 +177,7 @@ public class BloomFilter {
             return;
         }
         bufferCache.closeFile(fileId);
+        bufferCache.purgeHandle(fileId);
         isActivated = false;
     }
 

@@ -306,7 +306,7 @@ public abstract class AbstractLSMRTree extends AbstractLSMIndex implements ITree
             //component.getRTree().create(false);
             if (component.getBTree() != null) {
                 //component.getBTree().create(false);
-                component.getBloomFilter().create();
+                //component.getBloomFilter().create();
             }
         }
         // Tree will be closed during cleanup of merge().

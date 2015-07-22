@@ -381,6 +381,10 @@ public class LinkedMetaDataManager implements IMetaDataManager {
         ITreeIndexMetaDataFrame metaFrame = metaDataFrameFactory.createFrame();
 
         int pages = bufferCache.getNumPagesOfFile(fileId);
+        //if there are no pages in the file yet, we're just initializing.
+        if(pages==0){
+            return 0;
+        }
         //look at the front (modify in-place index)
         int page = 0;
         ICachedPage metaNode = bufferCache.pin(BufferedFileHandle.getDiskPageId(fileId, page), false);

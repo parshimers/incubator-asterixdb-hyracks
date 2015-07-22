@@ -533,4 +533,9 @@ public class VirtualBufferCache implements IVirtualBufferCache {
     public IIOManager getIOManager() {
         return virtIOManager;
     }
+
+    @Override
+    public void purgeHandle(int fileId) throws HyracksDataException {
+
+    }
 }

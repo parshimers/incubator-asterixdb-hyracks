@@ -74,4 +74,6 @@ public interface IBufferCache {
     void setPageDiskId(ICachedPage page, long dpid);
 
     IIOManager getIOManager();
+
+    void purgeHandle(int fileId) throws HyracksDataException;
 }

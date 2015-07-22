@@ -191,6 +191,11 @@ public class MultitenantVirtualBufferCache implements IVirtualBufferCache {
     }
 
     @Override
+    public void purgeHandle(int fileId) throws HyracksDataException {
+
+    }
+
+    @Override
     public void returnPage(ICachedPage page, boolean reinsert) {
         // TODO Auto-generated method stub
         

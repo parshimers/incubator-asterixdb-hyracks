@@ -134,7 +134,12 @@ public abstract class TreeIndexTestUtils {
                             + ctx.getCheckTuples().size() + "\nActual  : " + actualCount);
                 }
             } finally {
-                diskOrderCursor.close();
+                try {
+                    diskOrderCursor.close();
+                }
+                catch(Exception ex){
+                    LOGGER.log(Level.WARNING,"Error during scan cursor close",ex);
+                }
             }
         } catch (UnsupportedOperationException e) {
             // Ignore exception because some indexes, e.g. the LSMTrees, don't

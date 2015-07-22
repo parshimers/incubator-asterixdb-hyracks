@@ -73,7 +73,7 @@ public class BTreeTestHarness {
         TestStorageManagerComponentHolder.init(pageSize, numPages, maxOpenFiles);
         bufferCache = TestStorageManagerComponentHolder.getBufferCache(ctx);
         fileMapProvider = TestStorageManagerComponentHolder.getFileMapProvider(ctx);
-        file = new FileReference(fileName, FileReferenceType.DISTRIBUTED_IF_AVAIL);
+        file = new FileReference(fileName, FileReferenceType.LOCAL);
         rnd.setSeed(RANDOM_SEED);
     }
 
