@@ -19,6 +19,7 @@ public class IOHDFSSubSystem implements IIOSubSystem {
         System.setProperty("HADOOP_USER_NAME", "root");
         Configuration conf = new Configuration();
         conf.set("dfs.replication", "1");
+        conf.set("dfs.namenode.replication.considerLoad","false");
         conf.addResource(new Path("config/core-site.xml"));
         conf.addResource(new Path("config/hdfs-site.xml"));
         conf.addResource(new Path("config/mapred-site.xml"));

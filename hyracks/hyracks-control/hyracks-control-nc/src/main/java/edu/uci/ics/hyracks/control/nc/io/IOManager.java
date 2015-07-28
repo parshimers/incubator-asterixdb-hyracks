@@ -89,7 +89,7 @@ public class IOManager implements IIOManager {
     @Override
     public int syncWrite(IFileHandle fHandle, long offset, ByteBuffer data) throws HyracksDataException {
         if(DEBUG){
-            System.out.println("Write: "+offset);
+//            System.out.println("Write: "+offset);
         }
         try {
             int n = 0;

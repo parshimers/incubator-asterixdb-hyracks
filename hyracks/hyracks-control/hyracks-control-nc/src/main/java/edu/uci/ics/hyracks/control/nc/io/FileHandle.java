@@ -114,16 +114,19 @@ public class FileHandle implements IFileHandle, IFileHandleInternal {
 
     @Override
     public int write(ByteBuffer data, long offset) throws IOException {
+        System.out.println("Local write: "+ offset);
         return channel.write(data, offset);
     }
 
     @Override
     public int append(ByteBuffer data) throws IOException {
+        System.out.println("Local write: "+ channel.position());
         return channel.write(data);
     }
 
     @Override
     public int read(ByteBuffer data, long offset) throws IOException {
+        System.out.println("Local read: "+ offset);
         return channel.read(data, offset);
     }
 

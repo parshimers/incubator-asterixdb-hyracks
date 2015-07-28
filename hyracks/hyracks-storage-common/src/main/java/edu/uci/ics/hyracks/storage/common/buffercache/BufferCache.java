@@ -35,6 +35,7 @@ import edu.uci.ics.hyracks.api.io.FileReference;
 import edu.uci.ics.hyracks.api.io.IFileHandle;
 import edu.uci.ics.hyracks.api.io.IIOManager;
 import edu.uci.ics.hyracks.api.lifecycle.ILifeCycleComponent;
+import edu.uci.ics.hyracks.control.nc.io.HDFSFileHandle;
 import edu.uci.ics.hyracks.storage.common.file.BufferedFileHandle;
 import edu.uci.ics.hyracks.storage.common.file.IFileMapManager;
 
@@ -475,6 +476,8 @@ public class BufferCache implements IBufferCacheInternal, ILifeCycleComponent {
     private void read(CachedPage cPage) throws HyracksDataException {
         BufferedFileHandle fInfo = getFileInfo(cPage);
         cPage.buffer.clear();
+        if(fInfo.getFileHandle() instanceof HDFSFileHandle ) { cPage.readOnly = true;}
+        else cPage.readOnly = false;
         int read = ioManager.syncRead(fInfo.getFileHandle(), (long) BufferedFileHandle.getPageId(cPage.dpid) * pageSize,
                    cPage.buffer);
     }
@@ -497,6 +500,9 @@ public class BufferCache implements IBufferCacheInternal, ILifeCycleComponent {
         BufferedFileHandle fInfo = getFileInfo(cPage);
         if (fInfo.fileHasBeenDeleted()) {
             throw new HyracksDataException("Attempted to write back a dirty page to a deleted file");
+        }
+        if(cPage.readOnly){
+            throw new HyracksDataException("Attempted to write to a read-only page");
         }
         cPage.buffer.position(0);
         cPage.buffer.limit(pageSize);
@@ -1077,6 +1083,7 @@ public class BufferCache implements IBufferCacheInternal, ILifeCycleComponent {
     public void returnPage(ICachedPage page, boolean reinsert) {
         CachedPage cPage = (CachedPage) page;
         CacheBucket bucket = null;
+        ((CachedPage) page).readOnly = true;
         if (reinsert) {
             int hash = hash(cPage.dpid);
             bucket = pageMap[hash];

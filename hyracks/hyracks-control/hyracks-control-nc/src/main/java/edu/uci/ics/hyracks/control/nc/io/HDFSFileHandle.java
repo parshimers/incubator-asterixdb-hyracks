@@ -40,6 +40,7 @@ public class HDFSFileHandle implements IFileHandle, IFileHandleInternal {
         Configuration conf = new Configuration();
         conf.set("dfs.datanode.socket.write.timeout","0");
         conf.set("dfs.replication", "1");
+        conf.set("dfs.namenode.replication.considerLoad","false");
         conf.addResource(new Path("config/core-site.xml"));
         conf.addResource(new Path("config/hdfs-site.xml"));
         conf.addResource(new Path("config/mapred-site.xml"));

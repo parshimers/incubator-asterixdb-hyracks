@@ -34,6 +34,7 @@ public class CachedPage implements ICachedPageInternal {
     CachedPage next;
     volatile boolean valid;
     final AtomicBoolean virtual;
+    volatile boolean readOnly;
 
     public CachedPage(int cpid, ByteBuffer buffer, IPageReplacementStrategy pageReplacementStrategy) {
         this.cpid = cpid;
@@ -47,6 +48,7 @@ public class CachedPage implements ICachedPageInternal {
         valid = false;
         virtual = new AtomicBoolean();
         virtual.set(false);
+        readOnly = false;
     }
 
     public void reset(long dpid) {
@@ -55,6 +57,7 @@ public class CachedPage implements ICachedPageInternal {
         valid = false;
         virtual.set(false);
         pageReplacementStrategy.notifyCachePageReset(this);
+        readOnly = false;
     }
 
     public void invalidate() {
