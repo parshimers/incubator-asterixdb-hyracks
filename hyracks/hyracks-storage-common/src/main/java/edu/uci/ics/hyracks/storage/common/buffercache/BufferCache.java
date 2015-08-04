@@ -1139,6 +1139,7 @@ public class BufferCache implements IBufferCacheInternal, ILifeCycleComponent {
     @Override
     /**
      * _ONLY_ call this if you absolutely, positively know this file has no dirty pages in the cache!
+     * Bypasses the normal lifecycle of a file handle and evicts all references to it immediately.
      */
     public void purgeHandle(int fileId) throws HyracksDataException{
         synchronized(fileInfoMap){
@@ -1146,6 +1147,7 @@ public class BufferCache implements IBufferCacheInternal, ILifeCycleComponent {
                 if(fh != null){
                     ioManager.close(fh.getFileHandle());
                     fileInfoMap.remove(fileId);
+                    fileMapManager.unregisterFile(fileId);
                 }
         }
     }

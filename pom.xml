@@ -149,6 +149,8 @@
             <exclude>**/*.out</exclude>
             <exclude>**/*.piglet</exclude>
             <exclude>**/*.js</exclude>
+            <exclude>**/*.iml</exclude>
+            <exclude>**/*.wal</exclude>
             <exclude>**/device_id_0/*</exclude>
             <exclude>**/part-*</exclude>
             <exclude>**/conf/local_cluster.conf</exclude>
