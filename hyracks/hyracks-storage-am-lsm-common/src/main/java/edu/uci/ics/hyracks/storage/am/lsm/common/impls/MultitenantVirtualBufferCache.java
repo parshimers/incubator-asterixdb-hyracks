@@ -19,6 +19,7 @@ import java.util.logging.Logger;
 
 import edu.uci.ics.hyracks.api.exceptions.HyracksDataException;
 import edu.uci.ics.hyracks.api.io.FileReference;
+import edu.uci.ics.hyracks.api.replication.IIOReplicationManager;
 import edu.uci.ics.hyracks.storage.am.lsm.common.api.IVirtualBufferCache;
 import edu.uci.ics.hyracks.storage.common.buffercache.ICachedPage;
 import edu.uci.ics.hyracks.storage.common.buffercache.IFIFOPageQueue;
@@ -190,4 +191,13 @@ public class MultitenantVirtualBufferCache implements IVirtualBufferCache {
         return 0;
     }
 
+    @Override
+    public boolean isReplicationEnabled() {
+        return false;
+    }
+
+    @Override
+    public IIOReplicationManager getIIOReplicationManager() {
+        return null;
+    }
 }

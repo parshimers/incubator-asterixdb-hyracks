@@ -16,7 +16,9 @@
 package edu.uci.ics.hyracks.storage.am.lsm.rtree.impls;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import edu.uci.ics.hyracks.api.dataflow.value.IBinaryComparatorFactory;
 import edu.uci.ics.hyracks.api.dataflow.value.ILinearizeComparatorFactory;
@@ -454,5 +456,15 @@ public class LSMRTreeWithAntiMatterTuples extends AbstractLSMRTree {
         if (!appendOnly)
             throw new UnsupportedOperationException("LSM indexes don't support in-place modification");
         return createBulkLoader(fillFactor, verifyInput, numElementsHint, checkIfEmptyIndex);
+    }
+
+    @Override
+    public Set<String> getLSMComponentPhysicalFiles(ILSMComponent lsmComponent) {
+        Set<String> files = new HashSet<String>();
+
+        RTree rtree = ((LSMRTreeDiskComponent) lsmComponent).getRTree();
+        files.add(rtree.getFileReference().toString());
+
+        return files;
     }
 }

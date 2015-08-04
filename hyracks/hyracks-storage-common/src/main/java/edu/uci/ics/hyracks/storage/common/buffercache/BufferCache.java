@@ -3,9 +3,9 @@
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * you may obtain a copy of the License from
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -18,10 +18,10 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.HashSet;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
@@ -35,6 +35,7 @@ import edu.uci.ics.hyracks.api.io.FileReference;
 import edu.uci.ics.hyracks.api.io.IFileHandle;
 import edu.uci.ics.hyracks.api.io.IIOManager;
 import edu.uci.ics.hyracks.api.lifecycle.ILifeCycleComponent;
+import edu.uci.ics.hyracks.api.replication.IIOReplicationManager;
 import edu.uci.ics.hyracks.storage.common.file.BufferedFileHandle;
 import edu.uci.ics.hyracks.storage.common.file.IFileMapManager;
 
@@ -63,6 +64,7 @@ public class BufferCache implements IBufferCacheInternal, ILifeCycleComponent {
     private Lock confiscateLock;
     private HashMap<CachedPage, StackTraceElement[]> confiscatedPagesOwner;
     //!DEBUG
+    private IIOReplicationManager ioReplicationManager;
     public List<ICachedPageInternal> cachedPages = new ArrayList<ICachedPageInternal>();
 
     private boolean closed;
@@ -95,7 +97,15 @@ public class BufferCache implements IBufferCacheInternal, ILifeCycleComponent {
             confiscatedPagesOwner = new HashMap<CachedPage, StackTraceElement[]>();
             confiscateLock = new ReentrantLock();
         }
+    }
 
+    //this constructor is used when replication is enabled to pass the IIOReplicationManager
+    public BufferCache(IIOManager ioManager, IPageReplacementStrategy pageReplacementStrategy,
+            IPageCleanerPolicy pageCleanerPolicy, IFileMapManager fileMapManager, int maxOpenFiles,
+            ThreadFactory threadFactory, IIOReplicationManager ioReplicationManager) {
+
+        this(ioManager, pageReplacementStrategy, pageCleanerPolicy, fileMapManager, maxOpenFiles, threadFactory);
+        this.ioReplicationManager = ioReplicationManager;
     }
 
     @Override
@@ -639,7 +649,6 @@ public class BufferCache implements IBufferCacheInternal, ILifeCycleComponent {
                     if (shutdownStart) {
                         break;
                     }
-//                                        System.out.println(dumpState());
                     pageCleanerPolicy.notifyCleanCycleFinish(this);
                 }
             } catch (Exception e) {
@@ -1142,6 +1151,19 @@ public class BufferCache implements IBufferCacheInternal, ILifeCycleComponent {
         CachedPage srcCast = (CachedPage) src;
         CachedPage dstCast = (CachedPage) dst;
         System.arraycopy(srcCast.buffer.array(), 0, dstCast.getBuffer().array(), 0, srcCast.buffer.capacity());
+    }
+
+    @Override
+    public boolean isReplicationEnabled() {
+        if (ioReplicationManager != null) {
+            return ioReplicationManager.isReplicationEnabled();
+        }
+        return false;
+    }
+
+    @Override
+    public IIOReplicationManager getIIOReplicationManager() {
+        return ioReplicationManager;
     }
 
 }
