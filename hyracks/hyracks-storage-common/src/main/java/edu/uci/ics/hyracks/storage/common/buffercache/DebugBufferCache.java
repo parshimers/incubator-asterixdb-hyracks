@@ -244,4 +244,9 @@ public class DebugBufferCache implements IBufferCache {
     public IIOReplicationManager getIIOReplicationManager() {
         return null;
     }
+
+    @Override
+    public void purgeHandle(int fileId) throws HyracksDataException {
+        bufferCache.purgeHandle(fileId);
+    }
 }

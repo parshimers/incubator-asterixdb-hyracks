@@ -23,6 +23,7 @@ import edu.uci.ics.hyracks.storage.am.common.api.ITreeIndexMetaDataFrameFactory;
 import edu.uci.ics.hyracks.storage.common.buffercache.BufferCache;
 import edu.uci.ics.hyracks.storage.common.buffercache.IBufferCache;
 import edu.uci.ics.hyracks.storage.common.buffercache.ICachedPage;
+import edu.uci.ics.hyracks.storage.common.buffercache.IFIFOPageQueue;
 import edu.uci.ics.hyracks.storage.common.file.BufferedFileHandle;
 
 public class LinkedMetaDataManager implements IMetaDataManager {
@@ -312,26 +313,14 @@ public class LinkedMetaDataManager implements IMetaDataManager {
         closeGivePageId();
     }
 
-    private void writeFilterPage() throws HyracksDataException {
+    private void writeFilterPage(IFIFOPageQueue queue) throws HyracksDataException {
         if(filterPage != null) {
             ITreeIndexMetaDataFrame metaFrame = metaDataFrameFactory.createFrame();
             metaFrame.setPage(confiscatedMetaNode);
             metaFrame.setValid(true);
             int finalFilterPage = getMaxPage(metaFrame);
-            ICachedPage finalFilter = bufferCache.pin(BufferedFileHandle.getDiskPageId(fileId, finalFilterPage), true);
-            try {
-                filterPage.acquireReadLatch();
-                finalFilter.acquireWriteLatch();
-                bufferCache.copyPage(filterPage, finalFilter);
-                setFilterPageId(finalFilterPage);
-            }
-            finally {
-                finalFilter.releaseWriteLatch(true);
-                bufferCache.flushDirtyPage(finalFilter);
-                bufferCache.unpin(finalFilter);
-                filterPage.releaseReadLatch();
-                bufferCache.returnPage(filterPage,false);
-            }
+            bufferCache.setPageDiskId(filterPage, BufferedFileHandle.getDiskPageId(fileId, finalFilterPage));
+            queue.put(filterPage);
         }
     }
 
@@ -339,26 +328,15 @@ public class LinkedMetaDataManager implements IMetaDataManager {
     public int closeGivePageId() throws HyracksDataException {
         int finalPageId = 0;
         if (appendOnly && fileId > 0) {
-            writeFilterPage();
+            IFIFOPageQueue queue = bufferCache.createFIFOQueue();
+            writeFilterPage(queue);
             ITreeIndexMetaDataFrame metaFrame = metaDataFrameFactory.createFrame();
             metaFrame.setPage(confiscatedMetaNode);
             metaFrame.setValid(true);
             int finalMetaPage = getMaxPage(metaFrame);
-            ICachedPage finalMeta = bufferCache.pin(BufferedFileHandle.getDiskPageId(fileId, finalMetaPage), true);
-            try {
-                confiscatedMetaNode.acquireReadLatch();
-                finalMeta.acquireWriteLatch();
-                bufferCache.copyPage(confiscatedMetaNode, finalMeta);
-                finalPageId = finalMetaPage;
-            } finally {
-                finalMeta.releaseWriteLatch(true);
-                bufferCache.flushDirtyPage(finalMeta);
-                bufferCache.unpin(finalMeta);
-                confiscatedMetaNode.releaseReadLatch();
-                bufferCache.returnPage(confiscatedMetaNode, false);
-
-            }
-
+            bufferCache.setPageDiskId(confiscatedMetaNode, BufferedFileHandle.getDiskPageId(fileId,finalMetaPage));
+            queue.put(confiscatedMetaNode);
+            bufferCache.finishQueue();
         }
         fileId = -1;
         return finalPageId;
@@ -381,6 +359,10 @@ public class LinkedMetaDataManager implements IMetaDataManager {
         ITreeIndexMetaDataFrame metaFrame = metaDataFrameFactory.createFrame();
 
         int pages = bufferCache.getNumPagesOfFile(fileId);
+        //if there are no pages in the file yet, we're just initializing
+        if(pages == 0){
+            return 0;
+        }
         //look at the front (modify in-place index)
         int page = 0;
         ICachedPage metaNode = bufferCache.pin(BufferedFileHandle.getDiskPageId(fileId, page), false);

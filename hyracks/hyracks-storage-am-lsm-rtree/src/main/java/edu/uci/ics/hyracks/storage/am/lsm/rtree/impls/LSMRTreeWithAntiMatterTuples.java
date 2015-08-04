@@ -120,7 +120,7 @@ public class LSMRTreeWithAntiMatterTuples extends AbstractLSMRTree {
         List<ILSMComponent> immutableComponents = diskComponents;
         for (ILSMComponent c : immutableComponents) {
             RTree rtree = ((LSMRTreeDiskComponent) c).getRTree();
-            rtree.deactivate();
+            rtree.deactivateCloseHandle();
         }
         isActivated = false;
     }

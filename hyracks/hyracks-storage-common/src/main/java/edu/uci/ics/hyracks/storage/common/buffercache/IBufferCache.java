@@ -74,4 +74,6 @@ public interface IBufferCache {
 
     public IIOReplicationManager getIIOReplicationManager();
 
+    void purgeHandle(int fileId) throws HyracksDataException;
+
 }

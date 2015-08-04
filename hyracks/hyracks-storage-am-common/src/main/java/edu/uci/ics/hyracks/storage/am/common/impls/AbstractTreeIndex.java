@@ -198,6 +198,12 @@ public abstract class AbstractTreeIndex implements ITreeIndex {
         isActive = false;
     }
 
+    public synchronized void deactivateCloseHandle() throws HyracksDataException {
+        deactivate();
+        bufferCache.purgeHandle(fileId);
+
+    }
+
     public synchronized void destroy() throws HyracksDataException {
         if (isActive) {
             throw new HyracksDataException("Failed to destroy the index since it is activated.");

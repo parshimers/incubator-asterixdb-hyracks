@@ -506,7 +506,7 @@ public class BufferCache implements IBufferCacheInternal, ILifeCycleComponent {
     private void write(CachedPage cPage) throws HyracksDataException {
         BufferedFileHandle fInfo = getFileInfo(cPage);
         if (fInfo.fileHasBeenDeleted()) {
-            return;
+            throw new HyracksDataException("Attempted to write back a dirty page to a deleted file!");
         }
         cPage.buffer.position(0);
         cPage.buffer.limit(pageSize);
@@ -516,36 +516,6 @@ public class BufferCache implements IBufferCacheInternal, ILifeCycleComponent {
 
     @Override
     public void unpin(ICachedPage page) throws HyracksDataException {
-        // if (((CachedPage) page).dirty.get()
-        // && !DEBUG_writtenPages.add(getFileInfo(((CachedPage)
-        // page)).getFileId() * 10000
-        // + ((CachedPage) page).dpid)) {
-        // boolean ignore = false;
-        // switch (((CachedPage) page).cpid) {
-        // case 0: // metadata page
-        // case 1: // root page of tree
-        // }
-        // StackTraceElement[] stackTraceElements =
-        // Thread.currentThread().getStackTrace();
-        // for (StackTraceElement e : stackTraceElements) {
-        // if (e.getMethodName().contains("markAsValid")
-        // || e.getClassName().contains("BloomFilter")
-        // || // pin the whole thing?
-        // e.getMethodName().contains("getFreePage" /*metadata*/)
-        // || e.getMethodName().contains("FilterInfo")
-        // || e.getMethodName().contains("isEmptyTree" /* working on root page
-        // */)
-        // || (e.getClassName().contains("BulkLoader") &&
-        // e.getMethodName().contains("end") /* overwriting root node at end of
-        // bulkload */)) {
-        // ignore = true;
-        // break;
-        // }
-        // }
-        // if (!ignore) {
-        // System.out.println("Attempted to write page already flushed to disk");
-        // }
-        // }
         if (closed) {
             throw new HyracksDataException("unpin called on a closed cache");
         }
@@ -1164,6 +1134,20 @@ public class BufferCache implements IBufferCacheInternal, ILifeCycleComponent {
     @Override
     public IIOReplicationManager getIIOReplicationManager() {
         return ioReplicationManager;
+    }
+
+    @Override
+    /**
+     * _ONLY_ call this if you absolutely, positively know this file has no dirty pages in the cache!
+     */
+    public void purgeHandle(int fileId) throws HyracksDataException{
+        synchronized(fileInfoMap){
+                BufferedFileHandle fh = fileInfoMap.get(fileId);
+                if(fh != null){
+                    ioManager.close(fh.getFileHandle());
+                    fileInfoMap.remove(fileId);
+                }
+        }
     }
 
 }

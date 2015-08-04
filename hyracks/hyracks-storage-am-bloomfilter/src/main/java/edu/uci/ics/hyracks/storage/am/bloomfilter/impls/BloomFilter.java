@@ -70,7 +70,7 @@ public class BloomFilter {
 
     public int getNumPages() throws HyracksDataException {
         if (!isActivated) {
-            throw new HyracksDataException("The bloom filter is not activated.");
+            activate();
         }
         return numPages;
     }

@@ -216,7 +216,7 @@ public class LSMBTree extends AbstractLSMIndex implements ITreeIndex {
             LSMBTreeDiskComponent component = (LSMBTreeDiskComponent) c;
             BTree btree = component.getBTree();
             BloomFilter bloomFilter = component.getBloomFilter();
-            btree.deactivate();
+            btree.deactivateCloseHandle();
             bloomFilter.deactivate();
         }
         for (ILSMComponent c : memoryComponents) {
@@ -592,10 +592,6 @@ public class LSMBTree extends AbstractLSMIndex implements ITreeIndex {
         // Create new BTree instance.
         LSMBTreeDiskComponent component = (LSMBTreeDiskComponent) factory
                 .createLSMComponentInstance(new LSMComponentFileReferences(btreeFileRef, null, bloomFilterFileRef));
-        if (createComponent) {
-            //component.getBTree().create(true);
-            component.getBloomFilter().create();
-        }
         // BTree will be closed during cleanup of merge().
         if (!createComponent) {
             component.getBTree().activate();

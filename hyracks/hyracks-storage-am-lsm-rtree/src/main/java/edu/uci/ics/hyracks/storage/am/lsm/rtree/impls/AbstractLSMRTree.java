@@ -303,13 +303,6 @@ public abstract class AbstractLSMRTree extends AbstractLSMIndex implements ITree
         LSMRTreeDiskComponent component = (LSMRTreeDiskComponent) factory
                 .createLSMComponentInstance(new LSMComponentFileReferences(insertFileRef, deleteFileRef,
                         bloomFilterFileRef));
-        if (createComponent) {
-            //component.getRTree().create(false);
-            if (component.getBTree() != null) {
-                //component.getBTree().create(false);
-                component.getBloomFilter().create();
-            }
-        }
         // Tree will be closed during cleanup of merge().
         if (!createComponent) {
             component.getRTree().activate();
