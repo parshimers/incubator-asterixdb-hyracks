@@ -14,14 +14,17 @@
  */
 package edu.uci.ics.hyracks.storage.common.buffercache;
 
+import edu.uci.ics.hyracks.api.exceptions.HyracksDataException;
+import edu.uci.ics.hyracks.api.io.FileReference;
+import edu.uci.ics.hyracks.api.io.IFileHandle;
+import edu.uci.ics.hyracks.api.io.IIOManager;
+import edu.uci.ics.hyracks.api.lifecycle.ILifeCycleComponent;
+import edu.uci.ics.hyracks.storage.common.file.BufferedFileHandle;
+import edu.uci.ics.hyracks.storage.common.file.IFileMapManager;
+
 import java.io.IOException;
 import java.io.OutputStream;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.HashSet;
+import java.util.*;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
@@ -29,15 +32,6 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-
-import edu.uci.ics.hyracks.api.exceptions.HyracksDataException;
-import edu.uci.ics.hyracks.api.io.FileReference;
-import edu.uci.ics.hyracks.api.io.IFileHandle;
-import edu.uci.ics.hyracks.api.io.IIOManager;
-import edu.uci.ics.hyracks.api.lifecycle.ILifeCycleComponent;
-import edu.uci.ics.hyracks.control.nc.io.HDFSFileHandle;
-import edu.uci.ics.hyracks.storage.common.file.BufferedFileHandle;
-import edu.uci.ics.hyracks.storage.common.file.IFileMapManager;
 
 public class BufferCache implements IBufferCacheInternal, ILifeCycleComponent {
     private static final Logger LOGGER = Logger.getLogger(BufferCache.class.getName());
@@ -476,7 +470,7 @@ public class BufferCache implements IBufferCacheInternal, ILifeCycleComponent {
     private void read(CachedPage cPage) throws HyracksDataException {
         BufferedFileHandle fInfo = getFileInfo(cPage);
         cPage.buffer.clear();
-        if(fInfo.getFileHandle() instanceof HDFSFileHandle ) { cPage.readOnly = true;}
+        if(fInfo.handleType == BufferedFileHandle.HandleType.DFS) { cPage.readOnly = true;}
         else cPage.readOnly = false;
         int read = ioManager.syncRead(fInfo.getFileHandle(), (long) BufferedFileHandle.getPageId(cPage.dpid) * pageSize,
                    cPage.buffer);
@@ -754,7 +748,7 @@ public class BufferCache implements IBufferCacheInternal, ILifeCycleComponent {
                 FileReference fileRef = fileMapManager.lookupFileName(fileId);
                 IFileHandle fh = ioManager.open(fileRef, IIOManager.FileReadWriteMode.READ_WRITE,
                         IIOManager.FileSyncMode.METADATA_ASYNC_DATA_ASYNC);
-                fInfo = new BufferedFileHandle(fileId, fh);
+                fInfo = new BufferedFileHandle(fileId, fh, fileRef.type != FileReference.FileReferenceType.LOCAL);
                 fileInfoMap.put(fileId, fInfo);
             }
             //refresh the handle

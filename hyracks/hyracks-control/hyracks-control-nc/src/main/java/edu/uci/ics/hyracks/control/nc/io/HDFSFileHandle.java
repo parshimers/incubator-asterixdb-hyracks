@@ -39,14 +39,13 @@ public class HDFSFileHandle implements IFileHandle, IFileHandleInternal {
     static {
         Configuration conf = new Configuration();
         conf.set("dfs.datanode.socket.write.timeout","0");
-        conf.set("dfs.replication", "1");
         conf.set("dfs.namenode.replication.considerLoad","false");
         conf.addResource(new Path("config/core-site.xml"));
         conf.addResource(new Path("config/hdfs-site.xml"));
         conf.addResource(new Path("config/mapred-site.xml"));
         System.out.println("SHORTCIRCUIT " + conf.get("dfs.client.read.shortcircuit"));
         try {
-            fs = FileSystem.get(new URI("hdfs://127.0.1.1:9000"), conf);
+            fs = FileSystem.get(new URI("hdfs://rainbow-red.ics.uci.edu:9000"), conf);
         } catch (IOException | URISyntaxException e) {
             // TODO Auto-generated catch block
             e.printStackTrace();

@@ -17,6 +17,7 @@ package edu.uci.ics.hyracks.storage.am.common.dataflow;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.logging.Logger;
 
 import edu.uci.ics.hyracks.api.context.IHyracksTaskContext;
 import edu.uci.ics.hyracks.api.exceptions.HyracksDataException;
@@ -41,6 +42,7 @@ public abstract class IndexDataflowHelper implements IIndexDataflowHelper {
     protected final int partition;
     protected final int ioDeviceId;
     protected final boolean durable;
+    private static final Logger LOGGER = Logger.getLogger(IndexDataflowHelper.class.getName());
 
     protected IIndex index;
 
@@ -148,6 +150,7 @@ public abstract class IndexDataflowHelper implements IIndexDataflowHelper {
     @Override
     public long getResourceID() throws HyracksDataException {
         LocalResource localResource = localResourceRepository.getResourceByName(file.getPath());
+        LOGGER.info("Requesting local resource" + file.getPath());
         if (localResource == null) {
             return -1;
         } else {

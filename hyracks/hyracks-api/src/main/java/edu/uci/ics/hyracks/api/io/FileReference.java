@@ -24,7 +24,7 @@ public final class FileReference implements Serializable {
     private static final long serialVersionUID = 1L;
 
     private final String path;
-    private final FileReferenceType type;
+    public final FileReferenceType type;
 
     private File file;
 

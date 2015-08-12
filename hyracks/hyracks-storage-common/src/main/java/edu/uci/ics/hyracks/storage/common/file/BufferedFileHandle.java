@@ -22,11 +22,17 @@ public class BufferedFileHandle {
     private final int fileId;
     private IFileHandle handle;
     private final AtomicInteger refCount;
+    public enum HandleType {
+        DFS,
+        LOCAL
+    }
+    public HandleType handleType;
 
-    public BufferedFileHandle(int fileId, IFileHandle handle) {
+    public BufferedFileHandle(int fileId, IFileHandle handle, boolean distrib) {
         this.fileId = fileId;
         this.handle = handle;
         refCount = new AtomicInteger();
+        handleType = distrib ? HandleType.DFS : HandleType.LOCAL;
     }
 
     public int getFileId() {
