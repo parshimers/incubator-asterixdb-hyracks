@@ -991,7 +991,6 @@ public class BTree extends AbstractTreeIndex {
                     leafFrontier.pageId = freePageManager.getFreePage(metaFrame);
 
                     ((IBTreeLeafFrame) leafFrame).setNextLeaf(leafFrontier.pageId);
-                    leafFrontier.page.releaseWriteLatch(false);
                     queue.put(leafFrontier.page);
                     for (ICachedPage c : pagesToWrite) {
                         queue.put(c);
@@ -1000,7 +999,6 @@ public class BTree extends AbstractTreeIndex {
                     splitKey.setRightPage(leafFrontier.pageId);
                     leafFrontier.page = bufferCache.confiscatePage(BufferedFileHandle.getDiskPageId(fileId,
                             leafFrontier.pageId));
-                    leafFrontier.page.acquireWriteLatch();
                     leafFrame.setPage(leafFrontier.page);
                     leafFrame.initBuffer((byte) 0);
                 } else {
@@ -1062,7 +1060,6 @@ public class BTree extends AbstractTreeIndex {
                 splitKey.getTuple().resetByTupleOffset(splitKey.getBuffer(), 0);
 
                 ((IBTreeInteriorFrame) interiorFrame).deleteGreatest();
-                frontier.page.releaseWriteLatch(false);
                 int finalPageId = freePageManager.getFreePage(metaFrame);
                 AsyncFIFOPageQueueManager.setDpid(frontier.page, BufferedFileHandle.getDiskPageId(fileId, finalPageId));
                 pagesToWrite.add(frontier.page);
@@ -1070,7 +1067,6 @@ public class BTree extends AbstractTreeIndex {
 
                 propagateBulk(level + 1, pagesToWrite);
                 frontier.page = bufferCache.confiscatePage(BufferCache.INVALID_DPID);
-                frontier.page.acquireWriteLatch();
                 interiorFrame.setPage(frontier.page);
                 interiorFrame.initBuffer((byte) level);
             }
@@ -1089,7 +1085,6 @@ public class BTree extends AbstractTreeIndex {
             if (level < 1) {
                 ICachedPage lastLeaf = nodeFrontiers.get(level).page;
                 int lastLeafPage = nodeFrontiers.get(level).pageId;
-                lastLeaf.releaseWriteLatch(false);
                 AsyncFIFOPageQueueManager.setDpid(lastLeaf, BufferedFileHandle.getDiskPageId(fileId, lastLeafPage));
                 queue.put(lastLeaf);
                 nodeFrontiers.get(level).page = null;
@@ -1103,7 +1098,6 @@ public class BTree extends AbstractTreeIndex {
                 ((IBTreeInteriorFrame) interiorFrame).setRightmostChildPageId(rightPage);
             }
             //otherwise...
-            frontier.page.releaseWriteLatch(false);
             int finalPageId = freePageManager.getFreePage(metaFrame);
             AsyncFIFOPageQueueManager.setDpid(frontier.page, BufferedFileHandle.getDiskPageId(fileId, finalPageId));
             queue.put(frontier.page);

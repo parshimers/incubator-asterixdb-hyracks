@@ -995,13 +995,7 @@ public class BufferCache implements IBufferCacheInternal, ILifeCycleComponent {
                         }
                         if (found) {
                             returnPage = victim;
-                            returnPage.acquireWriteLatch();
-                            try {
-                                ((CachedPage) returnPage).dpid = dpid;
-                            }
-                            finally{
-                                returnPage.releaseWriteLatch(false);
-                            }
+                            ((CachedPage) returnPage).dpid = dpid;
                         } //otherwise, someone took the same victim before we acquired the lock. try again!
                     } finally {
                         bucket.bucketLock.unlock();

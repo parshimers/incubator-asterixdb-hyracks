@@ -123,7 +123,6 @@ public abstract class AbstractTreeIndex implements ITreeIndex {
         ITreeIndexFrame frame = leafFrameFactory.createFrame();
         ITreeIndexMetaDataFrame metaFrame = freePageManager.getMetaDataFrameFactory().createFrame();
         freePageManager.init(metaFrame, rootPage);
-
         ICachedPage rootNode = bufferCache.pin(BufferedFileHandle.getDiskPageId(fileId, rootPage), true);
         rootNode.acquireWriteLatch();
         try {
@@ -344,7 +343,6 @@ public abstract class AbstractTreeIndex implements ITreeIndex {
             leafFrontier.pageId = freePageManager.getFreePage(metaFrame);
             leafFrontier.page = bufferCache.confiscatePage(BufferedFileHandle
                     .getDiskPageId(fileId, leafFrontier.pageId));
-            leafFrontier.page.acquireWriteLatch();
 
             interiorFrame.setPage(leafFrontier.page);
             interiorFrame.initBuffer((byte) 0);
@@ -365,7 +363,6 @@ public abstract class AbstractTreeIndex implements ITreeIndex {
             for (NodeFrontier nodeFrontier : nodeFrontiers) {
                 ICachedPage frontierPage = nodeFrontier.page;
                 if (bufferCache.isVirtual(frontierPage)) {
-                    frontierPage.releaseWriteLatch(false);
                     bufferCache.returnPage(frontierPage);
                     continue;
                 }
@@ -414,7 +411,6 @@ public abstract class AbstractTreeIndex implements ITreeIndex {
                 if (!releasedLatches) {
                     for (int i = 0; i < nodeFrontiers.size(); i++) {
                         try {
-                            nodeFrontiers.get(i).page.releaseWriteLatch(false);
                         } catch (IllegalMonitorStateException e) {
                             //ignore illegal monitor state exception
                         }
@@ -427,7 +423,6 @@ public abstract class AbstractTreeIndex implements ITreeIndex {
             NodeFrontier frontier = new NodeFrontier(tupleWriter.createTupleReference());
             frontier.page = bufferCache.confiscatePage(BufferCache.INVALID_DPID);
             frontier.pageId = -1;
-            frontier.page.acquireWriteLatch();
             frontier.lastTuple.setFieldCount(cmp.getKeyFieldCount());
             interiorFrame.setPage(frontier.page);
             interiorFrame.initBuffer((byte) nodeFrontiers.size());
