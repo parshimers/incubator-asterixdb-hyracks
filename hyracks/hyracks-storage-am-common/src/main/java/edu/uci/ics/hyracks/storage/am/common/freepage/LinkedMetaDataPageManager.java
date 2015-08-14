@@ -40,7 +40,7 @@ public class LinkedMetaDataPageManager implements IMetaDataPageManager {
     ICachedPage confiscatedMetaNode;
     ICachedPage filterPage;
     private static Logger LOGGER = Logger
-            .getLogger("edu.uci.ics.hyracks.storage.am.common.freepage.LinkedMetaDataPageManager");
+            .getLogger(LinkedMetaDataPageManager.class.getName());
 
     public LinkedMetaDataPageManager(IBufferCache bufferCache, ITreeIndexMetaDataFrameFactory metaDataFrameFactory) {
         this.bufferCache = bufferCache;

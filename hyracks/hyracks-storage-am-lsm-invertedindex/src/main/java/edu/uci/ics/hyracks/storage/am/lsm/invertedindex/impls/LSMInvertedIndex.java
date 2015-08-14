@@ -816,8 +816,6 @@ public class LSMInvertedIndex extends AbstractLSMIndex implements IInvertedIndex
                 .createLSMComponentInstance(new LSMComponentFileReferences(dictBTreeFileRef, btreeFileRef,
                         bloomFilterFileRef));
         if (create) {
-            //component.getInvIndex().create();
-            //component.getDeletedKeysBTree().create();
             component.getBloomFilter().create();
             component.getBloomFilter().activate();
         } else {
@@ -891,14 +889,6 @@ public class LSMInvertedIndex extends AbstractLSMIndex implements IInvertedIndex
         return tokenizerFactory;
     }
 
-    protected void forceFlushInvListsFileDirtyPages(OnDiskInvertedIndex invIndex) throws HyracksDataException {
-        int fileId = invIndex.getInvListsFileId();
-        IBufferCache bufferCache = invIndex.getBufferCache();
-        int startPageId = 0;
-        int maxPageId = invIndex.getInvListsMaxPageId();
-
-    }
-
     @Override
     public void markAsValid(ILSMComponent lsmComponent) throws HyracksDataException {
         LSMInvertedIndexDiskComponent invIndexComponent = (LSMInvertedIndexDiskComponent) lsmComponent;
@@ -912,7 +902,6 @@ public class LSMInvertedIndex extends AbstractLSMIndex implements IInvertedIndex
 
         // Flush inverted index second.
         forceFlushDirtyPages(invIndex.getBTree());
-        forceFlushInvListsFileDirtyPages(invIndex);
         markAsValidInternal(invIndex.getBTree());
 
         // Flush deleted keys BTree.

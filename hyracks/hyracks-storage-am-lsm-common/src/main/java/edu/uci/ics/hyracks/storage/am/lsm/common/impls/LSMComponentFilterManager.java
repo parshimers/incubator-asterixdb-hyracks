@@ -73,7 +73,7 @@ public class LSMComponentFilterManager implements ILSMComponentFilterManager {
                 bufferCache.unpin(metadataPage);
             }
         }
-        else if (componentFilterPageId < -1){//NO_FILTER_APPEND_ONLY){//append-only mode
+        else if (componentFilterPageId <= LinkedMetaDataPageManager.NO_FILTER_APPEND_ONLY){
             appendOnly = true;
             filterPage = treeMetaManager.getFilterPage();
             if(filterPage == null){

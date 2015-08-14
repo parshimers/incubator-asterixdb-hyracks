@@ -45,8 +45,7 @@ public class CachedPage implements ICachedPageInternal {
         replacementStrategyObject = pageReplacementStrategy.createPerPageStrategyObject(cpid);
         dpid = -1;
         valid = false;
-        virtual = new AtomicBoolean();
-        virtual.set(false);
+        virtual = new AtomicBoolean(false);
     }
 
     public void reset(long dpid) {
