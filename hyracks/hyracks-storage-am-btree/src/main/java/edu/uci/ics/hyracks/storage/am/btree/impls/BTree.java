@@ -37,7 +37,7 @@ import edu.uci.ics.hyracks.storage.am.btree.exceptions.BTreeNotUpdateableExcepti
 import edu.uci.ics.hyracks.storage.am.btree.frames.BTreeNSMInteriorFrame;
 import edu.uci.ics.hyracks.storage.am.btree.impls.BTreeOpContext.PageValidationInfo;
 import edu.uci.ics.hyracks.storage.am.common.api.*;
-import edu.uci.ics.hyracks.storage.am.common.api.IMetaDataManager;
+import edu.uci.ics.hyracks.storage.am.common.api.IMetaDataPageManager;
 import edu.uci.ics.hyracks.storage.am.common.exceptions.TreeIndexDuplicateKeyException;
 import edu.uci.ics.hyracks.storage.am.common.exceptions.TreeIndexNonExistentKeyException;
 import edu.uci.ics.hyracks.storage.am.common.frames.FrameOpSpaceStatus;
@@ -48,6 +48,7 @@ import edu.uci.ics.hyracks.storage.am.common.impls.TreeIndexDiskOrderScanCursor;
 import edu.uci.ics.hyracks.storage.am.common.ophelpers.IndexOperation;
 import edu.uci.ics.hyracks.storage.am.common.ophelpers.MultiComparator;
 import edu.uci.ics.hyracks.storage.common.buffercache.AsyncFIFOPageQueueManager;
+import edu.uci.ics.hyracks.storage.common.buffercache.BufferCache;
 import edu.uci.ics.hyracks.storage.common.buffercache.IBufferCache;
 import edu.uci.ics.hyracks.storage.common.buffercache.ICachedPage;
 import edu.uci.ics.hyracks.storage.common.file.BufferedFileHandle;
@@ -65,7 +66,7 @@ public class BTree extends AbstractTreeIndex {
     private final ReadWriteLock treeLatch;
     private final int maxTupleSize;
 
-    public BTree(IBufferCache bufferCache, IFileMapProvider fileMapProvider, IMetaDataManager freePageManager,
+    public BTree(IBufferCache bufferCache, IFileMapProvider fileMapProvider, IMetaDataPageManager freePageManager,
             ITreeIndexFrameFactory interiorFrameFactory, ITreeIndexFrameFactory leafFrameFactory,
             IBinaryComparatorFactory[] cmpFactories, int fieldCount, FileReference file) {
         super(bufferCache, fileMapProvider, freePageManager, interiorFrameFactory, leafFrameFactory, cmpFactories,
@@ -1068,7 +1069,7 @@ public class BTree extends AbstractTreeIndex {
                 splitKey.setLeftPage(finalPageId);
 
                 propagateBulk(level + 1, pagesToWrite);
-                frontier.page = bufferCache.confiscatePage(-1);
+                frontier.page = bufferCache.confiscatePage(BufferCache.INVALID_DPID);
                 frontier.page.acquireWriteLatch();
                 interiorFrame.setPage(frontier.page);
                 interiorFrame.initBuffer((byte) level);

@@ -29,7 +29,7 @@ import edu.uci.ics.hyracks.storage.am.bloomfilter.impls.BloomFilterSpecification
 import edu.uci.ics.hyracks.storage.am.btree.impls.BTree;
 import edu.uci.ics.hyracks.storage.am.btree.impls.BTree.BTreeBulkLoader;
 import edu.uci.ics.hyracks.storage.am.common.api.*;
-import edu.uci.ics.hyracks.storage.am.common.api.IMetaDataManager;
+import edu.uci.ics.hyracks.storage.am.common.api.IMetaDataPageManager;
 import edu.uci.ics.hyracks.storage.am.common.impls.NoOpOperationCallback;
 import edu.uci.ics.hyracks.storage.am.common.ophelpers.IndexOperation;
 import edu.uci.ics.hyracks.storage.am.lsm.btree.tuples.LSMBTreeRefrencingTupleWriterFactory;
@@ -637,7 +637,7 @@ public class ExternalBTree extends LSMBTree implements ITwoPCIndex {
     }
 
     @Override
-    public IMetaDataManager getMetaManager() {
+    public IMetaDataPageManager getMetaManager() {
         return null;
     }
 

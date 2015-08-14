@@ -91,7 +91,7 @@ public class BufferCache implements IBufferCacheInternal, ILifeCycleComponent {
         executor.execute(cleanerThread);
         closed = false;
 
-        fifoWriter = new AsyncFIFOPageQueueManager();
+        fifoWriter = new AsyncFIFOPageQueueManager(this);
         if( DEBUG ) {
             confiscatedPages = new ArrayList<CachedPage>();
             confiscatedPagesOwner = new HashMap<CachedPage, StackTraceElement[]>();
@@ -633,6 +633,7 @@ public class BufferCache implements IBufferCacheInternal, ILifeCycleComponent {
     @Override
     public void close() {
         closed = true;
+        fifoWriter.destroyQueue();
         synchronized (cleanerThread) {
             cleanerThread.shutdownStart = true;
             cleanerThread.notifyAll();
@@ -834,12 +835,8 @@ public class BufferCache implements IBufferCacheInternal, ILifeCycleComponent {
         if (LOGGER.isLoggable(Level.INFO)) {
             LOGGER.info("Deleting file: " + fileId + " in cache: " + this);
         }
-        if (flushDirtyPages) {
-            synchronized (fileInfoMap) {
-                sweepAndFlush(fileId, flushDirtyPages);
-            }
-        }
         synchronized (fileInfoMap) {
+            sweepAndFlush(fileId, flushDirtyPages);
             BufferedFileHandle fInfo = null;
             try {
                 fInfo = fileInfoMap.get(fileId);
@@ -1070,8 +1067,8 @@ public class BufferCache implements IBufferCacheInternal, ILifeCycleComponent {
                 bucket.cachedPage = cPage;
                 cPage.pinCount.decrementAndGet();
                 if(DEBUG){
-                    assert cPage.pinCount.decrementAndGet() ==0 ;
-                    assert cPage.latch.getReadLockCount() == 1;
+                    assert cPage.pinCount.get() == 0 ;
+                    assert cPage.latch.getReadLockCount() == 0;
                     assert cPage.latch.getWriteHoldCount() == 0;
                     confiscatedPages.remove(cPage);
                     confiscatedPagesOwner.remove(cPage);
@@ -1108,7 +1105,7 @@ public class BufferCache implements IBufferCacheInternal, ILifeCycleComponent {
 
     @Override
     public IFIFOPageQueue createFIFOQueue() {
-        return fifoWriter.createQueue(this, FIFOLocalWriter.instance());
+        return fifoWriter.createQueue(FIFOLocalWriter.instance());
     }
 
     @Override

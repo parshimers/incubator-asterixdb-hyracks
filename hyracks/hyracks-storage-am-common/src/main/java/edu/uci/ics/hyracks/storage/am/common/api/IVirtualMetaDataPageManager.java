@@ -14,7 +14,7 @@
  */
 package edu.uci.ics.hyracks.storage.am.common.api;
 
-public interface IVirtualMetaDataManager extends IMetaDataManager {
+public interface IVirtualMetaDataPageManager extends IMetaDataPageManager {
     public int getCapacity();
 
     public void reset();

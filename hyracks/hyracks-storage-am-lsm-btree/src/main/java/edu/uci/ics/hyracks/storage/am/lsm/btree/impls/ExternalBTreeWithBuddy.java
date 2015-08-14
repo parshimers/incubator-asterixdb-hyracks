@@ -470,6 +470,8 @@ public class ExternalBTreeWithBuddy extends AbstractLSMIndex implements ITreeInd
                 break;
             case FULL_MERGE:
                 operationalComponents.addAll(immutableComponents);
+            case REPLICATE:
+                operationalComponents.addAll(ctx.getComponentsToBeReplicated());
                 break;
             case FLUSH:
                 // Do nothing. this is left here even though the index never
@@ -573,7 +575,7 @@ public class ExternalBTreeWithBuddy extends AbstractLSMIndex implements ITreeInd
     }
 
     @Override
-    public IMetaDataManager getMetaManager() {
+    public IMetaDataPageManager getMetaManager() {
         // This method should never be called for disk only indexes
         return null;
     }

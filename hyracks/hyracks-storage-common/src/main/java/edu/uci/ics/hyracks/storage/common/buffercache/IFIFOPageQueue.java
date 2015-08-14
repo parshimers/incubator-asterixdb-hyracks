@@ -15,6 +15,8 @@
 
 package edu.uci.ics.hyracks.storage.common.buffercache;
 
+import edu.uci.ics.hyracks.api.exceptions.HyracksDataException;
+
 public interface IFIFOPageQueue {
-    public void put(ICachedPage page);
+    public void put(ICachedPage page) throws HyracksDataException;
 }

@@ -36,7 +36,7 @@ import edu.uci.ics.hyracks.storage.am.btree.OrderedIndexTestContext;
 import edu.uci.ics.hyracks.storage.am.common.CheckTuple;
 import edu.uci.ics.hyracks.storage.am.common.api.IIndex;
 import edu.uci.ics.hyracks.storage.am.common.api.IndexException;
-import edu.uci.ics.hyracks.storage.am.lsm.common.freepage.VirtualMetaDataManager;
+import edu.uci.ics.hyracks.storage.am.lsm.common.freepage.VirtualMetaDataPageManager;
 import edu.uci.ics.hyracks.storage.am.lsm.invertedindex.api.IInvertedIndex;
 import edu.uci.ics.hyracks.storage.am.lsm.invertedindex.common.LSMInvertedIndexTestHarness;
 import edu.uci.ics.hyracks.storage.am.lsm.invertedindex.exceptions.InvertedIndexException;
@@ -125,14 +125,14 @@ public class LSMInvertedIndexTestContext extends OrderedIndexTestContext {
         switch (invIndexType) {
             case INMEMORY: {
                 invIndex = InvertedIndexUtils.createInMemoryBTreeInvertedindex(harness.getVirtualBufferCaches().get(0),
-                        new VirtualMetaDataManager(harness.getVirtualBufferCaches().get(0).getNumPages()),
+                        new VirtualMetaDataPageManager(harness.getVirtualBufferCaches().get(0).getNumPages()),
                         invListTypeTraits, invListCmpFactories, tokenTypeTraits, tokenCmpFactories, tokenizerFactory,
                         new FileReference(new File(harness.getOnDiskDir())));
                 break;
             }
             case PARTITIONED_INMEMORY: {
                 invIndex = InvertedIndexUtils.createPartitionedInMemoryBTreeInvertedindex(harness
-                        .getVirtualBufferCaches().get(0), new VirtualMetaDataManager(harness.getVirtualBufferCaches()
+                        .getVirtualBufferCaches().get(0), new VirtualMetaDataPageManager(harness.getVirtualBufferCaches()
                         .get(0).getNumPages()), invListTypeTraits, invListCmpFactories, tokenTypeTraits,
                         tokenCmpFactories, tokenizerFactory, new FileReference(new File(harness.getOnDiskDir())));
                 break;

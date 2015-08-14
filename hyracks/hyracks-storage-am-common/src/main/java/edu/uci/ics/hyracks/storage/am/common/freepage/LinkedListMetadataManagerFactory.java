@@ -16,23 +16,23 @@
 package edu.uci.ics.hyracks.storage.am.common.freepage;
 
 import edu.uci.ics.hyracks.api.exceptions.HyracksDataException;
-import edu.uci.ics.hyracks.storage.am.common.api.IMetaDataManager;
-import edu.uci.ics.hyracks.storage.am.common.api.IFreePageManagerFactory;
+import edu.uci.ics.hyracks.storage.am.common.api.IMetaDataPageManager;
+import edu.uci.ics.hyracks.storage.am.common.api.IMetadataManagerFactory;
 import edu.uci.ics.hyracks.storage.am.common.api.ITreeIndexMetaDataFrameFactory;
 import edu.uci.ics.hyracks.storage.common.buffercache.IBufferCache;
 
-public class LinkedListFreePageManagerFactory implements IFreePageManagerFactory {
+public class LinkedListMetadataManagerFactory implements IMetadataManagerFactory {
 
     private final ITreeIndexMetaDataFrameFactory metaDataFrameFactory;
     private final IBufferCache bufferCache;
 
-    public LinkedListFreePageManagerFactory(IBufferCache bufferCache,
-            ITreeIndexMetaDataFrameFactory metaDataFrameFactory) {
+    public LinkedListMetadataManagerFactory(IBufferCache bufferCache,
+                                            ITreeIndexMetaDataFrameFactory metaDataFrameFactory) {
         this.metaDataFrameFactory = metaDataFrameFactory;
         this.bufferCache = bufferCache;
     }
 
-    public IMetaDataManager createFreePageManager() throws HyracksDataException {
-        return new LinkedMetaDataManager(bufferCache, metaDataFrameFactory);
+    public IMetaDataPageManager createFreePageManager() throws HyracksDataException {
+        return new LinkedMetaDataPageManager(bufferCache, metaDataFrameFactory);
     }
 }

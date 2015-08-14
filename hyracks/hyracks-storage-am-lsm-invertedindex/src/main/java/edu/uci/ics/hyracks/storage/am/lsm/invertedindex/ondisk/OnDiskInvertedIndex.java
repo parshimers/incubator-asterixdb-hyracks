@@ -335,17 +335,14 @@ public class OnDiskInvertedIndex implements IInvertedIndex {
                     checkIfEmptyIndex, appendOnly);
             currentPageId = startPageId;
             currentPage = bufferCache.confiscatePage(BufferedFileHandle.getDiskPageId(fileId, currentPageId));
-            currentPage.acquireWriteLatch();
             invListBuilder.setTargetBuffer(currentPage.getBuffer().array(), 0);
             queue = bufferCache.createFIFOQueue();
         }
 
         public void pinNextPage() throws HyracksDataException {
-            currentPage.releaseWriteLatch(false);
             queue.put(currentPage);
             currentPageId++;
             currentPage = bufferCache.confiscatePage(BufferedFileHandle.getDiskPageId(fileId, currentPageId));
-            currentPage.acquireWriteLatch();
         }
 
         private void createAndInsertBTreeTuple() throws IndexException, HyracksDataException {
@@ -448,7 +445,6 @@ public class OnDiskInvertedIndex implements IInvertedIndex {
             btreeBulkloader.end();
 
             if (currentPage != null) {
-                currentPage.releaseWriteLatch(false);
                 queue.put(currentPage);
             }
             invListsMaxPageId = currentPageId;

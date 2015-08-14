@@ -18,6 +18,7 @@ import java.io.DataOutput;
 import java.util.Random;
 import java.util.logging.Level;
 
+import edu.uci.ics.hyracks.storage.am.common.api.*;
 import org.junit.Test;
 
 import edu.uci.ics.hyracks.api.comm.IFrame;
@@ -42,14 +43,9 @@ import edu.uci.ics.hyracks.storage.am.btree.frames.BTreeNSMLeafFrameFactory;
 import edu.uci.ics.hyracks.storage.am.btree.impls.BTree;
 import edu.uci.ics.hyracks.storage.am.btree.util.AbstractBTreeTest;
 import edu.uci.ics.hyracks.storage.am.common.TestOperationCallback;
-import edu.uci.ics.hyracks.storage.am.common.api.IMetaDataManager;
-import edu.uci.ics.hyracks.storage.am.common.api.ITreeIndexAccessor;
-import edu.uci.ics.hyracks.storage.am.common.api.ITreeIndexFrameFactory;
-import edu.uci.ics.hyracks.storage.am.common.api.ITreeIndexMetaDataFrame;
-import edu.uci.ics.hyracks.storage.am.common.api.ITreeIndexMetaDataFrameFactory;
-import edu.uci.ics.hyracks.storage.am.common.api.TreeIndexException;
+import edu.uci.ics.hyracks.storage.am.common.api.IMetaDataPageManager;
 import edu.uci.ics.hyracks.storage.am.common.frames.LIFOMetaDataFrameFactory;
-import edu.uci.ics.hyracks.storage.am.common.freepage.LinkedMetaDataManager;
+import edu.uci.ics.hyracks.storage.am.common.freepage.LinkedMetaDataPageManager;
 import edu.uci.ics.hyracks.storage.am.common.tuples.TypeAwareTupleWriterFactory;
 import edu.uci.ics.hyracks.storage.am.common.util.TreeIndexBufferCacheWarmup;
 import edu.uci.ics.hyracks.storage.am.common.util.TreeIndexStats;
@@ -95,7 +91,7 @@ public class BTreeStatsTest extends AbstractBTreeTest {
         IBTreeInteriorFrame interiorFrame = (IBTreeInteriorFrame) interiorFrameFactory.createFrame();
         ITreeIndexMetaDataFrame metaFrame = metaFrameFactory.createFrame();
 
-        IMetaDataManager freePageManager = new LinkedMetaDataManager(bufferCache, metaFrameFactory);
+        IMetaDataPageManager freePageManager = new LinkedMetaDataPageManager(bufferCache, metaFrameFactory);
 
         BTree btree = new BTree(bufferCache, fmp, freePageManager, interiorFrameFactory, leafFrameFactory,
                 cmpFactories, fieldCount, harness.getFileReference());

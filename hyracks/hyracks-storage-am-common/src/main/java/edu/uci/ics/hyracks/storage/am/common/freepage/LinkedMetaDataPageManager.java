@@ -17,7 +17,7 @@ package edu.uci.ics.hyracks.storage.am.common.freepage;
 import java.util.logging.Logger;
 
 import edu.uci.ics.hyracks.api.exceptions.HyracksDataException;
-import edu.uci.ics.hyracks.storage.am.common.api.IMetaDataManager;
+import edu.uci.ics.hyracks.storage.am.common.api.IMetaDataPageManager;
 import edu.uci.ics.hyracks.storage.am.common.api.ITreeIndexMetaDataFrame;
 import edu.uci.ics.hyracks.storage.am.common.api.ITreeIndexMetaDataFrameFactory;
 import edu.uci.ics.hyracks.storage.common.buffercache.BufferCache;
@@ -26,7 +26,7 @@ import edu.uci.ics.hyracks.storage.common.buffercache.ICachedPage;
 import edu.uci.ics.hyracks.storage.common.buffercache.IFIFOPageQueue;
 import edu.uci.ics.hyracks.storage.common.file.BufferedFileHandle;
 
-public class LinkedMetaDataManager implements IMetaDataManager {
+public class LinkedMetaDataPageManager implements IMetaDataPageManager {
 
     private static final byte META_PAGE_LEVEL_INDICATOR = -1;
     private static final byte FREE_PAGE_LEVEL_INDICATOR = -2;
@@ -40,9 +40,9 @@ public class LinkedMetaDataManager implements IMetaDataManager {
     ICachedPage confiscatedMetaNode;
     ICachedPage filterPage;
     private static Logger LOGGER = Logger
-            .getLogger("edu.uci.ics.hyracks.storage.am.common.freepage.LinkedMetaDataManager");
+            .getLogger("edu.uci.ics.hyracks.storage.am.common.freepage.LinkedMetaDataPageManager");
 
-    public LinkedMetaDataManager(IBufferCache bufferCache, ITreeIndexMetaDataFrameFactory metaDataFrameFactory) {
+    public LinkedMetaDataPageManager(IBufferCache bufferCache, ITreeIndexMetaDataFrameFactory metaDataFrameFactory) {
         this.bufferCache = bufferCache;
         this.metaDataFrameFactory = metaDataFrameFactory;
     }

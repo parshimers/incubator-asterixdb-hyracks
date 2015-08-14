@@ -18,7 +18,7 @@ package edu.uci.ics.hyracks.storage.am.lsm.rtree.impls;
 import edu.uci.ics.hyracks.api.dataflow.value.IBinaryComparatorFactory;
 import edu.uci.ics.hyracks.api.exceptions.HyracksDataException;
 import edu.uci.ics.hyracks.api.io.FileReference;
-import edu.uci.ics.hyracks.storage.am.common.api.IFreePageManagerFactory;
+import edu.uci.ics.hyracks.storage.am.common.api.IMetadataManagerFactory;
 import edu.uci.ics.hyracks.storage.am.common.api.ITreeIndexFrameFactory;
 import edu.uci.ics.hyracks.storage.am.common.api.IndexException;
 import edu.uci.ics.hyracks.storage.am.lsm.common.impls.TreeIndexFactory;
@@ -29,7 +29,7 @@ import edu.uci.ics.hyracks.storage.common.file.IFileMapProvider;
 public class RTreeFactory extends TreeIndexFactory<RTree> {
 
     public RTreeFactory(IBufferCache bufferCache, IFileMapProvider fileMapProvider,
-            IFreePageManagerFactory freePageManagerFactory, ITreeIndexFrameFactory interiorFrameFactory,
+            IMetadataManagerFactory freePageManagerFactory, ITreeIndexFrameFactory interiorFrameFactory,
             ITreeIndexFrameFactory leafFrameFactory, IBinaryComparatorFactory[] cmpFactories, int fieldCount) {
         super(bufferCache, fileMapProvider, freePageManagerFactory, interiorFrameFactory, leafFrameFactory,
                 cmpFactories, fieldCount);

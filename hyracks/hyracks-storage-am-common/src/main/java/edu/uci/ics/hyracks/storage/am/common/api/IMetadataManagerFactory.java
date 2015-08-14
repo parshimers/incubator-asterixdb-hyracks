@@ -16,6 +16,6 @@ package edu.uci.ics.hyracks.storage.am.common.api;
 
 import edu.uci.ics.hyracks.api.exceptions.HyracksDataException;
 
-public interface IFreePageManagerFactory {
-    public IMetaDataManager createFreePageManager() throws HyracksDataException;
+public interface IMetadataManagerFactory {
+    public IMetaDataPageManager createFreePageManager() throws HyracksDataException;
 }
