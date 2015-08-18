@@ -96,7 +96,7 @@ public class ClockPageReplacementStrategy implements IPageReplacementStrategy {
                         return cPage;
                 }
             }
-            clockPtr.set(clockPtr.incrementAndGet() % numPages.get());
+            advanceClock();
             if (clockPtr.get() == startClockPtr) {
                 ++cycleCount;
             }
@@ -120,6 +120,21 @@ public class ClockPageReplacementStrategy implements IPageReplacementStrategy {
             }
         }
         return null;
+    }
+
+    //derived from RoundRobinAllocationPolicy in Apache directmemory
+    private int advanceClock(){
+        boolean clockInDial = false;
+        int newClockPtr = 0;
+        do
+        {
+            int currClockPtr = clockPtr.get();
+            newClockPtr = ( currClockPtr + 1 ) % numPages.get();
+            clockInDial = clockPtr.compareAndSet( currClockPtr, newClockPtr );
+        }
+        while ( !clockInDial );
+        return newClockPtr;
+
     }
 
     private AtomicBoolean getPerPageObject(ICachedPageInternal cPage) {

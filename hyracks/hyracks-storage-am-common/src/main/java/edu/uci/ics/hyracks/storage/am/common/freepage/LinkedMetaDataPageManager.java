@@ -266,13 +266,11 @@ public class LinkedMetaDataPageManager implements IMetaDataPageManager {
             return;
         }
         ICachedPage metaNode = bufferCache.confiscatePage(BufferCache.INVALID_DPID);
-        metaNode.acquireWriteLatch();
         try {
             metaFrame.setPage(metaNode);
             metaFrame.initBuffer(META_PAGE_LEVEL_INDICATOR);
             metaFrame.setMaxPage(0);
         } finally {
-            metaNode.releaseWriteLatch(false);
             confiscatedMetaNode = metaNode;
             appendOnly = true;
         }
