@@ -14,13 +14,8 @@
  */
 package edu.uci.ics.hyracks.storage.common.buffercache;
 
-import java.util.concurrent.BlockingDeque;
-import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
 
 public class ClockPageReplacementStrategy implements IPageReplacementStrategy {
     private static final int MAX_UNSUCCESSFUL_CYCLE_COUNT = 3;
@@ -31,8 +26,6 @@ public class ClockPageReplacementStrategy implements IPageReplacementStrategy {
     private AtomicInteger numPages;
     private final int pageSize;
     private final int maxAllowedNumPages;
-    private AtomicInteger cpIdCounter;
-    //DEBUG
 
     public ClockPageReplacementStrategy(ICacheMemoryAllocator allocator, int pageSize, int maxAllowedNumPages) {
         this.allocator = allocator;

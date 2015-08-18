@@ -55,9 +55,9 @@ public class VirtualBufferCache implements IVirtualBufferCache {
         this.allocator = allocator;
         this.fileMapManager = new TransientFileMapManager();
         this.pageSize = pageSize;
-        this.numPages = numPages;
+        this.numPages = 2 * (numPages / 2) + 1;
 
-        buckets = new CacheBucket[numPages];
+        buckets = new CacheBucket[this.numPages];
         pages = new ArrayList<VirtualPage>();
         nextFree = 0;
         open = false;
@@ -191,7 +191,8 @@ public class VirtualBufferCache implements IVirtualBufferCache {
     }
 
     private int hash(long dpid) {
-        return (int) (dpid % buckets.length);
+        int hashValue = (int) dpid ^ (Integer.reverse((int) (dpid >>> 32)) >>> 1);
+        return hashValue % buckets.length;
     }
 
     private VirtualPage getOrAllocPage(long dpid) {

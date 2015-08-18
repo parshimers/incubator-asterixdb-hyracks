@@ -41,7 +41,7 @@ import edu.uci.ics.hyracks.storage.common.file.IFileMapManager;
 
 public class BufferCache implements IBufferCacheInternal, ILifeCycleComponent {
     private static final Logger LOGGER = Logger.getLogger(BufferCache.class.getName());
-    private static final int MAP_FACTOR = 2;
+    private static final int MAP_FACTOR = 3;
 
     private static final int MIN_CLEANED_COUNT_DIFF = 3;
     private static final int PIN_MAX_WAIT_TIME = 50;
@@ -76,7 +76,7 @@ public class BufferCache implements IBufferCacheInternal, ILifeCycleComponent {
         this.pageSize = pageReplacementStrategy.getPageSize();
         this.maxOpenFiles = maxOpenFiles;
         pageReplacementStrategy.setBufferCache(this);
-        pageMap = new CacheBucket[pageReplacementStrategy.getMaxAllowedNumPages() * MAP_FACTOR];
+        pageMap = new CacheBucket[pageReplacementStrategy.getMaxAllowedNumPages() * MAP_FACTOR + 1];
         for (int i = 0; i < pageMap.length; ++i) {
             pageMap[i] = new CacheBucket();
         }
@@ -523,7 +523,8 @@ public class BufferCache implements IBufferCacheInternal, ILifeCycleComponent {
     }
 
     private int hash(long dpid) {
-        return (int) (dpid % pageMap.length);
+        int hashValue = (int) dpid ^ (Integer.reverse((int) (dpid >>> 32)) >>> 1);
+        return hashValue % pageMap.length;
     }
 
     private static class CacheBucket {
