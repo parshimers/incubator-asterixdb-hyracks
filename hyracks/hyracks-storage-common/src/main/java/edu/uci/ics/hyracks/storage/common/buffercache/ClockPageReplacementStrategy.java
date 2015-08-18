@@ -24,6 +24,7 @@ public class ClockPageReplacementStrategy implements IPageReplacementStrategy {
     private AtomicInteger clockPtr;
     private ICacheMemoryAllocator allocator;
     private AtomicInteger numPages;
+    private AtomicInteger cpIdCounter;
     private final int pageSize;
     private final int maxAllowedNumPages;
 
