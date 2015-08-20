@@ -89,12 +89,12 @@ public abstract class AbstractLSMRTree extends AbstractLSMIndex implements ITree
         int i = 0;
         for (IVirtualBufferCache virtualBufferCache : virtualBufferCaches) {
             RTree memRTree = new RTree(virtualBufferCache,
-                    (virtualBufferCache).getFileMapProvider(), new VirtualMetaDataManager(
+                    (virtualBufferCache).getFileMapProvider(), new VirtualMetaDataPageManager(
                             virtualBufferCache.getNumPages()), rtreeInteriorFrameFactory, rtreeLeafFrameFactory,
                     rtreeCmpFactories, fieldCount, new FileReference(fileManager.getBaseDir() + "_virtual_r_"
                             + i));
             BTree memBTree = new BTree(virtualBufferCache,
-                    (virtualBufferCache).getFileMapProvider(), new VirtualMetaDataManager(
+                    (virtualBufferCache).getFileMapProvider(), new VirtualMetaDataPageManager(
                             virtualBufferCache.getNumPages()), btreeInteriorFrameFactory, btreeLeafFrameFactory,
                     btreeCmpFactories, btreeCmpFactories.length, new FileReference(fileManager.getBaseDir()
                             + "_virtual_b_" + i));

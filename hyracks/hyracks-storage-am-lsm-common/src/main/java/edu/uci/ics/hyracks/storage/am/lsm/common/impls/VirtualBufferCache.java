@@ -14,17 +14,22 @@
  */
 package edu.uci.ics.hyracks.storage.am.lsm.common.impls;
 
+import java.io.InputStream;
 import java.nio.ByteBuffer;
+import java.io.FilenameFilter;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Collections;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
+import java.util.concurrent.Executor;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import edu.uci.ics.hyracks.api.exceptions.HyracksDataException;
 import edu.uci.ics.hyracks.api.io.*;
+import edu.uci.ics.hyracks.api.replication.IIOReplicationManager;
 import edu.uci.ics.hyracks.storage.am.lsm.common.api.IVirtualBufferCache;
 import edu.uci.ics.hyracks.storage.common.buffercache.ICacheMemoryAllocator;
 import edu.uci.ics.hyracks.storage.common.buffercache.ICachedPage;
@@ -515,11 +520,6 @@ public class VirtualBufferCache implements IVirtualBufferCache {
     @Override
     public void returnPage(ICachedPage page, boolean reinsert) {
         throw new UnsupportedOperationException("Virtual buffer caches don't have FIFO writers");
-    }
-
-    @Override
-    public int getFileReferenceCount(int fileId) {
-        return 0;
     }
 
     @Override

@@ -238,11 +238,6 @@ public class DebugBufferCache implements IBufferCache {
     }
 
     @Override
-    public void purgeHandle(int fileId) throws HyracksDataException {
-
-    }
-
-    @Override
     public int getFileReferenceCount(int fileId) {
         return bufferCache.getFileReferenceCount(fileId);
     }

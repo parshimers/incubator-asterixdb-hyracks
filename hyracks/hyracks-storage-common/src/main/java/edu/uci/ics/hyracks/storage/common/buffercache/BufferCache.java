@@ -1127,17 +1127,6 @@ public class BufferCache implements IBufferCacheInternal, ILifeCycleComponent {
     }
 
     @Override
-    public void purgeHandle(int fileId) throws HyracksDataException {
-        synchronized(fileInfoMap){
-            BufferedFileHandle fh = fileInfoMap.get(fileId);
-            if(fh != null) {
-                ioManager.close(fh.getFileHandle());
-                fileInfoMap.remove(fileId);
-            }
-        }
-    }
-
-    @Override
     public boolean isReplicationEnabled() {
         if (ioReplicationManager != null) {
             return ioReplicationManager.isReplicationEnabled();
