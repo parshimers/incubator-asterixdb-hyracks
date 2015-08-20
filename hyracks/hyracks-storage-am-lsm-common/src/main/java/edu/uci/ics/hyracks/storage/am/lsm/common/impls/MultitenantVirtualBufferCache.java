@@ -20,6 +20,7 @@ import java.util.logging.Logger;
 
 import edu.uci.ics.hyracks.api.exceptions.HyracksDataException;
 import edu.uci.ics.hyracks.api.io.FileReference;
+import edu.uci.ics.hyracks.api.replication.IIOReplicationManager;
 import edu.uci.ics.hyracks.api.io.IFileHandle;
 import edu.uci.ics.hyracks.api.io.IIOManager;
 import edu.uci.ics.hyracks.storage.am.lsm.common.api.IVirtualBufferCache;
@@ -175,13 +176,11 @@ public class MultitenantVirtualBufferCache implements IVirtualBufferCache {
 
     @Override
     public void copyPage(ICachedPage src, ICachedPage dst) {
-        // TODO Auto-generated method stub
         
     }
 
     @Override
     public void setPageDiskId(ICachedPage page, long dpid) {
-        // TODO Auto-generated method stub
         
     }
 
@@ -197,7 +196,6 @@ public class MultitenantVirtualBufferCache implements IVirtualBufferCache {
 
     @Override
     public void returnPage(ICachedPage page, boolean reinsert) {
-        // TODO Auto-generated method stub
         
     }
     
@@ -206,4 +204,18 @@ public class MultitenantVirtualBufferCache implements IVirtualBufferCache {
         return 0;
     }
 
+    @Override
+    public boolean isReplicationEnabled() {
+        return false;
+    }
+
+    @Override
+    public IIOReplicationManager getIIOReplicationManager() {
+        return null;
+    }
+
+    @Override
+    public void purgeHandle(int fileId) throws HyracksDataException {
+
+    }
 }

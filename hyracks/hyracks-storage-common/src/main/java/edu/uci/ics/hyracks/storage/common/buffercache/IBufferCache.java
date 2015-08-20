@@ -14,17 +14,16 @@
  */
 package edu.uci.ics.hyracks.storage.common.buffercache;
 
-import java.util.concurrent.ConcurrentLinkedQueue;
-
 import edu.uci.ics.hyracks.api.exceptions.HyracksDataException;
 import edu.uci.ics.hyracks.api.io.IFileHandle;
 import edu.uci.ics.hyracks.api.io.FileReference;
+import edu.uci.ics.hyracks.api.replication.IIOReplicationManager;
 import edu.uci.ics.hyracks.api.io.IFileHandle;
 import edu.uci.ics.hyracks.api.io.IIOManager;
 
 public interface IBufferCache {
     public void createFile(FileReference fileRef) throws HyracksDataException;
-
+    
     public int createMemFile() throws HyracksDataException;
 
     public void openFile(int fileId) throws HyracksDataException;
@@ -72,8 +71,11 @@ public interface IBufferCache {
     void copyPage(ICachedPage src, ICachedPage dst);
 
     void setPageDiskId(ICachedPage page, long dpid);
+    
+    public boolean isReplicationEnabled();
 
     IIOManager getIOManager();
 
     void purgeHandle(int fileId) throws HyracksDataException;
+
 }

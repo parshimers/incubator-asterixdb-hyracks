@@ -14,13 +14,8 @@
  */
 package edu.uci.ics.hyracks.storage.common.buffercache;
 
-import java.util.concurrent.BlockingDeque;
-import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
 
 public class ClockPageReplacementStrategy implements IPageReplacementStrategy {
     private static final int MAX_UNSUCCESSFUL_CYCLE_COUNT = 3;
@@ -29,17 +24,14 @@ public class ClockPageReplacementStrategy implements IPageReplacementStrategy {
     private AtomicInteger clockPtr;
     private ICacheMemoryAllocator allocator;
     private AtomicInteger numPages;
-    private final int pageSize;
-    private final int realMaxAllowedNumPages;
-    private AtomicInteger maxAllowedNumPages;
     private AtomicInteger cpIdCounter;
-    //DEBUG
+    private final int pageSize;
+    private final int maxAllowedNumPages;
 
     public ClockPageReplacementStrategy(ICacheMemoryAllocator allocator, int pageSize, int maxAllowedNumPages) {
         this.allocator = allocator;
         this.pageSize = pageSize;
-        this.maxAllowedNumPages = new AtomicInteger(maxAllowedNumPages);
-        this.realMaxAllowedNumPages = maxAllowedNumPages;
+        this.maxAllowedNumPages = maxAllowedNumPages;
         this.clockPtr = new AtomicInteger(0);
         this.numPages = new AtomicInteger(0);
         this.cpIdCounter = new AtomicInteger(0);
@@ -68,7 +60,7 @@ public class ClockPageReplacementStrategy implements IPageReplacementStrategy {
     @Override
     public ICachedPageInternal findVictim() {
         ICachedPageInternal cachedPage = null;
-        if (numPages.get() >= maxAllowedNumPages.get()) {
+        if (numPages.get() >= maxAllowedNumPages) {
             cachedPage = findVictimByEviction();
         } else {
             cachedPage = allocatePage();
@@ -78,8 +70,7 @@ public class ClockPageReplacementStrategy implements IPageReplacementStrategy {
 
     private ICachedPageInternal findVictimByEviction() {
         //check if we're starved from confiscation
-        if (maxAllowedNumPages.get() == 0)
-            return null;
+        assert (maxAllowedNumPages > 0);
         int startClockPtr = clockPtr.get();
         int cycleCount = 0;
         do {
@@ -99,7 +90,7 @@ public class ClockPageReplacementStrategy implements IPageReplacementStrategy {
                         return cPage;
                 }
             }
-            clockPtr.set(clockPtr.incrementAndGet() % (numPages.get()-1));
+            advanceClock();
             if (clockPtr.get() == startClockPtr) {
                 ++cycleCount;
             }
@@ -110,11 +101,6 @@ public class ClockPageReplacementStrategy implements IPageReplacementStrategy {
     @Override
     public int getNumPages() {
         return numPages.get();
-    }
-
-
-    public int addPage() {
-        return numPages.incrementAndGet();
     }
 
     private ICachedPageInternal allocatePage() {
@@ -130,6 +116,21 @@ public class ClockPageReplacementStrategy implements IPageReplacementStrategy {
         return null;
     }
 
+    //derived from RoundRobinAllocationPolicy in Apache directmemory
+    private int advanceClock(){
+        boolean clockInDial = false;
+        int newClockPtr = 0;
+        do
+        {
+            int currClockPtr = clockPtr.get();
+            newClockPtr = ( currClockPtr + 1 ) % numPages.get();
+            clockInDial = clockPtr.compareAndSet( currClockPtr, newClockPtr );
+        }
+        while ( !clockInDial );
+        return newClockPtr;
+
+    }
+
     private AtomicBoolean getPerPageObject(ICachedPageInternal cPage) {
         return (AtomicBoolean) cPage.getReplacementStrategyObject();
     }
@@ -141,7 +142,7 @@ public class ClockPageReplacementStrategy implements IPageReplacementStrategy {
 
     @Override
     public int getMaxAllowedNumPages() {
-        return realMaxAllowedNumPages;
+        return maxAllowedNumPages;
     }
 
     @Override

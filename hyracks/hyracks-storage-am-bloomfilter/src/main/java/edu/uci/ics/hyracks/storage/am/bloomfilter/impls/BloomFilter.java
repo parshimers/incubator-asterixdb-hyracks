@@ -70,7 +70,7 @@ public class BloomFilter {
 
     public int getNumPages() throws HyracksDataException {
         if (!isActivated) {
-            throw new HyracksDataException("The bloom filter is not activated.");
+            activate();
         }
         return numPages;
     }
@@ -88,7 +88,7 @@ public class BloomFilter {
         }
         MurmurHash128Bit.hash3_x64_128(tuple, keyFields, SEED, hashes);
         for (int i = 0; i < numHashes; ++i) {
-            long hash = Math.abs((hashes[0] + (long) i * hashes[1]) % numBits);
+            long hash = Math.abs((hashes[0] + i * hashes[1]) % numBits);
 
             // we increment the page id by one, since the metadata page id of the filter is 0.
             ICachedPage page = bufferCache.pin(
@@ -228,12 +228,7 @@ public class BloomFilter {
             int currentPageId = 1;
             while (currentPageId <= numPages) {
                 ICachedPage page = bufferCache.confiscatePage(BufferedFileHandle.getDiskPageId(fileId, currentPageId));
-                page.acquireWriteLatch();
-                try {
-                    initPage(page.getBuffer().array());
-                } finally {
-                    page.releaseWriteLatch(false);
-                }
+                initPage(page.getBuffer().array());
                 pages[currentPageId - 1] = page;
                 ++currentPageId;
             }
@@ -256,15 +251,10 @@ public class BloomFilter {
             if (metaDataPage == null) {
                 metaDataPage = bufferCache.confiscatePage(BufferedFileHandle.getDiskPageId(fileId, METADATA_PAGE_ID));
             }
-            metaDataPage.acquireWriteLatch();
-            try {
-                metaDataPage.getBuffer().putInt(NUM_PAGES_OFFSET, numPages);
-                metaDataPage.getBuffer().putInt(NUM_HASHES_USED_OFFSET, numHashes);
-                metaDataPage.getBuffer().putLong(NUM_ELEMENTS_OFFSET, numElements);
-                metaDataPage.getBuffer().putLong(NUM_BITS_OFFSET, numBits);
-            } finally {
-                metaDataPage.releaseWriteLatch(false);
-            }
+            metaDataPage.getBuffer().putInt(NUM_PAGES_OFFSET, numPages);
+            metaDataPage.getBuffer().putInt(NUM_HASHES_USED_OFFSET, numHashes);
+            metaDataPage.getBuffer().putLong(NUM_ELEMENTS_OFFSET, numElements);
+            metaDataPage.getBuffer().putLong(NUM_BITS_OFFSET, numBits);
         }
 
         @Override
@@ -275,21 +265,15 @@ public class BloomFilter {
             }
             MurmurHash128Bit.hash3_x64_128(tuple, keyFields, SEED, hashes);
             for (int i = 0; i < numHashes; ++i) {
-                long hash = Math.abs((hashes[0] + (long) i * hashes[1]) % numBits);
+                long hash = Math.abs((hashes[0] + i * hashes[1]) % numBits);
                 ICachedPage page = pages[((int) (hash / numBitsPerPage))];
-                page.acquireWriteLatch();
-                try {
-                    ByteBuffer buffer = page.getBuffer();
-                    int byteIndex = (int) (hash % numBitsPerPage) >> 3; // divide by 8
-                    byte b = buffer.get(byteIndex);
-                    int bitIndex = (int) (hash % numBitsPerPage) & 0x07; // mod 8
-                    b = (byte) (b | (1 << bitIndex));
+                ByteBuffer buffer = page.getBuffer();
+                int byteIndex = (int) (hash % numBitsPerPage) >> 3; // divide by 8
+                byte b = buffer.get(byteIndex);
+                int bitIndex = (int) (hash % numBitsPerPage) & 0x07; // mod 8
+                b = (byte) (b | (1 << bitIndex));
 
-                    buffer.put(byteIndex, b);
-                } finally {
-                    page.releaseWriteLatch(false);
-                }
-
+                buffer.put(byteIndex, b);
             }
         }
 

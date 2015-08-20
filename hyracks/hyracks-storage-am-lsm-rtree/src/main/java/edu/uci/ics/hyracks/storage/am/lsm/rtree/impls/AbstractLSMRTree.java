@@ -41,7 +41,7 @@ import edu.uci.ics.hyracks.storage.am.lsm.common.api.ILSMIndexOperationContext;
 import edu.uci.ics.hyracks.storage.am.lsm.common.api.ILSMMergePolicy;
 import edu.uci.ics.hyracks.storage.am.lsm.common.api.ILSMOperationTracker;
 import edu.uci.ics.hyracks.storage.am.lsm.common.api.IVirtualBufferCache;
-import edu.uci.ics.hyracks.storage.am.lsm.common.freepage.VirtualMetaDataManager;
+import edu.uci.ics.hyracks.storage.am.lsm.common.freepage.VirtualMetaDataPageManager;
 import edu.uci.ics.hyracks.storage.am.lsm.common.impls.AbstractLSMIndex;
 import edu.uci.ics.hyracks.storage.am.lsm.common.impls.BlockingIOOperationCallbackWrapper;
 import edu.uci.ics.hyracks.storage.am.lsm.common.impls.LSMComponentFileReferences;
@@ -265,6 +265,9 @@ public abstract class AbstractLSMRTree extends AbstractLSMIndex implements ITree
             case FULL_MERGE:
                 operationalComponents.addAll(immutableComponents);
                 break;
+            case REPLICATE:
+                operationalComponents.addAll(ctx.getComponentsToBeReplicated());
+                break;
             default:
                 throw new UnsupportedOperationException("Operation " + ctx.getOperation() + " not supported.");
         }
@@ -302,13 +305,6 @@ public abstract class AbstractLSMRTree extends AbstractLSMIndex implements ITree
         LSMRTreeDiskComponent component = (LSMRTreeDiskComponent) factory
                 .createLSMComponentInstance(new LSMComponentFileReferences(insertFileRef, deleteFileRef,
                         bloomFilterFileRef));
-        if (createComponent) {
-            //component.getRTree().create(false);
-            if (component.getBTree() != null) {
-                //component.getBTree().create(false);
-                //component.getBloomFilter().create();
-            }
-        }
         // Tree will be closed during cleanup of merge().
         if (!createComponent) {
             component.getRTree().activate();
@@ -340,7 +336,7 @@ public abstract class AbstractLSMRTree extends AbstractLSMIndex implements ITree
     }
 
     @Override
-    public IMetaDataManager getMetaManager() {
+    public IMetaDataPageManager getMetaManager() {
         LSMRTreeMemoryComponent mutableComponent = (LSMRTreeMemoryComponent) memoryComponents
                 .get(currentMutableComponentId.get());
         return mutableComponent.getRTree().getMetaManager();

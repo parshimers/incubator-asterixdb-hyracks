@@ -17,7 +17,7 @@ package edu.uci.ics.hyracks.storage.am.common.freepage;
 import java.util.logging.Logger;
 
 import edu.uci.ics.hyracks.api.exceptions.HyracksDataException;
-import edu.uci.ics.hyracks.storage.am.common.api.IMetaDataManager;
+import edu.uci.ics.hyracks.storage.am.common.api.IMetaDataPageManager;
 import edu.uci.ics.hyracks.storage.am.common.api.ITreeIndexMetaDataFrame;
 import edu.uci.ics.hyracks.storage.am.common.api.ITreeIndexMetaDataFrameFactory;
 import edu.uci.ics.hyracks.storage.common.buffercache.BufferCache;
@@ -27,7 +27,7 @@ import edu.uci.ics.hyracks.storage.common.buffercache.IFIFOPageQueue;
 import edu.uci.ics.hyracks.storage.common.file.BufferedFileHandle;
 import org.apache.commons.io.filefilter.IOFileFilter;
 
-public class LinkedMetaDataManager implements IMetaDataManager {
+public class LinkedMetaDataPageManager implements IMetaDataPageManager {
 
     private static final byte META_PAGE_LEVEL_INDICATOR = -1;
     private static final byte FREE_PAGE_LEVEL_INDICATOR = -2;
@@ -267,13 +267,11 @@ public class LinkedMetaDataManager implements IMetaDataManager {
             return;
         }
         ICachedPage metaNode = bufferCache.confiscatePage(BufferCache.INVALID_DPID);
-        metaNode.acquireWriteLatch();
         try {
             metaFrame.setPage(metaNode);
             metaFrame.initBuffer(META_PAGE_LEVEL_INDICATOR);
             metaFrame.setMaxPage(0);
         } finally {
-            metaNode.releaseWriteLatch(false);
             confiscatedMetaNode = metaNode;
             appendOnly = true;
         }
@@ -319,7 +317,7 @@ public class LinkedMetaDataManager implements IMetaDataManager {
             ITreeIndexMetaDataFrame metaFrame = metaDataFrameFactory.createFrame();
             metaFrame.setPage(confiscatedMetaNode);
             metaFrame.setValid(true);
-            int finalFilterPage = getFreePage(metaFrame);
+            int finalFilterPage = getMaxPage(metaFrame);
             bufferCache.setPageDiskId(filterPage, BufferedFileHandle.getDiskPageId(fileId, finalFilterPage));
             queue.put(filterPage);
         }
@@ -335,7 +333,7 @@ public class LinkedMetaDataManager implements IMetaDataManager {
             metaFrame.setPage(confiscatedMetaNode);
             metaFrame.setValid(true);
             int finalMetaPage = getMaxPage(metaFrame);
-            bufferCache.setPageDiskId(confiscatedMetaNode,BufferedFileHandle.getDiskPageId(fileId,finalMetaPage));
+            bufferCache.setPageDiskId(confiscatedMetaNode, BufferedFileHandle.getDiskPageId(fileId,finalMetaPage));
             queue.put(confiscatedMetaNode);
             bufferCache.finishQueue();
         }
@@ -360,8 +358,8 @@ public class LinkedMetaDataManager implements IMetaDataManager {
         ITreeIndexMetaDataFrame metaFrame = metaDataFrameFactory.createFrame();
 
         int pages = bufferCache.getNumPagesOfFile(fileId);
-        //if there are no pages in the file yet, we're just initializing.
-        if(pages==0){
+        //if there are no pages in the file yet, we're just initializing
+        if(pages == 0){
             return 0;
         }
         //look at the front (modify in-place index)

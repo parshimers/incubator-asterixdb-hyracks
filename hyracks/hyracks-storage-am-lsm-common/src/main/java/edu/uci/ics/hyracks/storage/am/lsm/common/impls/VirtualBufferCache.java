@@ -3,9 +3,9 @@
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * you may obtain a copy of the License from
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -14,13 +14,9 @@
  */
 package edu.uci.ics.hyracks.storage.am.lsm.common.impls;
 
-import java.io.FilenameFilter;
-import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.List;
-import java.util.concurrent.Executor;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
@@ -59,10 +55,9 @@ public class VirtualBufferCache implements IVirtualBufferCache {
         this.allocator = allocator;
         this.fileMapManager = new TransientFileMapManager();
         this.pageSize = pageSize;
-        this.numPages = numPages;
+        this.numPages = 2 * (numPages / 2) + 1;
 
-
-        buckets = new CacheBucket[numPages];
+        buckets = new CacheBucket[this.numPages];
         pages = new ArrayList<VirtualPage>();
         nextFree = 0;
         open = false;
@@ -296,7 +291,8 @@ public class VirtualBufferCache implements IVirtualBufferCache {
     }
 
     private int hash(long dpid) {
-        return (int) (dpid % buckets.length);
+        int hashValue = (int) dpid ^ (Integer.reverse((int) (dpid >>> 32)) >>> 1);
+        return hashValue % buckets.length;
     }
 
     private VirtualPage getOrAllocPage(long dpid) {
@@ -452,17 +448,15 @@ public class VirtualBufferCache implements IVirtualBufferCache {
         }
 
     }
+
     //These 4 methods aren't applicable here.
     @Override
     public int createMemFile() throws HyracksDataException {
-        // TODO Auto-generated method stub
         return 0;
     }
 
     @Override
     public void deleteMemFile(int fileId) throws HyracksDataException {
-        // TODO Auto-generated method stub
-
     }
 
     @Override
@@ -485,13 +479,11 @@ public class VirtualBufferCache implements IVirtualBufferCache {
 
     @Override
     public boolean isVirtual(ICachedPage vp) throws HyracksDataException {
-        // TODO Auto-generated method stub
         return false;
     }
 
     @Override
     public void returnPage(ICachedPage page) {
-        // TODO Auto-generated method stub
 
     }
 
@@ -502,37 +494,50 @@ public class VirtualBufferCache implements IVirtualBufferCache {
 
     @Override
     public void finishQueue() {
-
+        throw new UnsupportedOperationException("Virtual buffer caches don't have FIFO writers");
     }
 
     @Override
     public ICachedPage confiscatePage(long dpid) {
-        // TODO Auto-generated method stub
-        return null;
+        throw new UnsupportedOperationException("Virtual buffer caches don't have FIFO writers");
     }
 
     @Override
     public void copyPage(ICachedPage src, ICachedPage dst) {
-        // TODO Auto-generated method stub
-        
+        throw new UnsupportedOperationException("Virtual buffer caches don't have FIFO writers");
     }
 
     @Override
     public void setPageDiskId(ICachedPage page, long dpid) {
-        // TODO Auto-generated method stub
         
     }
 
     @Override
     public void returnPage(ICachedPage page, boolean reinsert) {
-        // TODO Auto-generated method stub
-        
+        throw new UnsupportedOperationException("Virtual buffer caches don't have FIFO writers");
+    }
+
+    @Override
+    public int getFileReferenceCount(int fileId) {
+        return 0;
     }
 
     @Override
     public IIOManager getIOManager() {
         return virtIOManager;
     }
+
+    @Override
+    public boolean isReplicationEnabled() {
+        return false;
+    }
+
+    @Override
+    public IIOReplicationManager getIIOReplicationManager() {
+        return null;
+    }
+
+    
 
     @Override
     public void purgeHandle(int fileId) throws HyracksDataException {

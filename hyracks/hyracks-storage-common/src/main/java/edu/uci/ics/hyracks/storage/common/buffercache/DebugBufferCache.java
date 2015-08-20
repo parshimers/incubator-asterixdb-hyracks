@@ -5,7 +5,7 @@
  * you may obtain a copy of the License from
  *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -15,13 +15,13 @@
 
 package edu.uci.ics.hyracks.storage.common.buffercache;
 
-import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicLong;
 
 import edu.uci.ics.hyracks.api.exceptions.HyracksDataException;
 import edu.uci.ics.hyracks.api.io.FileReference;
 import edu.uci.ics.hyracks.api.io.IFileHandle;
 import edu.uci.ics.hyracks.api.io.IIOManager;
+import edu.uci.ics.hyracks.api.replication.IIOReplicationManager;
 
 /**
  * Implementation of an IBufferCache that counts the number of pins/unpins,
@@ -176,7 +176,7 @@ public class DebugBufferCache implements IBufferCache {
 
     @Override
     public void deleteMemFile(int fileId) throws HyracksDataException {
-        bufferCache.deleteMemFile(fileId); 
+        bufferCache.deleteMemFile(fileId);
     }
 
     @Override
@@ -246,5 +246,19 @@ public class DebugBufferCache implements IBufferCache {
     public int getFileReferenceCount(int fileId) {
         return bufferCache.getFileReferenceCount(fileId);
     }
+    
+    @Override
+    public boolean isReplicationEnabled() {
+        return false;
+    }
 
+    @Override
+    public IIOReplicationManager getIIOReplicationManager() {
+        return null;
+    }
+
+    @Override
+    public void purgeHandle(int fileId) throws HyracksDataException {
+        bufferCache.purgeHandle(fileId);
+    }
 }

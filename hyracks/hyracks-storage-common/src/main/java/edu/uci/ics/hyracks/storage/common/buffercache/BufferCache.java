@@ -14,14 +14,6 @@
  */
 package edu.uci.ics.hyracks.storage.common.buffercache;
 
-import edu.uci.ics.hyracks.api.exceptions.HyracksDataException;
-import edu.uci.ics.hyracks.api.io.FileReference;
-import edu.uci.ics.hyracks.api.io.IFileHandle;
-import edu.uci.ics.hyracks.api.io.IIOManager;
-import edu.uci.ics.hyracks.api.lifecycle.ILifeCycleComponent;
-import edu.uci.ics.hyracks.storage.common.file.BufferedFileHandle;
-import edu.uci.ics.hyracks.storage.common.file.IFileMapManager;
-
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.*;
@@ -33,9 +25,18 @@ import java.util.concurrent.locks.ReentrantLock;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import edu.uci.ics.hyracks.api.exceptions.HyracksDataException;
+import edu.uci.ics.hyracks.api.io.FileReference;
+import edu.uci.ics.hyracks.api.io.IFileHandle;
+import edu.uci.ics.hyracks.api.io.IIOManager;
+import edu.uci.ics.hyracks.api.lifecycle.ILifeCycleComponent;
+import edu.uci.ics.hyracks.api.replication.IIOReplicationManager;
+import edu.uci.ics.hyracks.storage.common.file.BufferedFileHandle;
+import edu.uci.ics.hyracks.storage.common.file.IFileMapManager;
+
 public class BufferCache implements IBufferCacheInternal, ILifeCycleComponent {
     private static final Logger LOGGER = Logger.getLogger(BufferCache.class.getName());
-    private static final int MAP_FACTOR = 2;
+    private static final int MAP_FACTOR = 3;
 
     private static final int MIN_CLEANED_COUNT_DIFF = 3;
     private static final int PIN_MAX_WAIT_TIME = 50;
@@ -58,6 +59,7 @@ public class BufferCache implements IBufferCacheInternal, ILifeCycleComponent {
     private Lock confiscateLock;
     private HashMap<CachedPage, StackTraceElement[]> confiscatedPagesOwner;
     //!DEBUG
+    private IIOReplicationManager ioReplicationManager;
     public List<ICachedPageInternal> cachedPages = new ArrayList<ICachedPageInternal>();
 
     private boolean closed;
@@ -69,7 +71,7 @@ public class BufferCache implements IBufferCacheInternal, ILifeCycleComponent {
         this.pageSize = pageReplacementStrategy.getPageSize();
         this.maxOpenFiles = maxOpenFiles;
         pageReplacementStrategy.setBufferCache(this);
-        pageMap = new CacheBucket[pageReplacementStrategy.getMaxAllowedNumPages() * MAP_FACTOR];
+        pageMap = new CacheBucket[pageReplacementStrategy.getMaxAllowedNumPages() * MAP_FACTOR + 1];
         for (int i = 0; i < pageMap.length; ++i) {
             pageMap[i] = new CacheBucket();
         }
@@ -84,13 +86,21 @@ public class BufferCache implements IBufferCacheInternal, ILifeCycleComponent {
         executor.execute(cleanerThread);
         closed = false;
 
-        fifoWriter = new AsyncFIFOPageQueueManager();
+        fifoWriter = new AsyncFIFOPageQueueManager(this);
         if( DEBUG ) {
             confiscatedPages = new ArrayList<CachedPage>();
             confiscatedPagesOwner = new HashMap<CachedPage, StackTraceElement[]>();
             confiscateLock = new ReentrantLock();
         }
+    }
 
+    //this constructor is used when replication is enabled to pass the IIOReplicationManager
+    public BufferCache(IIOManager ioManager, IPageReplacementStrategy pageReplacementStrategy,
+            IPageCleanerPolicy pageCleanerPolicy, IFileMapManager fileMapManager, int maxOpenFiles,
+            ThreadFactory threadFactory, IIOReplicationManager ioReplicationManager) {
+
+        this(ioManager, pageReplacementStrategy, pageCleanerPolicy, fileMapManager, maxOpenFiles, threadFactory);
+        this.ioReplicationManager = ioReplicationManager;
     }
 
     @Override
@@ -506,36 +516,6 @@ public class BufferCache implements IBufferCacheInternal, ILifeCycleComponent {
 
     @Override
     public void unpin(ICachedPage page) throws HyracksDataException {
-        // if (((CachedPage) page).dirty.get()
-        // && !DEBUG_writtenPages.add(getFileInfo(((CachedPage)
-        // page)).getFileId() * 10000
-        // + ((CachedPage) page).dpid)) {
-        // boolean ignore = false;
-        // switch (((CachedPage) page).cpid) {
-        // case 0: // metadata page
-        // case 1: // root page of tree
-        // }
-        // StackTraceElement[] stackTraceElements =
-        // Thread.currentThread().getStackTrace();
-        // for (StackTraceElement e : stackTraceElements) {
-        // if (e.getMethodName().contains("markAsValid")
-        // || e.getClassName().contains("BloomFilter")
-        // || // pin the whole thing?
-        // e.getMethodName().contains("getFreePage" /*metadata*/)
-        // || e.getMethodName().contains("FilterInfo")
-        // || e.getMethodName().contains("isEmptyTree" /* working on root page
-        // */)
-        // || (e.getClassName().contains("BulkLoader") &&
-        // e.getMethodName().contains("end") /* overwriting root node at end of
-        // bulkload */)) {
-        // ignore = true;
-        // break;
-        // }
-        // }
-        // if (!ignore) {
-        // System.out.println("Attempted to write page already flushed to disk");
-        // }
-        // }
         if (closed) {
             throw new HyracksDataException("unpin called on a closed cache");
         }
@@ -543,7 +523,8 @@ public class BufferCache implements IBufferCacheInternal, ILifeCycleComponent {
     }
 
     private int hash(long dpid) {
-        return (int) (dpid % pageMap.length);
+        int hashValue = (int) dpid ^ (Integer.reverse((int) (dpid >>> 32)) >>> 1);
+        return hashValue % pageMap.length;
     }
 
     private static class CacheBucket {
@@ -639,7 +620,6 @@ public class BufferCache implements IBufferCacheInternal, ILifeCycleComponent {
                     if (shutdownStart) {
                         break;
                     }
-//                                        System.out.println(dumpState());
                     pageCleanerPolicy.notifyCleanCycleFinish(this);
                 }
             } catch (Exception e) {
@@ -654,6 +634,7 @@ public class BufferCache implements IBufferCacheInternal, ILifeCycleComponent {
     @Override
     public void close() {
         closed = true;
+        fifoWriter.destroyQueue();
         synchronized (cleanerThread) {
             cleanerThread.shutdownStart = true;
             cleanerThread.notifyAll();
@@ -751,7 +732,6 @@ public class BufferCache implements IBufferCacheInternal, ILifeCycleComponent {
                 fInfo = new BufferedFileHandle(fileId, fh, fileRef.type != FileReference.FileReferenceType.LOCAL);
                 fileInfoMap.put(fileId, fInfo);
             }
-            //refresh the handle
             fInfo.incReferenceCount();
         }
     }
@@ -862,6 +842,7 @@ public class BufferCache implements IBufferCacheInternal, ILifeCycleComponent {
             }
         }
         synchronized (fileInfoMap) {
+            sweepAndFlush(fileId, flushDirtyPages);
             BufferedFileHandle fInfo = null;
             try {
                 fInfo = fileInfoMap.get(fileId);
@@ -875,6 +856,7 @@ public class BufferCache implements IBufferCacheInternal, ILifeCycleComponent {
                     // such that when its pages are reclaimed in openFile(),
                     // the pages are not flushed to disk but only invalidated.
                     if (!fInfo.fileHasBeenDeleted()) {
+                        ioManager.close(fInfo.getFileHandle());
                         fInfo.markAsDeleted();
                     }
                 }
@@ -1019,13 +1001,7 @@ public class BufferCache implements IBufferCacheInternal, ILifeCycleComponent {
                         }
                         if (found) {
                             returnPage = victim;
-                            returnPage.acquireWriteLatch();
-                            try {
-                                ((CachedPage) returnPage).dpid = dpid;
-                            }
-                            finally{
-                                returnPage.releaseWriteLatch(false);
-                            }
+                            ((CachedPage) returnPage).dpid = dpid;
                         } //otherwise, someone took the same victim before we acquired the lock. try again!
                     } finally {
                         bucket.bucketLock.unlock();
@@ -1092,8 +1068,8 @@ public class BufferCache implements IBufferCacheInternal, ILifeCycleComponent {
                 bucket.cachedPage = cPage;
                 cPage.pinCount.decrementAndGet();
                 if(DEBUG){
-                    assert cPage.pinCount.decrementAndGet() ==0 ;
-                    assert cPage.latch.getReadLockCount() == 1;
+                    assert cPage.pinCount.get() == 0 ;
+                    assert cPage.latch.getReadLockCount() == 0;
                     assert cPage.latch.getWriteHoldCount() == 0;
                     confiscatedPages.remove(cPage);
                     confiscatedPagesOwner.remove(cPage);
@@ -1130,7 +1106,7 @@ public class BufferCache implements IBufferCacheInternal, ILifeCycleComponent {
 
     @Override
     public IFIFOPageQueue createFIFOQueue() {
-        return fifoWriter.createQueue(this, FIFOLocalWriter.instance());
+        return fifoWriter.createQueue(FIFOLocalWriter.instance());
     }
 
     @Override
@@ -1158,6 +1134,35 @@ public class BufferCache implements IBufferCacheInternal, ILifeCycleComponent {
                 ioManager.close(fh.getFileHandle());
                 fileInfoMap.remove(fileId);
             }
+        }
+    }
+
+    @Override
+    public boolean isReplicationEnabled() {
+        if (ioReplicationManager != null) {
+            return ioReplicationManager.isReplicationEnabled();
+        }
+        return false;
+    }
+
+    @Override
+    public IIOReplicationManager getIIOReplicationManager() {
+        return ioReplicationManager;
+    }
+
+    @Override
+    /**
+     * _ONLY_ call this if you absolutely, positively know this file has no dirty pages in the cache!
+     * Bypasses the normal lifecycle of a file handle and evicts all references to it immediately.
+     */
+    public void purgeHandle(int fileId) throws HyracksDataException{
+        synchronized(fileInfoMap){
+                BufferedFileHandle fh = fileInfoMap.get(fileId);
+                if(fh != null){
+                    ioManager.close(fh.getFileHandle());
+                    fileInfoMap.remove(fileId);
+                    fileMapManager.unregisterFile(fileId);
+                }
         }
     }
 

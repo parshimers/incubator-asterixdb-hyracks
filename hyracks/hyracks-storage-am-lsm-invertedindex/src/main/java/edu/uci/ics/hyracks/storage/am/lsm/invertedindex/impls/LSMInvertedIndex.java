@@ -16,7 +16,9 @@ package edu.uci.ics.hyracks.storage.am.lsm.invertedindex.impls;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import edu.uci.ics.hyracks.api.dataflow.value.IBinaryComparatorFactory;
 import edu.uci.ics.hyracks.api.dataflow.value.ITypeTraits;
@@ -56,7 +58,7 @@ import edu.uci.ics.hyracks.storage.am.lsm.common.api.ILSMIndexOperationContext;
 import edu.uci.ics.hyracks.storage.am.lsm.common.api.ILSMMergePolicy;
 import edu.uci.ics.hyracks.storage.am.lsm.common.api.ILSMOperationTracker;
 import edu.uci.ics.hyracks.storage.am.lsm.common.api.IVirtualBufferCache;
-import edu.uci.ics.hyracks.storage.am.lsm.common.freepage.VirtualMetaDataManager;
+import edu.uci.ics.hyracks.storage.am.lsm.common.freepage.VirtualMetaDataPageManager;
 import edu.uci.ics.hyracks.storage.am.lsm.common.impls.AbstractLSMIndex;
 import edu.uci.ics.hyracks.storage.am.lsm.common.impls.BTreeFactory;
 import edu.uci.ics.hyracks.storage.am.lsm.common.impls.BlockingIOOperationCallbackWrapper;
@@ -122,8 +124,8 @@ public class LSMInvertedIndex extends AbstractLSMIndex implements IInvertedIndex
         int i = 0;
         for (IVirtualBufferCache virtualBufferCache : virtualBufferCaches) {
             InMemoryInvertedIndex memInvIndex = createInMemoryInvertedIndex(virtualBufferCache,
-                    new VirtualMetaDataManager(virtualBufferCache.getNumPages()), i);
-            BTree deleteKeysBTree = BTreeUtils.createBTree(virtualBufferCache, new VirtualMetaDataManager(
+                    new VirtualMetaDataPageManager(virtualBufferCache.getNumPages()), i);
+            BTree deleteKeysBTree = BTreeUtils.createBTree(virtualBufferCache, new VirtualMetaDataPageManager(
                     virtualBufferCache.getNumPages()), ((IVirtualBufferCache) virtualBufferCache).getFileMapProvider(),
                     invListTypeTraits, invListCmpFactories, BTreeLeafFrameType.REGULAR_NSM, new FileReference(
                             fileManager.getBaseDir() + "_virtual_del_" + i));
@@ -315,6 +317,9 @@ public class LSMInvertedIndex extends AbstractLSMIndex implements IInvertedIndex
                 break;
             case FULL_MERGE:
                 operationalComponents.addAll(immutableComponents);
+                break;
+            case REPLICATE:
+                operationalComponents.addAll(ctx.getComponentsToBeReplicated());
                 break;
             default:
                 throw new UnsupportedOperationException("Operation " + ctx.getOperation() + " not supported.");
@@ -582,7 +587,7 @@ public class LSMInvertedIndex extends AbstractLSMIndex implements IInvertedIndex
         String lastFileName = lastInvIndex.getBTree().getFileReference().getName();
 
         LSMComponentFileReferences relMergeFileRefs = fileManager.getRelMergeFileReference(firstFileName, lastFileName);
-        ILSMIndexAccessorInternal accessor = new LSMInvertedIndexAccessor(lsmHarness, ictx);
+        ILSMIndexAccessorInternal accessor = new LSMInvertedIndexAccessor(lsmHarness, ctx);
         ioScheduler.scheduleOperation(new LSMInvertedIndexMergeOperation(accessor, mergingComponents, cursor,
                 relMergeFileRefs.getInsertIndexFileReference(), relMergeFileRefs.getDeleteIndexFileReference(),
                 relMergeFileRefs.getBloomFilterFileReference(), callback, fileManager.getBaseDir()));
@@ -800,7 +805,7 @@ public class LSMInvertedIndex extends AbstractLSMIndex implements IInvertedIndex
     }
 
     protected InMemoryInvertedIndex createInMemoryInvertedIndex(IVirtualBufferCache virtualBufferCache,
-            IVirtualMetaDataManager virtualFreePageManager, int id) throws IndexException {
+            IVirtualMetaDataPageManager virtualFreePageManager, int id) throws IndexException {
         return InvertedIndexUtils.createInMemoryBTreeInvertedindex(virtualBufferCache, virtualFreePageManager,
                 invListTypeTraits, invListCmpFactories, tokenTypeTraits, tokenCmpFactories, tokenizerFactory,
                 new FileReference(fileManager.getBaseDir() + "_virtual_vocab_" + id));
@@ -813,8 +818,6 @@ public class LSMInvertedIndex extends AbstractLSMIndex implements IInvertedIndex
                 .createLSMComponentInstance(new LSMComponentFileReferences(dictBTreeFileRef, btreeFileRef,
                         bloomFilterFileRef));
         if (create) {
-            //component.getInvIndex().create();
-            //component.getDeletedKeysBTree().create();
             component.getBloomFilter().create();
             component.getBloomFilter().activate();
         } else {
@@ -888,14 +891,6 @@ public class LSMInvertedIndex extends AbstractLSMIndex implements IInvertedIndex
         return tokenizerFactory;
     }
 
-    protected void forceFlushInvListsFileDirtyPages(OnDiskInvertedIndex invIndex) throws HyracksDataException {
-        int fileId = invIndex.getInvListsFileId();
-        IBufferCache bufferCache = invIndex.getBufferCache();
-        int startPageId = 0;
-        int maxPageId = invIndex.getInvListsMaxPageId();
-        //forceFlushDirtyPages(bufferCache, fileId, startPageId, maxPageId);
-    }
-
     @Override
     public void markAsValid(ILSMComponent lsmComponent) throws HyracksDataException {
         LSMInvertedIndexDiskComponent invIndexComponent = (LSMInvertedIndexDiskComponent) lsmComponent;
@@ -909,7 +904,6 @@ public class LSMInvertedIndex extends AbstractLSMIndex implements IInvertedIndex
 
         // Flush inverted index second.
         forceFlushDirtyPages(invIndex.getBTree());
-        forceFlushInvListsFileDirtyPages(invIndex);
         markAsValidInternal(invIndex.getBTree());
 
         // Flush deleted keys BTree.
@@ -947,4 +941,18 @@ public class LSMInvertedIndex extends AbstractLSMIndex implements IInvertedIndex
         return false;
     }
 
+    @Override
+    public Set<String> getLSMComponentPhysicalFiles(ILSMComponent lsmComponent) {
+        Set<String> files = new HashSet<String>();
+
+        LSMInvertedIndexDiskComponent invIndexComponent = (LSMInvertedIndexDiskComponent) lsmComponent;
+        OnDiskInvertedIndex invIndex = (OnDiskInvertedIndex) invIndexComponent.getInvIndex();
+
+        files.add(invIndex.getInvListsFile().toString());
+        files.add(invIndex.getBTree().toString());
+        files.add(invIndexComponent.getBloomFilter().getFileReference().toString());
+        files.add(invIndexComponent.getDeletedKeysBTree().getFileReference().toString());
+
+        return files;
+    }
 }
