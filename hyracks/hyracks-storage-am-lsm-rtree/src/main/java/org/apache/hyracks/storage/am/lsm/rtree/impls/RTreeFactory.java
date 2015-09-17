@@ -30,18 +30,22 @@ import org.apache.hyracks.storage.common.buffercache.IBufferCache;
 import org.apache.hyracks.storage.common.file.IFileMapProvider;
 
 public class RTreeFactory extends TreeIndexFactory<RTree> {
+    
+    private final boolean isPointMBR;
 
     public RTreeFactory(IBufferCache bufferCache, IFileMapProvider fileMapProvider,
             IFreePageManagerFactory freePageManagerFactory, ITreeIndexFrameFactory interiorFrameFactory,
-            ITreeIndexFrameFactory leafFrameFactory, IBinaryComparatorFactory[] cmpFactories, int fieldCount) {
+            ITreeIndexFrameFactory leafFrameFactory, IBinaryComparatorFactory[] cmpFactories, int fieldCount,
+            boolean isPointMBR) {
         super(bufferCache, fileMapProvider, freePageManagerFactory, interiorFrameFactory, leafFrameFactory,
                 cmpFactories, fieldCount);
+        this.isPointMBR = isPointMBR;
     }
 
     @Override
     public RTree createIndexInstance(FileReference file) throws IndexException {
         return new RTree(bufferCache, fileMapProvider, freePageManagerFactory.createFreePageManager(),
-                interiorFrameFactory, leafFrameFactory, cmpFactories, fieldCount, file);
+                interiorFrameFactory, leafFrameFactory, cmpFactories, fieldCount, file, isPointMBR);
     }
 
 }

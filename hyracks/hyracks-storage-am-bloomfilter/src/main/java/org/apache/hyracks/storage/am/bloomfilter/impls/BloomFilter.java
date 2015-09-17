@@ -211,6 +211,7 @@ public class BloomFilter {
         private final int numHashes;
         private final long numBits;
         private final int numPages;
+        private ICachedPage[] pages;
 
         public BloomFilterBuilder(long numElements, int numHashes, int numBitsPerElement) throws HyracksDataException {
             if (!isActivated) {
@@ -225,18 +226,15 @@ public class BloomFilter {
                 throw new HyracksDataException("Cannot create a bloom filter with his huge number of pages.");
             }
             numPages = (int) tmp;
+            pages = new ICachedPage[numPages];
             persistBloomFilterMetaData();
             readBloomFilterMetaData();
             int currentPageId = 1;
             while (currentPageId <= numPages) {
                 ICachedPage page = bufferCache.pin(BufferedFileHandle.getDiskPageId(fileId, currentPageId), true);
                 page.acquireWriteLatch();
-                try {
-                    initPage(page.getBuffer().array());
-                } finally {
-                    page.releaseWriteLatch(true);
-                    bufferCache.unpin(page);
-                }
+                initPage(page.getBuffer().array());
+                pages[currentPageId - 1] = page;
                 ++currentPageId;
             }
         }
@@ -277,28 +275,22 @@ public class BloomFilter {
             MurmurHash128Bit.hash3_x64_128(tuple, keyFields, SEED, hashes);
             for (int i = 0; i < numHashes; ++i) {
                 long hash = Math.abs((hashes[0] + i * hashes[1]) % numBits);
-
-                // we increment the page id by one, since the metadata page id of the filter is 0.
-                ICachedPage page = bufferCache.pin(
-                        BufferedFileHandle.getDiskPageId(fileId, (int) (hash / numBitsPerPage) + 1), false);
-                page.acquireWriteLatch();
-                try {
-                    ByteBuffer buffer = page.getBuffer();
-                    int byteIndex = (int) (hash % numBitsPerPage) >> 3; // divide by 8
-                    byte b = buffer.array()[byteIndex];
-                    int bitIndex = (int) (hash % numBitsPerPage) & 0x07; // mod 8
-                    b = (byte) (b | (1 << bitIndex));
-                    buffer.array()[byteIndex] = b;
-                } finally {
-                    page.releaseWriteLatch(true);
-                    bufferCache.unpin(page);
-                }
+                ICachedPage page = pages[((int) (hash / numBitsPerPage))];
+                ByteBuffer buffer = page.getBuffer();
+                int byteIndex = (int) (hash % numBitsPerPage) >> 3; // divide by 8
+                byte b = buffer.array()[byteIndex];
+                int bitIndex = (int) (hash % numBitsPerPage) & 0x07; // mod 8
+                b = (byte) (b | (1 << bitIndex));
+                buffer.array()[byteIndex] = b;
             }
         }
 
         @Override
         public void end() throws HyracksDataException, IndexException {
+            for (ICachedPage p : pages) {
+                p.releaseWriteLatch(true);
+                bufferCache.unpin(p);
+            }
         }
-
     }
 }

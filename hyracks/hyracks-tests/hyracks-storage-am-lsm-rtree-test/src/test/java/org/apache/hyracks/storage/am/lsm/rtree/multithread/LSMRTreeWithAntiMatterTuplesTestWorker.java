@@ -67,7 +67,7 @@ public class LSMRTreeWithAntiMatterTuplesTestWorker extends AbstractLSMRTreeTest
 
             case MERGE:
                 accessor.scheduleMerge(NoOpIOOperationCallback.INSTANCE,
-                        ((AbstractLSMRTree) lsmRTree).getImmutableComponents());
+                        ((AbstractLSMRTree) lsmRTree).getImmutableComponents(), null);
                 break;
 
             default:

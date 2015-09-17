@@ -46,7 +46,7 @@ public class LSMBTreeDiskComponentFactory implements ILSMComponentFactory {
     public ILSMComponent createLSMComponentInstance(LSMComponentFileReferences cfr) throws IndexException,
             HyracksDataException {
         return new LSMBTreeDiskComponent(btreeFactory.createIndexInstance(cfr.getInsertIndexFileReference()),
-                bloomFilterFactory.createBloomFiltertInstance(cfr.getBloomFilterFileReference()),
+                bloomFilterFactory == null ? null : bloomFilterFactory.createBloomFiltertInstance(cfr.getBloomFilterFileReference()),
                 filterFactory == null ? null : filterFactory.createLSMComponentFilter());
     }
 
@@ -56,6 +56,6 @@ public class LSMBTreeDiskComponentFactory implements ILSMComponentFactory {
     }
 
     public int[] getBloomFilterKeyFields() {
-        return bloomFilterFactory.getBloomFilterKeyFields();
+        return bloomFilterFactory == null ? null : bloomFilterFactory.getBloomFilterKeyFields();
     }
 }

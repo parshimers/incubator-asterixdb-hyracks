@@ -45,18 +45,18 @@ public class RTreeUtils {
     public static RTree createRTree(IBufferCache bufferCache, IFileMapProvider fileMapProvider,
             ITypeTraits[] typeTraits, IPrimitiveValueProviderFactory[] valueProviderFactories,
             IBinaryComparatorFactory[] cmpFactories, RTreePolicyType rtreePolicyType, FileReference file,
-            boolean durable) {
+			boolean durable, boolean isPointMBR) {
 
         RTreeTypeAwareTupleWriterFactory tupleWriterFactory = new RTreeTypeAwareTupleWriterFactory(typeTraits);
         ITreeIndexFrameFactory interiorFrameFactory = new RTreeNSMInteriorFrameFactory(tupleWriterFactory,
-                valueProviderFactories, rtreePolicyType);
+                valueProviderFactories, rtreePolicyType, isPointMBR);
         ITreeIndexFrameFactory leafFrameFactory = new RTreeNSMLeafFrameFactory(tupleWriterFactory,
-                valueProviderFactories, rtreePolicyType);
+                valueProviderFactories, rtreePolicyType, isPointMBR);
         ITreeIndexMetaDataFrameFactory metaFrameFactory = new LIFOMetaDataFrameFactory();
 
         IFreePageManager freePageManager = new LinkedListFreePageManager(bufferCache, 0, metaFrameFactory);
         RTree rtree = new RTree(bufferCache, fileMapProvider, freePageManager, interiorFrameFactory, leafFrameFactory,
-                cmpFactories, typeTraits.length, file);
+                cmpFactories, typeTraits.length, file, isPointMBR);
         return rtree;
     }
 

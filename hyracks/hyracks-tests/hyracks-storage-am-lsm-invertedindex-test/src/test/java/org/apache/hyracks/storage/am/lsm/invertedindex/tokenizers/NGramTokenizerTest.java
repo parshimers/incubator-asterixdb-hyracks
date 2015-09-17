@@ -34,6 +34,11 @@ import org.junit.Before;
 import org.junit.Test;
 
 import org.apache.hyracks.data.std.util.GrowableArray;
+import org.apache.hyracks.storage.am.common.api.IToken;
+import org.apache.hyracks.storage.am.common.tokenizer.AbstractUTF8Token;
+import org.apache.hyracks.storage.am.common.tokenizer.HashedUTF8NGramTokenFactory;
+import org.apache.hyracks.storage.am.common.tokenizer.NGramUTF8StringBinaryTokenizer;
+import org.apache.hyracks.storage.am.common.tokenizer.UTF8NGramTokenFactory;
 
 public class NGramTokenizerTest {
 

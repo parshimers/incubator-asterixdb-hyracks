@@ -23,6 +23,7 @@ import java.util.ArrayList;
 
 import org.apache.hyracks.api.context.IHyracksCommonContext;
 import org.apache.hyracks.api.exceptions.HyracksDataException;
+import org.apache.hyracks.dataflow.common.data.accessors.ITupleReference;
 import org.apache.hyracks.storage.am.common.api.IIndexOperationContext;
 import org.apache.hyracks.storage.am.common.api.IndexException;
 import org.apache.hyracks.storage.am.lsm.invertedindex.api.IInvertedIndex;
@@ -40,6 +41,16 @@ public class TOccurrenceSearcher extends AbstractTOccurrenceSearcher {
     }
 
     public void search(OnDiskInvertedIndexSearchCursor resultCursor, InvertedIndexSearchPredicate searchPred,
+            IIndexOperationContext ictx) throws HyracksDataException, IndexException {
+        //distinguish search operations based on the given search modifier. 
+        if (searchPred.getSearchModifier() instanceof DisjunctiveSearchModifier) {
+            disjunctiveSearch(resultCursor, searchPred, ictx);
+        } else {
+            toccurenceSearch(resultCursor, searchPred, ictx);
+        }
+    }
+    
+    private void toccurenceSearch(OnDiskInvertedIndexSearchCursor resultCursor, InvertedIndexSearchPredicate searchPred,
             IIndexOperationContext ictx) throws HyracksDataException, IndexException {
         tokenizeQuery(searchPred);
         int numQueryTokens = queryTokenAppender.getTupleCount();
@@ -59,9 +70,33 @@ public class TOccurrenceSearcher extends AbstractTOccurrenceSearcher {
             throw new OccurrenceThresholdPanicException("Merge threshold is <= 0. Failing Search.");
         }
         int numPrefixLists = searchModifier.getNumPrefixLists(occurrenceThreshold, invListCursors.size());
-
         searchResult.reset();
         invListMerger.merge(invListCursors, occurrenceThreshold, numPrefixLists, searchResult);
+        resultCursor.open(null, searchPred);
+    }
+    
+    private void disjunctiveSearch(OnDiskInvertedIndexSearchCursor resultCursor, InvertedIndexSearchPredicate searchPred,
+            IIndexOperationContext ictx) throws HyracksDataException, IndexException {
+        tokenizeQuery(searchPred);
+        int numQueryTokens = queryTokenAppender.getTupleCount();
+        IInvertedListCursor invListCursor = invListCursorFactory.create();
+        ITupleReference invListTuple = null;
+
+        searchResult.reset();
+        for (int i = 0; i < numQueryTokens; i++) {
+            searchKey.reset(queryTokenAppender, i);
+            invIndex.openInvertedListCursor(invListCursor, searchKey, ictx);
+            invListCursor.pinPages();
+            try {
+                while (invListCursor.hasNext()) {
+                    invListCursor.next();
+                    invListTuple = invListCursor.getTuple();
+                    searchResult.append(invListTuple, 1);
+                }
+            } finally {
+                invListCursor.unpinPages();    
+            }
+        }
         resultCursor.open(null, searchPred);
     }
 }

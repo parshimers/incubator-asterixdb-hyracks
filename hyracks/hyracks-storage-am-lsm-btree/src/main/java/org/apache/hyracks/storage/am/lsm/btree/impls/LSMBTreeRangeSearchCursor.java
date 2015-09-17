@@ -28,10 +28,14 @@ import org.apache.hyracks.dataflow.common.util.TupleUtils;
 import org.apache.hyracks.storage.am.btree.api.IBTreeLeafFrame;
 import org.apache.hyracks.storage.am.btree.impls.BTree;
 import org.apache.hyracks.storage.am.btree.impls.BTreeRangeSearchCursor;
+import org.apache.hyracks.storage.am.btree.impls.HilbertBTreeRangeSearchCursor;
+import org.apache.hyracks.storage.am.btree.impls.HilbertValueBTreeRangeSearchCursor;
 import org.apache.hyracks.storage.am.btree.impls.RangePredicate;
 import org.apache.hyracks.storage.am.common.api.ICursorInitialState;
 import org.apache.hyracks.storage.am.common.api.IIndexAccessor;
 import org.apache.hyracks.storage.am.common.api.IIndexCursor;
+import org.apache.hyracks.storage.am.common.api.ILinearizerSearchPredicate;
+import org.apache.hyracks.storage.am.common.api.ILinearizerSearchPredicate.LinearizerSearchComparisonType;
 import org.apache.hyracks.storage.am.common.api.ISearchOperationCallback;
 import org.apache.hyracks.storage.am.common.api.ISearchPredicate;
 import org.apache.hyracks.storage.am.common.api.ITreeIndexAccessor;
@@ -199,7 +203,15 @@ public class LSMBTreeRangeSearchCursor extends LSMIndexSearchCursor {
             ILSMComponent component = operationalComponents.get(i);
             BTree btree;
             IBTreeLeafFrame leafFrame = (IBTreeLeafFrame) lsmInitialState.getLeafFrameFactory().createFrame();
-            rangeCursors[i] = new BTreeRangeSearchCursor(leafFrame, false);
+            if (searchPred instanceof ILinearizerSearchPredicate) {
+                if (((ILinearizerSearchPredicate) searchPred).getComparisonType() == LinearizerSearchComparisonType.HILBERT_ORDER_BASED_RELATIVE_COMPARISON_BETWEETN_TWO_OBJECTS) {
+                    rangeCursors[i] = new HilbertBTreeRangeSearchCursor(leafFrame, false);
+                } else {
+                    rangeCursors[i] = new HilbertValueBTreeRangeSearchCursor(leafFrame, false);
+                }
+            } else {
+                rangeCursors[i] = new BTreeRangeSearchCursor(leafFrame, false);
+            }
             if (component.getType() == LSMComponentType.MEMORY) {
                 includeMutableComponent = true;
                 btree = (BTree) ((LSMBTreeMemoryComponent) component).getBTree();

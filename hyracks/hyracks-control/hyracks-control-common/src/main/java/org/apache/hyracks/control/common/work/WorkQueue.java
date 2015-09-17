@@ -28,7 +28,7 @@ import org.apache.hyracks.api.exceptions.HyracksException;
 
 public class WorkQueue {
     private static final Logger LOGGER = Logger.getLogger(WorkQueue.class.getName());
-    private static final Level COUNT_LOGGING_LEVEL = Level.FINEST;
+//    private static final Level COUNT_LOGGING_LEVEL = Level.FINEST;
 
     private final LinkedBlockingQueue<AbstractWork> queue;
     private final WorkerThread thread;
@@ -42,10 +42,10 @@ public class WorkQueue {
         thread = new WorkerThread();
         stopSemaphore = new Semaphore(1);
         stopped = true;
-        if (LOGGER.isLoggable(COUNT_LOGGING_LEVEL)) {
-            enqueueCount = new AtomicInteger(0);
-            dequeueCount = new AtomicInteger(0);
-        }
+//        if (LOGGER.isLoggable(COUNT_LOGGING_LEVEL)) {
+//            enqueueCount = new AtomicInteger(0);
+//            dequeueCount = new AtomicInteger(0);
+//        }
     }
 
     public void start() throws HyracksException {
@@ -54,10 +54,10 @@ public class WorkQueue {
         } catch (InterruptedException e) {
             throw new HyracksException(e);
         }
-        if (LOGGER.isLoggable(COUNT_LOGGING_LEVEL)) {
-            enqueueCount.set(0);
-            dequeueCount.set(0);
-        }
+//        if (LOGGER.isLoggable(COUNT_LOGGING_LEVEL)) {
+//            enqueueCount.set(0);
+//            dequeueCount.set(0);
+//        }
         stopped = false;
         thread.start();
     }
@@ -79,9 +79,9 @@ public class WorkQueue {
     }
 
     public void schedule(AbstractWork event) {
-        if (LOGGER.isLoggable(COUNT_LOGGING_LEVEL)) {
-            LOGGER.log(COUNT_LOGGING_LEVEL, "Enqueue (" + hashCode() + "): " + enqueueCount.incrementAndGet());
-        }
+//        if (LOGGER.isLoggable(COUNT_LOGGING_LEVEL)) {
+//            LOGGER.log(COUNT_LOGGING_LEVEL, "Enqueue (" + hashCode() + "): " + enqueueCount.incrementAndGet());
+//        }
         if (LOGGER.isLoggable(Level.FINER)) {
             LOGGER.finer("Scheduling: " + event);
         }
@@ -114,11 +114,11 @@ public class WorkQueue {
                     } catch (InterruptedException e) {
                         continue;
                     }
-                    if (LOGGER.isLoggable(COUNT_LOGGING_LEVEL)) {
-                        LOGGER.log(COUNT_LOGGING_LEVEL,
-                                "Dequeue (" + WorkQueue.this.hashCode() + "): " + dequeueCount.incrementAndGet() + "/"
-                                        + enqueueCount);
-                    }
+//                    if (LOGGER.isLoggable(COUNT_LOGGING_LEVEL)) {
+//                        LOGGER.log(COUNT_LOGGING_LEVEL,
+//                                "Dequeue (" + WorkQueue.this.hashCode() + "): " + dequeueCount.incrementAndGet() + "/"
+//                                        + enqueueCount);
+//                    }
                     try {
                         if (LOGGER.isLoggable(r.logLevel())) {
                             LOGGER.log(r.logLevel(), "Executing: " + r);

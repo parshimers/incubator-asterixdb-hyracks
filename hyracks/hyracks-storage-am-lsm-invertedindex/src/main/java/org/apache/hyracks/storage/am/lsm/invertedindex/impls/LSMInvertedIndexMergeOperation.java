@@ -29,12 +29,12 @@ import org.apache.hyracks.api.io.IODeviceHandle;
 import org.apache.hyracks.storage.am.common.api.IIndexCursor;
 import org.apache.hyracks.storage.am.common.api.IndexException;
 import org.apache.hyracks.storage.am.lsm.common.api.ILSMComponent;
-import org.apache.hyracks.storage.am.lsm.common.api.ILSMIOOperation;
 import org.apache.hyracks.storage.am.lsm.common.api.ILSMIOOperationCallback;
 import org.apache.hyracks.storage.am.lsm.common.api.ILSMIndexAccessorInternal;
+import org.apache.hyracks.storage.am.lsm.common.impls.AbstractLSMMergeOperation;
 import org.apache.hyracks.storage.am.lsm.invertedindex.ondisk.OnDiskInvertedIndex;
 
-public class LSMInvertedIndexMergeOperation implements ILSMIOOperation {
+public class LSMInvertedIndexMergeOperation extends AbstractLSMMergeOperation {
     private final ILSMIndexAccessorInternal accessor;
     private final List<ILSMComponent> mergingComponents;
     private final IIndexCursor cursor;
@@ -46,7 +46,9 @@ public class LSMInvertedIndexMergeOperation implements ILSMIOOperation {
 
     public LSMInvertedIndexMergeOperation(ILSMIndexAccessorInternal accessor, List<ILSMComponent> mergingComponents,
             IIndexCursor cursor, FileReference dictBTreeMergeTarget, FileReference deletedKeysBTreeMergeTarget,
-            FileReference bloomFilterMergeTarget, ILSMIOOperationCallback callback, String indexIdentifier) {
+            FileReference bloomFilterMergeTarget, ILSMIOOperationCallback callback, String indexIdentifier,
+            Object mergePolicyInfo) {
+        super(mergePolicyInfo);
         this.accessor = accessor;
         this.mergingComponents = mergingComponents;
         this.cursor = cursor;

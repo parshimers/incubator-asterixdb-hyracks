@@ -91,11 +91,11 @@ public class ExternalRTree extends LSMRTree implements ITwoPCIndex {
             IBinaryComparatorFactory[] btreeCmpFactories, ILinearizeComparatorFactory linearizer,
             int[] comparatorFields, IBinaryComparatorFactory[] linearizerArray, ILSMMergePolicy mergePolicy,
             ILSMOperationTracker opTracker, ILSMIOOperationScheduler ioScheduler, ILSMIOOperationCallback ioOpCallback,
-            int[] buddyBTreeFields, int version, boolean durable) {
+            int[] buddyBTreeFields, int version, boolean durable, boolean isPointMBR) {
         super(rtreeInteriorFrameFactory, rtreeLeafFrameFactory, btreeInteriorFrameFactory, btreeLeafFrameFactory,
                 fileNameManager, diskRTreeFactory, diskBTreeFactory, bloomFilterFactory, bloomFilterFalsePositiveRate,
                 diskFileMapProvider, fieldCount, rtreeCmpFactories, btreeCmpFactories, linearizer, comparatorFields,
-                linearizerArray, mergePolicy, opTracker, ioScheduler, ioOpCallback, buddyBTreeFields, durable);
+                linearizerArray, mergePolicy, opTracker, ioScheduler, ioOpCallback, buddyBTreeFields, durable, isPointMBR);
         this.secondDiskComponents = new LinkedList<ILSMComponent>();
         this.version = version;
         this.fieldCount = fieldCount;
@@ -290,6 +290,7 @@ public class ExternalRTree extends LSMRTree implements ITwoPCIndex {
 
         LSMRTreeDiskComponent mergedComponent = createDiskComponent(componentFactory, mergeOp.getRTreeMergeTarget(),
                 mergeOp.getBTreeMergeTarget(), mergeOp.getBloomFilterMergeTarget(), true);
+        mergedComponent.setMergePolicyInfo(mergeOp.getMergePolicyInfo());
 
         // In case we must keep the deleted-keys BTrees, then they must be
         // merged *before* merging the r-trees so that
@@ -666,7 +667,7 @@ public class ExternalRTree extends LSMRTree implements ITwoPCIndex {
     // The only change the the schedule merge is the method used to create the
     // opCtx. first line <- in schedule merge, we->
     @Override
-    public void scheduleMerge(ILSMIndexOperationContext ctx, ILSMIOOperationCallback callback)
+    public void scheduleMerge(ILSMIndexOperationContext ctx, ILSMIOOperationCallback callback, Object mergePolicyInfo)
             throws HyracksDataException, IndexException {
         ILSMIndexOperationContext rctx = createOpContext(NoOpOperationCallback.INSTANCE, -1);
         rctx.setOperation(IndexOperation.MERGE);
@@ -675,9 +676,10 @@ public class ExternalRTree extends LSMRTree implements ITwoPCIndex {
         LSMComponentFileReferences relMergeFileRefs = getMergeTargetFileName(mergingComponents);
         ILSMIndexAccessorInternal accessor = new LSMRTreeAccessor(lsmHarness, rctx);
         // create the merge operation.
-        LSMRTreeMergeOperation mergeOp = new LSMRTreeMergeOperation(accessor, mergingComponents, cursor,
-                relMergeFileRefs.getInsertIndexFileReference(), relMergeFileRefs.getDeleteIndexFileReference(),
-                relMergeFileRefs.getBloomFilterFileReference(), callback, fileManager.getBaseDir());
+        LSMRTreeMergeOperation mergeOp = new LSMRTreeMergeOperation((ILSMIndexAccessorInternal) accessor,
+                mergingComponents, cursor, relMergeFileRefs.getInsertIndexFileReference(),
+                relMergeFileRefs.getDeleteIndexFileReference(), relMergeFileRefs.getBloomFilterFileReference(),
+                callback, fileManager.getBaseDir(), mergePolicyInfo);
         // set the keepDeletedTuples flag
         boolean keepDeleteTuples = false;
         if (version == 0) {

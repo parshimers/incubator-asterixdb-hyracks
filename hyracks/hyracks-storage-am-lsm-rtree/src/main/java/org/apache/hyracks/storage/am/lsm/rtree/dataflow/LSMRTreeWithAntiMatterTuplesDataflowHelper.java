@@ -50,10 +50,10 @@ public class LSMRTreeWithAntiMatterTuplesDataflowHelper extends AbstractLSMRTree
             ILSMMergePolicy mergePolicy, ILSMOperationTrackerProvider opTrackerFactory,
             ILSMIOOperationScheduler ioScheduler, ILSMIOOperationCallbackFactory ioOpCallbackFactory,
             ILinearizeComparatorFactory linearizeCmpFactory, int[] rtreeFields, ITypeTraits[] filterTypeTraits,
-            IBinaryComparatorFactory[] filterCmpFactories, int[] filterFields, boolean durable) {
+            IBinaryComparatorFactory[] filterCmpFactories, int[] filterFields, boolean durable , boolean isPointMBR) {
         super(opDesc, ctx, partition, virtualBufferCaches, btreeComparatorFactories, valueProviderFactories,
-                rtreePolicyType, mergePolicy, opTrackerFactory, ioScheduler, ioOpCallbackFactory, linearizeCmpFactory,
-                rtreeFields, filterTypeTraits, filterCmpFactories, filterFields, durable);
+                rtreePolicyType, mergePolicy, opTrackerFactory, ioScheduler, ioOpCallbackFactory, linearizeCmpFactory, rtreeFields, filterTypeTraits,
+                filterCmpFactories, filterFields, durable, isPointMBR);
     }
 
     @Override
@@ -69,7 +69,7 @@ public class LSMRTreeWithAntiMatterTuplesDataflowHelper extends AbstractLSMRTree
                     diskFileMapProvider, typeTraits, rtreeCmpFactories, btreeCmpFactories, valueProviderFactories,
                     rtreePolicyType, mergePolicy, opTracker, ioScheduler,
                     ioOpCallbackFactory.createIOOperationCallback(), linearizeCmpFactory, rtreeFields,
-                    filterTypeTraits, filterCmpFactories, filterFields, durable);
+                    filterTypeTraits, filterCmpFactories, filterFields, durable, isPointMBR);
         } catch (TreeIndexException e) {
             throw new HyracksDataException(e);
         }

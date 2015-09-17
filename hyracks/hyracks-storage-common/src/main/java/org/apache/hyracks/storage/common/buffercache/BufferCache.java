@@ -39,6 +39,7 @@ import org.apache.hyracks.api.io.FileReference;
 import org.apache.hyracks.api.io.IFileHandle;
 import org.apache.hyracks.api.io.IIOManager;
 import org.apache.hyracks.api.lifecycle.ILifeCycleComponent;
+import org.apache.hyracks.api.util.ExperimentProfiler;
 import org.apache.hyracks.api.replication.IIOReplicationManager;
 import org.apache.hyracks.storage.common.file.BufferedFileHandle;
 import org.apache.hyracks.storage.common.file.IFileMapManager;
@@ -63,6 +64,9 @@ public class BufferCache implements IBufferCacheInternal, ILifeCycleComponent {
     private IIOReplicationManager ioReplicationManager;
     private List<ICachedPageInternal> cachedPages = new ArrayList<ICachedPageInternal>();
     private boolean closed;
+    
+    //for profiler
+    public static long profilerCacheMiss;
 
     public BufferCache(IIOManager ioManager, IPageReplacementStrategy pageReplacementStrategy,
             IPageCleanerPolicy pageCleanerPolicy, IFileMapManager fileMapManager, int maxOpenFiles,
@@ -85,6 +89,10 @@ public class BufferCache implements IBufferCacheInternal, ILifeCycleComponent {
         cleanerThread = new CleanerThread();
         executor.execute(cleanerThread);
         closed = false;
+        
+        if (ExperimentProfiler.PROFILE_MODE) {
+            profilerCacheMiss = 0;
+        }
     }
 
     //this constructor is used when replication is enabled to pass the IIOReplicationManager
@@ -160,6 +168,9 @@ public class BufferCache implements IBufferCacheInternal, ILifeCycleComponent {
                 if (!cPage.valid) {
                     read(cPage);
                     cPage.valid = true;
+                    if (ExperimentProfiler.PROFILE_MODE) {
+                        ++profilerCacheMiss;
+                    }
                 }
             }
         } else {

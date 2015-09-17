@@ -20,10 +20,10 @@
 package org.apache.hyracks.storage.am.lsm.invertedindex.search;
 
 import org.apache.hyracks.dataflow.common.data.accessors.ITupleReference;
+import org.apache.hyracks.storage.am.common.api.IBinaryTokenizer;
 import org.apache.hyracks.storage.am.common.impls.AbstractSearchPredicate;
 import org.apache.hyracks.storage.am.common.ophelpers.MultiComparator;
 import org.apache.hyracks.storage.am.lsm.invertedindex.api.IInvertedIndexSearchModifier;
-import org.apache.hyracks.storage.am.lsm.invertedindex.tokenizers.IBinaryTokenizer;
 
 public class InvertedIndexSearchPredicate extends AbstractSearchPredicate {
     private static final long serialVersionUID = 1L;

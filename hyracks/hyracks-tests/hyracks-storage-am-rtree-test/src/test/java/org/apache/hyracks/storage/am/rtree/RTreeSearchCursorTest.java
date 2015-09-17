@@ -113,16 +113,16 @@ public class RTreeSearchCursorTest extends AbstractRTreeTest {
         ITreeIndexMetaDataFrameFactory metaFrameFactory = new LIFOMetaDataFrameFactory();
 
         ITreeIndexFrameFactory interiorFrameFactory = new RTreeNSMInteriorFrameFactory(tupleWriterFactory,
-                valueProviderFactories, RTreePolicyType.RTREE);
+                valueProviderFactories, RTreePolicyType.RTREE, false);
         ITreeIndexFrameFactory leafFrameFactory = new RTreeNSMLeafFrameFactory(tupleWriterFactory,
-                valueProviderFactories, RTreePolicyType.RTREE);
+                valueProviderFactories, RTreePolicyType.RTREE, false);
 
         IRTreeInteriorFrame interiorFrame = (IRTreeInteriorFrame) interiorFrameFactory.createFrame();
         IRTreeLeafFrame leafFrame = (IRTreeLeafFrame) leafFrameFactory.createFrame();
         IFreePageManager freePageManager = new LinkedListFreePageManager(bufferCache, 0, metaFrameFactory);
 
         RTree rtree = new RTree(bufferCache, harness.getFileMapProvider(), freePageManager, interiorFrameFactory,
-                leafFrameFactory, cmpFactories, fieldCount, harness.getFileReference());
+                leafFrameFactory, cmpFactories, fieldCount, harness.getFileReference(), false);
         rtree.create();
         rtree.activate();
 

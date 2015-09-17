@@ -32,8 +32,8 @@ import org.apache.hyracks.dataflow.common.comm.io.FrameTupleAccessor;
 import org.apache.hyracks.dataflow.common.comm.io.FrameTupleAppender;
 import org.apache.hyracks.dataflow.common.comm.util.FrameUtils;
 import org.apache.hyracks.dataflow.std.base.AbstractUnaryInputUnaryOutputOperatorNodePushable;
-import org.apache.hyracks.storage.am.lsm.invertedindex.tokenizers.IBinaryTokenizer;
-import org.apache.hyracks.storage.am.lsm.invertedindex.tokenizers.IToken;
+import org.apache.hyracks.storage.am.common.api.IBinaryTokenizer;
+import org.apache.hyracks.storage.am.common.api.IToken;
 
 public class BinaryTokenizerOperatorNodePushable extends AbstractUnaryInputUnaryOutputOperatorNodePushable {
 
@@ -45,6 +45,8 @@ public class BinaryTokenizerOperatorNodePushable extends AbstractUnaryInputUnary
     private final boolean writeKeyFieldsFirst;
     private final RecordDescriptor inputRecDesc;
     private final RecordDescriptor outputRecDesc;
+    private final short numTokensPerOutputRecord;
+    private final boolean flushFramesRapidly;
 
     private FrameTupleAccessor accessor;
     private ArrayTupleBuilder builder;
@@ -53,7 +55,7 @@ public class BinaryTokenizerOperatorNodePushable extends AbstractUnaryInputUnary
 
     public BinaryTokenizerOperatorNodePushable(IHyracksTaskContext ctx, RecordDescriptor inputRecDesc,
             RecordDescriptor outputRecDesc, IBinaryTokenizer tokenizer, int docField, int[] keyFields,
-            boolean addNumTokensKey, boolean writeKeyFieldsFirst) {
+            boolean addNumTokensKey, boolean writeKeyFieldsFirst, int numTokensPerOutputRecord, boolean flushFramesRapidly) {
         this.ctx = ctx;
         this.tokenizer = tokenizer;
         this.docField = docField;
@@ -62,6 +64,8 @@ public class BinaryTokenizerOperatorNodePushable extends AbstractUnaryInputUnary
         this.inputRecDesc = inputRecDesc;
         this.outputRecDesc = outputRecDesc;
         this.writeKeyFieldsFirst = writeKeyFieldsFirst;
+        this.numTokensPerOutputRecord = (short) numTokensPerOutputRecord;
+        this.flushFramesRapidly = flushFramesRapidly;
     }
 
     @Override
@@ -88,28 +92,29 @@ public class BinaryTokenizerOperatorNodePushable extends AbstractUnaryInputUnary
 
             if (addNumTokensKey) {
                 // Get the total number of tokens.
-                numTokens = tokenizer.getTokensCount();
+                numTokens = (short) (numTokensPerOutputRecord > 1 ? tokenizer.getTokensCount() * numTokensPerOutputRecord : tokenizer.getTokensCount());
             }
 
             // Write token and data into frame by following the order specified
             // in the writeKeyFieldsFirst field.
             while (tokenizer.hasNext()) {
 
-                tokenizer.next();
-
                 builder.reset();
 
                 // Writing Order: token, number of token, keyfield1 ... n
                 if (!writeKeyFieldsFirst) {
                     try {
-                        IToken token = tokenizer.getToken();
-                        token.serializeToken(builderData);
-
-                        builder.addFieldEndOffset();
-                        // Add number of tokens if requested.
-                        if (addNumTokensKey) {
-                            builder.getDataOutput().writeShort(numTokens);
+                        for (int j = 0; j < numTokensPerOutputRecord; j++) {
+                            tokenizer.next();
+                            IToken token = tokenizer.getToken();
+                            token.serializeToken(builderData);
+    
                             builder.addFieldEndOffset();
+                            // Add number of tokens if requested.
+                            if (addNumTokensKey) {
+                                builder.getDataOutput().writeShort(numTokens);
+                                builder.addFieldEndOffset();
+                            }
                         }
                     } catch (IOException e) {
                         throw new HyracksDataException(e.getMessage());
@@ -128,14 +133,17 @@ public class BinaryTokenizerOperatorNodePushable extends AbstractUnaryInputUnary
                     }
 
                     try {
-                        IToken token = tokenizer.getToken();
-                        token.serializeToken(builderData);
-
-                        builder.addFieldEndOffset();
-                        // Add number of tokens if requested.
-                        if (addNumTokensKey) {
-                            builder.getDataOutput().writeShort(numTokens);
+                        for (int j = 0; j < numTokensPerOutputRecord; j++) {
+                            tokenizer.next();
+                            IToken token = tokenizer.getToken();
+                            token.serializeToken(builderData);
+    
                             builder.addFieldEndOffset();
+                            // Add number of tokens if requested.
+                            if (addNumTokensKey) {
+                                builder.getDataOutput().writeShort(numTokens);
+                                builder.addFieldEndOffset();
+                            }
                         }
                     } catch (IOException e) {
                         throw new HyracksDataException(e.getMessage());
@@ -146,10 +154,12 @@ public class BinaryTokenizerOperatorNodePushable extends AbstractUnaryInputUnary
                 FrameUtils.appendToWriter(writer, appender, builder.getFieldEndOffsets(), builder.getByteArray(), 0,
                         builder.getSize());
 
-            }
-
+            }//end while
+        }//end for
+        
+        if (flushFramesRapidly) {
+        	appender.flush(writer, true);
         }
-
     }
 
     @Override

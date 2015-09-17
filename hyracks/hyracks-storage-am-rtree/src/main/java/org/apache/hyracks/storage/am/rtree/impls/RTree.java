@@ -64,12 +64,12 @@ public class RTree extends AbstractTreeIndex {
 
     // Global node sequence number used for the concurrency control protocol
     private final AtomicLong globalNsn;
-
     private final int maxTupleSize;
+    private final boolean isPointMBR; // used for reducing storage space to store point objects.
 
     public RTree(IBufferCache bufferCache, IFileMapProvider fileMapProvider, IFreePageManager freePageManager,
             ITreeIndexFrameFactory interiorFrameFactory, ITreeIndexFrameFactory leafFrameFactory,
-            IBinaryComparatorFactory[] cmpFactories, int fieldCount, FileReference file) {
+            IBinaryComparatorFactory[] cmpFactories, int fieldCount, FileReference file, boolean isPointMBR) {
         super(bufferCache, fileMapProvider, freePageManager, interiorFrameFactory, leafFrameFactory, cmpFactories,
                 fieldCount, file);
         globalNsn = new AtomicLong();
@@ -77,6 +77,7 @@ public class RTree extends AbstractTreeIndex {
         ITreeIndexFrame interiorFrame = interiorFrameFactory.createFrame();
         maxTupleSize = Math.min(leafFrame.getMaxTupleSize(bufferCache.getPageSize()),
                 interiorFrame.getMaxTupleSize(bufferCache.getPageSize()));
+        this.isPointMBR = isPointMBR;
     }
 
     private long incrementGlobalNsn() {
@@ -861,6 +862,18 @@ public class RTree extends AbstractTreeIndex {
             throw new UnsupportedOperationException(
                     "The RTree does not support the notion of keys, therefore upsert does not make sense.");
         }
+
+        /***********
+         * This method is used to create a Cursor which gets all MBRs in a certain level 
+         * (indicated by the treeLevel parameter) in a R-tree.
+         * This method exists for debugging purpose and must not be used for any other purposes.
+         * 
+         * @param treeLevel
+         * @return
+         */
+        public RTreeInteriorCursor createInteriorCursor(int treeLevel) {
+            return new RTreeInteriorCursor((IRTreeInteriorFrame) interiorFrameFactory.createFrame(), treeLevel);
+        }
     }
 
     @Override
@@ -875,21 +888,23 @@ public class RTree extends AbstractTreeIndex {
     }
 
     public class RTreeBulkLoader extends AbstractTreeIndex.AbstractTreeIndexBulkLoader {
-        ITreeIndexFrame lowerFrame, prevInteriorFrame;
-        RTreeTypeAwareTupleWriter tupleWriter = ((RTreeTypeAwareTupleWriter) interiorFrame.getTupleWriter());
+        ITreeIndexFrame lowerFrame, reusableInteriorFrame;
+        RTreeTypeAwareTupleWriter interiorFrameTupleWriter = ((RTreeTypeAwareTupleWriter) interiorFrame
+                .getTupleWriter());
         ITreeIndexTupleReference mbrTuple = interiorFrame.createTupleReference();
         ByteBuffer mbr;
 
         public RTreeBulkLoader(float fillFactor) throws TreeIndexException, HyracksDataException {
             super(fillFactor);
-            prevInteriorFrame = interiorFrameFactory.createFrame();
+            reusableInteriorFrame = interiorFrameFactory.createFrame();
         }
 
         @Override
         public void add(ITupleReference tuple) throws IndexException, HyracksDataException {
             try {
-                int tupleSize = Math.max(leafFrame.getBytesRequriedToWriteTuple(tuple),
-                        interiorFrame.getBytesRequriedToWriteTuple(tuple));
+                int leafFrameTupleSize = leafFrame.getBytesRequriedToWriteTuple(tuple);
+                int interiorFrameTupleSize = interiorFrame.getBytesRequriedToWriteTuple(tuple);
+                int tupleSize = Math.max(leafFrameTupleSize, interiorFrameTupleSize);
                 if (tupleSize > maxTupleSize) {
                     throw new TreeIndexException("Space required for record (" + tupleSize
                             + ") larger than maximum acceptable size (" + maxTupleSize + ")");
@@ -897,7 +912,7 @@ public class RTree extends AbstractTreeIndex {
 
                 NodeFrontier leafFrontier = nodeFrontiers.get(0);
 
-                int spaceNeeded = tupleWriter.bytesRequired(tuple) + slotSize;
+                int spaceNeeded = leafFrameTupleSize;
                 int spaceUsed = leafFrame.getBuffer().capacity() - leafFrame.getTotalFreeSpace();
 
                 // try to free space by compression
@@ -951,45 +966,56 @@ public class RTree extends AbstractTreeIndex {
             if (level >= nodeFrontiers.size())
                 addLevel();
 
+            // compute mbr
             ((RTreeNSMFrame) lowerFrame).adjustMBR();
 
+            // prepare byte array for the computed mbr
             if (mbr == null) {
-                int bytesRequired = tupleWriter.bytesRequired(((RTreeNSMFrame) lowerFrame).getTuples()[0], 0,
-                        cmp.getKeyFieldCount())
-                        + ((RTreeNSMInteriorFrame) interiorFrame).getChildPointerSize();
+                int bytesRequired = interiorFrameTupleWriter.bytesRequired(((RTreeNSMFrame) lowerFrame).getTuples()[0],
+                        0, cmp.getKeyFieldCount()) + ((RTreeNSMInteriorFrame) interiorFrame).getChildPointerSize();
                 mbr = ByteBuffer.allocate(bytesRequired);
             }
-            tupleWriter.writeTupleFields(((RTreeNSMFrame) lowerFrame).getTuples(), 0, mbr, 0);
+
+            // writes the computed mbr to the byte array
+            interiorFrameTupleWriter.writeTupleFields(((RTreeNSMFrame) lowerFrame).getTuples(), 0, mbr, 0);
+
+            // set mbr tuple reference to the bytearray
             mbrTuple.resetByTupleOffset(mbr, 0);
 
+            // write the mbr to the interior frame of the "level" 
             NodeFrontier frontier = nodeFrontiers.get(level);
             interiorFrame.setPage(frontier.page);
-
             interiorFrame.insert(mbrTuple, -1);
 
+            // write the associated child pointer right next to the mbr written. 
             interiorFrame.getBuffer().putInt(
                     interiorFrame.getTupleOffset(interiorFrame.getTupleCount() - 1) + mbrTuple.getTupleSize(),
                     nodeFrontiers.get(level - 1).pageId);
 
+            // handle a case that the current interior frame is full (and toRoot is false, which means that there are still records to load).
             if (interiorFrame.hasSpaceInsert(mbrTuple) != FrameOpSpaceStatus.SUFFICIENT_CONTIGUOUS_SPACE && !toRoot) {
-                lowerFrame = prevInteriorFrame;
+
+                // interior frame's page (let's say p10) goes to the lower frame 
+                lowerFrame = reusableInteriorFrame;
                 lowerFrame.setPage(frontier.page);
 
+                // In the following recursive call, the parent page(say p20) of the page(p10) in the lower frame goes to the interior frame
                 propagateBulk(level + 1, toRoot);
                 propagated = true;
 
+                // prepare a new sibling page to the original page(p10) and put the new one to the interior frame. 
                 frontier.page.releaseWriteLatch(true);
                 bufferCache.unpin(frontier.page);
                 frontier.pageId = freePageManager.getFreePage(metaFrame);
-
                 frontier.page = bufferCache.pin(BufferedFileHandle.getDiskPageId(fileId, frontier.pageId), true);
                 frontier.page.acquireWriteLatch();
                 interiorFrame.setPage(frontier.page);
                 interiorFrame.initBuffer((byte) level);
             }
 
+            // handle a case that there are no more records to load and the last loaded record didn't trigger a propagation.
             if (toRoot && !propagated && level < nodeFrontiers.size() - 1) {
-                lowerFrame = prevInteriorFrame;
+                lowerFrame = reusableInteriorFrame;
                 lowerFrame.setPage(frontier.page);
                 propagateBulk(level + 1, true);
             }

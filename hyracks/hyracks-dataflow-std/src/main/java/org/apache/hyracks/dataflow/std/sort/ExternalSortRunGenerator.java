@@ -27,11 +27,13 @@ import org.apache.hyracks.api.dataflow.value.INormalizedKeyComputerFactory;
 import org.apache.hyracks.api.dataflow.value.RecordDescriptor;
 import org.apache.hyracks.api.exceptions.HyracksDataException;
 import org.apache.hyracks.api.io.FileReference;
+import org.apache.hyracks.api.util.ExperimentProfiler;
+import org.apache.hyracks.dataflow.common.comm.io.FrameTupleAccessor;
 import org.apache.hyracks.dataflow.common.io.RunFileWriter;
 import org.apache.hyracks.dataflow.std.sort.buffermanager.EnumFreeSlotPolicy;
-import org.apache.hyracks.dataflow.std.sort.buffermanager.FrameFreeSlotSmallestFit;
 import org.apache.hyracks.dataflow.std.sort.buffermanager.FrameFreeSlotBiggestFirst;
 import org.apache.hyracks.dataflow.std.sort.buffermanager.FrameFreeSlotLastFit;
+import org.apache.hyracks.dataflow.std.sort.buffermanager.FrameFreeSlotSmallestFit;
 import org.apache.hyracks.dataflow.std.sort.buffermanager.IFrameBufferManager;
 import org.apache.hyracks.dataflow.std.sort.buffermanager.IFrameFreeSlotPolicy;
 import org.apache.hyracks.dataflow.std.sort.buffermanager.VariableFrameMemoryManager;
@@ -86,12 +88,23 @@ public class ExternalSortRunGenerator extends AbstractSortRunGenerator {
             frameSorter = new FrameSorterQuickSort(ctx, bufferManager, sortFields, firstKeyNormalizerFactory,
                     comparatorFactories, recordDesc, outputLimit);
         }
+        
+        if (ExperimentProfiler.PROFILE_MODE) {
+            profilerFta = new FrameTupleAccessor(recordDesc);
+            profilerTupleCount = 0;
+        }
     }
 
     @Override
     public void nextFrame(ByteBuffer buffer) throws HyracksDataException {
         if (!frameSorter.insertFrame(buffer)) {
             flushFramesToRun();
+            
+            if (ExperimentProfiler.PROFILE_MODE) {
+                profilerFta.reset(buffer);
+                profilerTupleCount += profilerFta.getTupleCount();
+            }
+            
             if (!frameSorter.insertFrame(buffer)) {
                 throw new HyracksDataException("The given frame is too big to insert into the sorting memory.");
             }

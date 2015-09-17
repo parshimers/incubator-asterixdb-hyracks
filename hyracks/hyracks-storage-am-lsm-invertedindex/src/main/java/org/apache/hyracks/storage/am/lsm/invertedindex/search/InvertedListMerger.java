@@ -228,19 +228,18 @@ public class InvertedListMerger {
         FixedSizeFrameTupleAccessor resultFrameTupleAcc = prevSearchResult.getAccessor();
         FixedSizeTupleReference resultTuple = prevSearchResult.getTuple();
 
+        boolean invListHasNext = false;
         boolean advanceCursor = true;
         boolean advancePrevResult = false;
         int resultTidx = 0;
 
         resultFrameTupleAcc.reset(prevCurrentBuffer);
 
-        int invListTidx = 0;
-        int invListNumTuples = invListCursor.size();
-
-        if (invListCursor.hasNext())
+        invListHasNext = invListCursor.hasNext();
+        if (invListHasNext)
             invListCursor.next();
 
-        while (invListTidx < invListNumTuples && resultTidx < resultFrameTupleAcc.getTupleCount()) {
+        while (invListHasNext && resultTidx < resultFrameTupleAcc.getTupleCount()) {
 
             ITupleReference invListTuple = invListCursor.getTuple();
             resultTuple.reset(prevCurrentBuffer.array(), resultFrameTupleAcc.getTupleStartOffset(resultTidx));
@@ -278,21 +277,19 @@ public class InvertedListMerger {
             }
 
             if (advanceCursor) {
-                invListTidx++;
-                if (invListCursor.hasNext()) {
+                invListHasNext = invListCursor.hasNext();
+                if (invListHasNext)
                     invListCursor.next();
-                }
             }
         }
 
         // append remaining new elements from inverted list
-        while (invListTidx < invListNumTuples) {
+        while (invListHasNext) {
             ITupleReference invListTuple = invListCursor.getTuple();
             newSearchResult.append(invListTuple, 1);
-            invListTidx++;
-            if (invListCursor.hasNext()) {
+            invListHasNext = invListCursor.hasNext();
+            if (invListHasNext)
                 invListCursor.next();
-            }
         }
 
         // append remaining elements from previous result set

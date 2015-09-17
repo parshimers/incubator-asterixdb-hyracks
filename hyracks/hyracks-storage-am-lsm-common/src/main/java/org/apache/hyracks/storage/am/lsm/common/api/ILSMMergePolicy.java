@@ -23,10 +23,13 @@ import java.util.Map;
 
 import org.apache.hyracks.api.exceptions.HyracksDataException;
 import org.apache.hyracks.storage.am.common.api.IndexException;
+import org.apache.hyracks.storage.am.lsm.common.impls.AbstractDiskLSMComponent;
 
 public interface ILSMMergePolicy {
-    public void diskComponentAdded(ILSMIndex index, boolean fullMergeIsRequested) throws HyracksDataException,
+    public void diskComponentAdded(ILSMIndex index, boolean fullMergeIsRequested, AbstractDiskLSMComponent newComponent) throws HyracksDataException,
             IndexException;
 
     public void configure(Map<String, String> properties);
+    
+    public boolean isMergeLagging(ILSMIndex index);
 }

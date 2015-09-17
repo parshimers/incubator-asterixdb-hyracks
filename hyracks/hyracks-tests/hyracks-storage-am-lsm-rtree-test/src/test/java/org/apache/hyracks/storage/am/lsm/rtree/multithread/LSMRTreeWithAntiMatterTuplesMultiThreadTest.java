@@ -62,13 +62,13 @@ public class LSMRTreeWithAntiMatterTuplesMultiThreadTest extends AbstractRTreeMu
     protected ITreeIndex createTreeIndex(ITypeTraits[] typeTraits, IBinaryComparatorFactory[] rtreeCmpFactories,
             IBinaryComparatorFactory[] btreeCmpFactories, IPrimitiveValueProviderFactory[] valueProviderFactories,
             RTreePolicyType rtreePolicyType, int[] btreeFields) throws TreeIndexException {
-        return LSMRTreeUtils
-                .createLSMTreeWithAntiMatterTuples(harness.getVirtualBufferCaches(), harness.getFileReference(),
-                        harness.getDiskBufferCache(), harness.getDiskFileMapProvider(), typeTraits, rtreeCmpFactories,
-                        btreeCmpFactories, valueProviderFactories, rtreePolicyType, harness.getMergePolicy(),
-                        harness.getOperationTracker(), harness.getIOScheduler(), harness.getIOOperationCallback(),
-                        LSMRTreeUtils.proposeBestLinearizer(typeTraits, rtreeCmpFactories.length), null, null, null,
-                        null, true);
+        return LSMRTreeUtils.createLSMTreeWithAntiMatterTuples(harness.getVirtualBufferCaches(),
+                harness.getFileReference(), harness.getDiskBufferCache(), harness.getDiskFileMapProvider(), typeTraits,
+                rtreeCmpFactories, btreeCmpFactories, valueProviderFactories, rtreePolicyType,
+                harness.getMergePolicy(), harness.getOperationTracker(), harness.getIOScheduler(),
+                harness.getIOOperationCallback(),
+                LSMRTreeUtils.proposeBestLinearizer(typeTraits, rtreeCmpFactories.length), null, null, null, null, 
+                true, false);
 
     }
 

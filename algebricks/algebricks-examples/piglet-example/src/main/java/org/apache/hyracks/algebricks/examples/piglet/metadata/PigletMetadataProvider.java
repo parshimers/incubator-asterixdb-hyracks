@@ -207,7 +207,7 @@ public class PigletMetadataProvider implements IMetadataProvider<String, String>
             IDataSourceIndex<String, String> dataSource, IOperatorSchema propagatedSchema, IOperatorSchema[] inputSchemas,
             IVariableTypeEnvironment typeEnv, List<LogicalVariable> primaryKeys, List<LogicalVariable> secondaryKeys,
             ILogicalExpression filterExpr, RecordDescriptor recordDesc,
-            JobGenContext context, JobSpecification spec, boolean bulkload) throws AlgebricksException {
+            JobGenContext context, JobSpecification spec, boolean isBulkload, boolean isQuery) throws AlgebricksException {
         // TODO Auto-generated method stub
         return null;
     }

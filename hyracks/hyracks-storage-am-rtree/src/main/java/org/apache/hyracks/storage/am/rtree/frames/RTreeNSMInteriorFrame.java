@@ -46,8 +46,8 @@ public class RTreeNSMInteriorFrame extends RTreeNSMFrame implements IRTreeInteri
     private final int keyFieldCount;
 
     public RTreeNSMInteriorFrame(ITreeIndexTupleWriter tupleWriter, IPrimitiveValueProvider[] keyValueProviders,
-            RTreePolicyType rtreePolicyType) {
-        super(tupleWriter, keyValueProviders, rtreePolicyType);
+            RTreePolicyType rtreePolicyType, boolean isPointMBR) {
+        super(tupleWriter, keyValueProviders, rtreePolicyType, isPointMBR);
         keyFieldCount = keyValueProviders.length;
         frameTuple.setFieldCount(keyFieldCount);
     }
@@ -197,10 +197,8 @@ public class RTreeNSMInteriorFrame extends RTreeNSMFrame implements IRTreeInteri
         if (tupleIndex != -1) {
             tupleWriter.writeTuple(tuple, buf.array(), getTupleOffset(tupleIndex));
         } else {
-            throw new TreeIndexException("Error: Faild to find a tuple in a page");
-
+            throw new TreeIndexException("Error: Failed to find a tuple in a page");
         }
-
     }
 
     protected int pointerCmp(ITupleReference tupleA, ITupleReference tupleB, MultiComparator cmp)
@@ -231,7 +229,6 @@ public class RTreeNSMInteriorFrame extends RTreeNSMFrame implements IRTreeInteri
         buf.putInt(tupleCountOff, buf.getInt(tupleCountOff) + 1);
         buf.putInt(freeSpaceOff, buf.getInt(freeSpaceOff) + tupleSize);
         buf.putInt(totalFreeSpaceOff, buf.getInt(totalFreeSpaceOff) - tupleSize - slotManager.getSlotSize());
-
     }
 
     @Override

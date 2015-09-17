@@ -23,11 +23,12 @@ import java.io.IOException;
 
 import org.apache.hyracks.api.exceptions.HyracksDataException;
 import org.apache.hyracks.dataflow.common.data.accessors.ITupleReference;
-import org.apache.hyracks.storage.am.lsm.invertedindex.tokenizers.IBinaryTokenizer;
-import org.apache.hyracks.storage.am.lsm.invertedindex.tokenizers.IToken;
+import org.apache.hyracks.storage.am.common.api.IBinaryTokenizer;
+import org.apache.hyracks.storage.am.common.api.IToken;
+import org.apache.hyracks.storage.am.common.tokenizer.TokenizingTupleIterator;
 
 // TODO: We can possibly avoid copying the data into a new tuple here.
-public class PartitionedInvertedIndexTokenizingTupleIterator extends InvertedIndexTokenizingTupleIterator {
+public class PartitionedInvertedIndexTokenizingTupleIterator extends TokenizingTupleIterator {
 
     protected short numTokens = 0;
 
@@ -36,7 +37,7 @@ public class PartitionedInvertedIndexTokenizingTupleIterator extends InvertedInd
         super(tokensFieldCount, invListFieldCount, tokenizer);
     }
 
-    public void reset(ITupleReference inputTuple) {
+    public void reset(ITupleReference inputTuple) throws HyracksDataException {
         super.reset(inputTuple);
         // Run through the tokenizer once to get the total number of tokens.
         numTokens = 0;
@@ -62,7 +63,7 @@ public class PartitionedInvertedIndexTokenizingTupleIterator extends InvertedInd
             throw new HyracksDataException(e);
         }
         // Add inverted-list element fields.
-        for (int i = 0; i < invListFieldCount; i++) {
+        for (int i = 0; i < attachedFieldCount; i++) {
             tupleBuilder.addField(inputTuple.getFieldData(i + 1), inputTuple.getFieldStart(i + 1),
                     inputTuple.getFieldLength(i + 1));
         }

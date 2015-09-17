@@ -165,8 +165,13 @@ public class LSMBTreePointSearchCursor implements ITreeIndexCursor {
                 rangeCursors[i] = new BTreeRangeSearchCursor(leafFrame, false);
                 btree = (BTree) ((LSMBTreeMemoryComponent) component).getBTree();
             } else {
-                rangeCursors[i] = new BloomFilterAwareBTreePointSearchCursor(leafFrame, false,
-                        ((LSMBTreeDiskComponent) component).getBloomFilter());
+                if (((LSMBTreeDiskComponent) component).getBloomFilter() == null) {
+                    //Secondary indexes don't have a Bloomfilter.  
+                    rangeCursors[i] = new BTreeRangeSearchCursor(leafFrame, false);
+                } else {
+                    rangeCursors[i] = new BloomFilterAwareBTreePointSearchCursor(leafFrame, false,
+                            ((LSMBTreeDiskComponent) component).getBloomFilter());
+                }
                 btree = (BTree) ((LSMBTreeDiskComponent) component).getBTree();
             }
             btreeAccessors[i] = btree.createAccessor(NoOpOperationCallback.INSTANCE, NoOpOperationCallback.INSTANCE);

@@ -60,7 +60,7 @@ public class LSMInvertedIndexMergeTest extends AbstractInvertedIndexLoadTest {
             }
             // Perform merge.
             invIndexAccessor.scheduleMerge(NoOpIOOperationCallback.INSTANCE,
-                    ((LSMInvertedIndex) invIndex).getImmutableComponents());
+                    ((LSMInvertedIndex) invIndex).getImmutableComponents(), null);
             validateAndCheckIndex(testCtx);
             runTinySearchWorkload(testCtx, tupleGen);
         }

@@ -39,7 +39,7 @@ public interface ILSMHarness {
 
     public void endSearch(ILSMIndexOperationContext ctx) throws HyracksDataException;
 
-    public void scheduleMerge(ILSMIndexOperationContext ctx, ILSMIOOperationCallback callback)
+    public void scheduleMerge(ILSMIndexOperationContext ctx, ILSMIOOperationCallback callback, Object mergePolicyInfo)
             throws HyracksDataException, IndexException;
 
     public void scheduleFullMerge(ILSMIndexOperationContext ctx, ILSMIOOperationCallback callback)

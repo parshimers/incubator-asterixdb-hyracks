@@ -19,7 +19,6 @@
 
 package org.apache.hyracks.algebricks.core.algebra.operators.physical;
 
-import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.hyracks.algebricks.common.constraints.AlgebricksPartitionConstraint;
@@ -82,18 +81,17 @@ public class TokenizePOperator extends AbstractPhysicalOperator {
             IOperatorSchema propagatedSchema, IOperatorSchema[] inputSchemas, IOperatorSchema outerPlanSchema)
             throws AlgebricksException {
         TokenizeOperator tokenizeOp = (TokenizeOperator) op;
-        if (tokenizeOp.getOperation() != Kind.INSERT || !tokenizeOp.isBulkload()) {
-            throw new AlgebricksException("Tokenize Operator only works when bulk-loading data.");
-        }
-
         IMetadataProvider mp = context.getMetadataProvider();
         IVariableTypeEnvironment typeEnv = context.getTypeEnvironment(op);
         JobSpecification spec = builder.getJobSpec();
         RecordDescriptor inputDesc = JobGenHelper.mkRecordDescriptor(
                 context.getTypeEnvironment(op.getInputs().get(0).getValue()), inputSchemas[0], context);
-        Pair<IOperatorDescriptor, AlgebricksPartitionConstraint> runtimeAndConstraints = mp.getTokenizerRuntime(
+        
+        Pair<IOperatorDescriptor, AlgebricksPartitionConstraint> runtimeAndConstraints = null;
+        runtimeAndConstraints = mp.getTokenizerRuntime(
                 dataSourceIndex, propagatedSchema, inputSchemas, typeEnv, primaryKeys, secondaryKeys, null, inputDesc,
-                context, spec, true);
+                context, spec, tokenizeOp.isBulkload(), tokenizeOp.isQuery());
+        
         builder.contributeHyracksOperator(tokenizeOp, runtimeAndConstraints.first);
         builder.contributeAlgebricksPartitionConstraint(runtimeAndConstraints.first, runtimeAndConstraints.second);
         ILogicalOperator src = tokenizeOp.getInputs().get(0).getValue();

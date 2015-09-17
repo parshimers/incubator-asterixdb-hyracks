@@ -88,6 +88,7 @@ public class ExternalBTree extends LSMBTree implements ITwoPCIndex {
 
     private final ITreeIndexFrameFactory interiorFrameFactory;
 
+    //TODO remove useless Bloomfilter for secondary btree index if useless
     public ExternalBTree(ITreeIndexFrameFactory interiorFrameFactory, ITreeIndexFrameFactory insertLeafFrameFactory,
             ITreeIndexFrameFactory deleteLeafFrameFactory, ILSMIndexFileManager fileManager,
             TreeIndexFactory<BTree> diskBTreeFactory, TreeIndexFactory<BTree> bulkLoadBTreeFactory,
@@ -173,7 +174,7 @@ public class ExternalBTree extends LSMBTree implements ITwoPCIndex {
     // The only reason to override the following method is that it uses a different context object
     // in addition, determining whether or not to keep deleted tuples is different here
     @Override
-    public void scheduleMerge(ILSMIndexOperationContext ctx, ILSMIOOperationCallback callback)
+    public void scheduleMerge(ILSMIndexOperationContext ctx, ILSMIOOperationCallback callback, Object mergePolicyInfo)
             throws HyracksDataException, IndexException {
         ExternalBTreeOpContext opCtx = createOpContext(NoOpOperationCallback.INSTANCE, -1);
         opCtx.setOperation(IndexOperation.MERGE);
@@ -200,7 +201,7 @@ public class ExternalBTree extends LSMBTree implements ITwoPCIndex {
         ILSMIndexAccessorInternal accessor = new LSMBTreeAccessor(lsmHarness, opCtx);
         ioScheduler.scheduleOperation(new LSMBTreeMergeOperation(accessor, mergingComponents, cursor, relMergeFileRefs
                 .getInsertIndexFileReference(), relMergeFileRefs.getBloomFilterFileReference(), callback, fileManager
-                .getBaseDir()));
+                .getBaseDir(), mergePolicyInfo));
     }
 
     // This function should only be used when a transaction fail. it doesn't

@@ -329,12 +329,16 @@ public class SetAlgebricksPhysicalOperatorsRule implements IAlgebraicRewriteRule
                 }
                 case TOKENIZE: {
                     TokenizeOperator opTokenize = (TokenizeOperator) op;
-                    List<LogicalVariable> primaryKeys = new ArrayList<LogicalVariable>();
-                    List<LogicalVariable> secondaryKeys = new ArrayList<LogicalVariable>();
-                    getKeys(opTokenize.getPrimaryKeyExpressions(), primaryKeys);
-                    getKeys(opTokenize.getSecondaryKeyExpressions(), secondaryKeys);
-                    // Tokenize Operator only operates with a bulk load on a data set with an index
-                    if (opTokenize.isBulkload()) {
+                    if (opTokenize.isQuery()) {
+                        List<LogicalVariable> secondaryKeys = new ArrayList<LogicalVariable>();
+                        getKeys(opTokenize.getSecondaryKeyExpressions(), secondaryKeys);
+                        op.setPhysicalOperator(new TokenizePOperator(null, secondaryKeys, opTokenize
+                                .getDataSourceIndex()));
+                    } else {
+                        List<LogicalVariable> primaryKeys = new ArrayList<LogicalVariable>();
+                        List<LogicalVariable> secondaryKeys = new ArrayList<LogicalVariable>();
+                        getKeys(opTokenize.getPrimaryKeyExpressions(), primaryKeys);
+                        getKeys(opTokenize.getSecondaryKeyExpressions(), secondaryKeys);
                         op.setPhysicalOperator(new TokenizePOperator(primaryKeys, secondaryKeys, opTokenize
                                 .getDataSourceIndex()));
                     }

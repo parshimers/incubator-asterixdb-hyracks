@@ -62,8 +62,7 @@ public class RTreeMultiThreadTest extends AbstractRTreeMultiThreadTest {
             IBinaryComparatorFactory[] btreeCmpFactories, IPrimitiveValueProviderFactory[] valueProviderFactories,
             RTreePolicyType rtreePolicyType, int[] btreeFields) throws TreeIndexException {
         return RTreeUtils.createRTree(harness.getBufferCache(), harness.getFileMapProvider(), typeTraits,
-                valueProviderFactories, rtreeCmpFactories, rtreePolicyType, harness.getFileReference(), true);
-
+                valueProviderFactories, rtreeCmpFactories, rtreePolicyType, harness.getFileReference(), true, false);
     }
 
     @Override

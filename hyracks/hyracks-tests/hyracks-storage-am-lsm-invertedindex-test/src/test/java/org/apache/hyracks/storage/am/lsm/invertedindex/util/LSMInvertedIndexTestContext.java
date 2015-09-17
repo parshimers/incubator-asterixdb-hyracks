@@ -38,13 +38,15 @@ import org.apache.hyracks.dataflow.common.util.SerdeUtils;
 import org.apache.hyracks.dataflow.common.util.TupleUtils;
 import org.apache.hyracks.storage.am.btree.OrderedIndexTestContext;
 import org.apache.hyracks.storage.am.common.CheckTuple;
+import org.apache.hyracks.storage.am.common.api.IBinaryTokenizerFactory;
 import org.apache.hyracks.storage.am.common.api.IIndex;
+import org.apache.hyracks.storage.am.common.api.ITokenizingTupleIterator;
 import org.apache.hyracks.storage.am.common.api.IndexException;
+import org.apache.hyracks.storage.am.common.tokenizer.TokenizingTupleIterator;
 import org.apache.hyracks.storage.am.lsm.common.freepage.VirtualFreePageManager;
 import org.apache.hyracks.storage.am.lsm.invertedindex.api.IInvertedIndex;
 import org.apache.hyracks.storage.am.lsm.invertedindex.common.LSMInvertedIndexTestHarness;
 import org.apache.hyracks.storage.am.lsm.invertedindex.exceptions.InvertedIndexException;
-import org.apache.hyracks.storage.am.lsm.invertedindex.tokenizers.IBinaryTokenizerFactory;
 
 @SuppressWarnings("rawtypes")
 public class LSMInvertedIndexTestContext extends OrderedIndexTestContext {
@@ -62,13 +64,13 @@ public class LSMInvertedIndexTestContext extends OrderedIndexTestContext {
     protected IBinaryComparatorFactory[] allCmpFactories;
     protected IBinaryTokenizerFactory tokenizerFactory;
     protected InvertedIndexType invIndexType;
-    protected InvertedIndexTokenizingTupleIterator indexTupleIter;
+    protected ITokenizingTupleIterator indexTupleIter;
     protected HashSet<Comparable> allTokens = new HashSet<Comparable>();
     protected List<ITupleReference> documentCorpus = new ArrayList<ITupleReference>();
 
     public LSMInvertedIndexTestContext(ISerializerDeserializer[] fieldSerdes, IIndex index,
             IBinaryTokenizerFactory tokenizerFactory, InvertedIndexType invIndexType,
-            InvertedIndexTokenizingTupleIterator indexTupleIter) throws HyracksDataException {
+            ITokenizingTupleIterator indexTupleIter) throws HyracksDataException {
         super(fieldSerdes, index);
         invIndex = (IInvertedIndex) index;
         this.tokenizerFactory = tokenizerFactory;
@@ -177,12 +179,12 @@ public class LSMInvertedIndexTestContext extends OrderedIndexTestContext {
                 throw new InvertedIndexException("Unknow inverted-index type '" + invIndexType + "'.");
             }
         }
-        InvertedIndexTokenizingTupleIterator indexTupleIter = null;
+        ITokenizingTupleIterator indexTupleIter = null;
         switch (invIndexType) {
             case INMEMORY:
             case ONDISK:
             case LSM: {
-                indexTupleIter = new InvertedIndexTokenizingTupleIterator(invIndex.getTokenTypeTraits().length,
+                indexTupleIter = new TokenizingTupleIterator(invIndex.getTokenTypeTraits().length,
                         invIndex.getInvListTypeTraits().length, tokenizerFactory.createTokenizer());
                 break;
             }

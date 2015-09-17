@@ -42,6 +42,8 @@ public class AsynchronousScheduler implements ILSMIOOperationScheduler {
     private ExecutorService executor;
     private final Map<String, ILSMIOOperation> runningFlushOperations = new HashMap<String, ILSMIOOperation>();
     private final Map<String, PriorityQueue<ILSMIOOperation>> waitingFlushOperations = new HashMap<String, PriorityQueue<ILSMIOOperation>>();
+    private final Map<String, ILSMIOOperation> runningMergeOperations = new HashMap<String, ILSMIOOperation>();
+    private final Map<String, PriorityQueue<ILSMIOOperation>> waitingMergeOperations = new HashMap<String, PriorityQueue<ILSMIOOperation>>();
 
     public void init(ThreadFactory threadFactory) {
         // Creating an executor with the same configuration of Executors.newCachedThreadPool. 
@@ -60,32 +62,64 @@ public class AsynchronousScheduler implements ILSMIOOperationScheduler {
                 LSMIOOperationTask<Boolean> task = (LSMIOOperationTask<Boolean>) r;
                 ILSMIOOperation executedOp = task.getOperation();
                 String id = executedOp.getIndexUniqueIdentifier();
-                synchronized (this) {
-                    runningFlushOperations.remove(id);
-                    if (waitingFlushOperations.containsKey(id)) {
-                        try {
-                            ILSMIOOperation op = waitingFlushOperations.get(id).poll();
-                            if (op != null) {
-                                scheduleOperation(op);
-                            } else {
-                                waitingFlushOperations.remove(id);
+//                if (executedOp.getIOOpertionType() == LSMIOOpertionType.MERGE) {
+//                    synchronized (runningMergeOperations) {
+//                        runningMergeOperations.remove(id);
+//                        if (waitingMergeOperations.containsKey(id)) {
+//                            try {
+//                                ILSMIOOperation op = waitingMergeOperations.get(id).poll();
+//                                if (op != null) {
+//                                    scheduleOperation(op);
+//                                } else {
+//                                    waitingMergeOperations.remove(id);
+//                                }
+//                            } catch (HyracksDataException e) {
+//                                t = e.getCause();
+//                            }
+//                        }
+//                    }
+//                } else {
+                    synchronized (runningFlushOperations) {
+                        runningFlushOperations.remove(id);
+                        if (waitingFlushOperations.containsKey(id)) {
+                            try {
+                                ILSMIOOperation op = waitingFlushOperations.get(id).poll();
+                                if (op != null) {
+                                    scheduleOperation(op);
+                                } else {
+                                    waitingFlushOperations.remove(id);
+                                }
+                            } catch (HyracksDataException e) {
+                                t = e.getCause();
                             }
-                        } catch (HyracksDataException e) {
-                            t = e.getCause();
                         }
                     }
-                }
+//                }
             }
         };
     }
 
     @Override
     public void scheduleOperation(ILSMIOOperation operation) throws HyracksDataException {
+        String id = operation.getIndexUniqueIdentifier();
         if (operation.getIOOpertionType() == LSMIOOpertionType.MERGE) {
+//            synchronized (runningMergeOperations) {
+//                if (runningMergeOperations.containsKey(id)) {
+//                    if (waitingMergeOperations.containsKey(id)) {
+//                        waitingMergeOperations.get(id).offer(operation);
+//                    } else {
+//                        PriorityQueue<ILSMIOOperation> q = new PriorityQueue<ILSMIOOperation>();
+//                        q.offer(operation);
+//                        waitingMergeOperations.put(id, q);
+//                    }
+//                } else {
+//                    runningMergeOperations.put(id, operation);
+//                    executor.submit(operation);
+//                }
+//            }
             executor.submit(operation);
         } else {
-            String id = operation.getIndexUniqueIdentifier();
-            synchronized (executor) {
+            synchronized (runningFlushOperations) {
                 if (runningFlushOperations.containsKey(id)) {
                     if (waitingFlushOperations.containsKey(id)) {
                         waitingFlushOperations.get(id).offer(operation);

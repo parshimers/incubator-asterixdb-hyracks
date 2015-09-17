@@ -42,5 +42,4 @@ public class BTreeFactory extends TreeIndexFactory<BTree> {
         return new BTree(bufferCache, fileMapProvider, freePageManagerFactory.createFreePageManager(),
                 interiorFrameFactory, leafFrameFactory, cmpFactories, fieldCount, file);
     }
-
 }

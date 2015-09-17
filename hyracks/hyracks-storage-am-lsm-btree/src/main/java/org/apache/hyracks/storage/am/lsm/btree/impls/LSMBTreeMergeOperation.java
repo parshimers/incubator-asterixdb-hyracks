@@ -29,11 +29,11 @@ import org.apache.hyracks.api.io.IODeviceHandle;
 import org.apache.hyracks.storage.am.common.api.ITreeIndexCursor;
 import org.apache.hyracks.storage.am.common.api.IndexException;
 import org.apache.hyracks.storage.am.lsm.common.api.ILSMComponent;
-import org.apache.hyracks.storage.am.lsm.common.api.ILSMIOOperation;
 import org.apache.hyracks.storage.am.lsm.common.api.ILSMIOOperationCallback;
 import org.apache.hyracks.storage.am.lsm.common.api.ILSMIndexAccessorInternal;
+import org.apache.hyracks.storage.am.lsm.common.impls.AbstractLSMMergeOperation;
 
-public class LSMBTreeMergeOperation implements ILSMIOOperation {
+public class LSMBTreeMergeOperation extends AbstractLSMMergeOperation {
 
     private final ILSMIndexAccessorInternal accessor;
     private final List<ILSMComponent> mergingComponents;
@@ -45,7 +45,8 @@ public class LSMBTreeMergeOperation implements ILSMIOOperation {
 
     public LSMBTreeMergeOperation(ILSMIndexAccessorInternal accessor, List<ILSMComponent> mergingComponents,
             ITreeIndexCursor cursor, FileReference btreeMergeTarget, FileReference bloomFilterMergeTarget,
-            ILSMIOOperationCallback callback, String indexIdentifier) {
+            ILSMIOOperationCallback callback, String indexIdentifier, Object mergePolicyInfo) {
+        super(mergePolicyInfo);
         this.accessor = accessor;
         this.mergingComponents = mergingComponents;
         this.cursor = cursor;
@@ -61,7 +62,9 @@ public class LSMBTreeMergeOperation implements ILSMIOOperation {
         for (ILSMComponent o : mergingComponents) {
             LSMBTreeDiskComponent component = (LSMBTreeDiskComponent) o;
             devs.add(component.getBTree().getFileReference().getDeviceHandle());
-            devs.add(component.getBloomFilter().getFileReference().getDeviceHandle());
+            if (bloomFilterMergeTarget != null) {
+                devs.add(component.getBloomFilter().getFileReference().getDeviceHandle());
+            }
         }
         return devs;
     }
@@ -70,7 +73,9 @@ public class LSMBTreeMergeOperation implements ILSMIOOperation {
     public Set<IODeviceHandle> getWriteDevices() {
         Set<IODeviceHandle> devs = new HashSet<IODeviceHandle>();
         devs.add(btreeMergeTarget.getDeviceHandle());
-        devs.add(bloomFilterMergeTarget.getDeviceHandle());
+        if (bloomFilterMergeTarget != null) {
+            devs.add(bloomFilterMergeTarget.getDeviceHandle());
+        }
         return devs;
     }
 

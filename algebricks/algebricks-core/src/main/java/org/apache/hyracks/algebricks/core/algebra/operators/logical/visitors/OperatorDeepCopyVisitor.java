@@ -310,7 +310,7 @@ public class OperatorDeepCopyVisitor implements ILogicalOperatorVisitor<ILogical
 
         TokenizeOperator tokenizeOp = new TokenizeOperator(op.getDataSourceIndex(), newPrimaryKeyExpressions,
                 newSecondaryKeyExpressions, newTokenizeVars, newFilterExpression, op.getOperation(), op.isBulkload(),
-                op.isPartitioned(), newTokenizeVarTypes);
+                op.isPartitioned(), newTokenizeVarTypes, op.isQuery());
         return tokenizeOp;
     }
 

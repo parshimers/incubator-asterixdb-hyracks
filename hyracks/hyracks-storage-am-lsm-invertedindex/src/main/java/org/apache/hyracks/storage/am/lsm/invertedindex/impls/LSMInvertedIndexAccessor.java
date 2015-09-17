@@ -93,12 +93,12 @@ public class LSMInvertedIndexAccessor implements ILSMIndexAccessorInternal, IInv
     }
 
     @Override
-    public void scheduleMerge(ILSMIOOperationCallback callback, List<ILSMComponent> components)
+    public void scheduleMerge(ILSMIOOperationCallback callback, List<ILSMComponent> components, Object mergePolicyInfo)
             throws HyracksDataException, IndexException {
         ctx.setOperation(IndexOperation.MERGE);
         ctx.getComponentsToBeMerged().clear();
         ctx.getComponentsToBeMerged().addAll(components);
-        lsmHarness.scheduleMerge(ctx, callback);
+        lsmHarness.scheduleMerge(ctx, callback, mergePolicyInfo);
     }
     
     @Override

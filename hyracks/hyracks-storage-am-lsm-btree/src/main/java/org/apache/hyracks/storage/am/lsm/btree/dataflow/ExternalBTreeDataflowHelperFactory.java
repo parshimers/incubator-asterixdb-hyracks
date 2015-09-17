@@ -21,6 +21,7 @@ package org.apache.hyracks.storage.am.lsm.btree.dataflow;
 import java.util.Map;
 
 import org.apache.hyracks.api.context.IHyracksTaskContext;
+import org.apache.hyracks.storage.am.common.api.IBinaryTokenizerFactory;
 import org.apache.hyracks.storage.am.common.api.IIndexDataflowHelper;
 import org.apache.hyracks.storage.am.common.dataflow.IIndexOperatorDescriptor;
 import org.apache.hyracks.storage.am.lsm.common.api.ILSMIOOperationCallbackFactory;
@@ -33,15 +34,18 @@ public class ExternalBTreeDataflowHelperFactory extends AbstractLSMIndexDataflow
 
     private static final long serialVersionUID = 1L;
 
-    private final int version;
+    private int version;
+    private final IBinaryTokenizerFactory tokenizerFactory;
 
     public ExternalBTreeDataflowHelperFactory(ILSMMergePolicyFactory mergePolicyFactory,
             Map<String, String> mergePolicyProperties, ILSMOperationTrackerProvider opTrackerFactory,
             ILSMIOOperationSchedulerProvider ioSchedulerProvider, ILSMIOOperationCallbackFactory ioOpCallbackFactory,
-            double bloomFilterFalsePositiveRate, int version, boolean durable) {
+            double bloomFilterFalsePositiveRate, int version, IBinaryTokenizerFactory tokenizerFactory, boolean durable) {
         super(null, mergePolicyFactory, mergePolicyProperties, opTrackerFactory, ioSchedulerProvider,
                 ioOpCallbackFactory, bloomFilterFalsePositiveRate, null, null, null, durable);
         this.version = version;
+        this.tokenizerFactory = tokenizerFactory;
+        
     }
 
     @Override
@@ -49,7 +53,7 @@ public class ExternalBTreeDataflowHelperFactory extends AbstractLSMIndexDataflow
             int partition) {
         return new ExternalBTreeDataflowHelper(opDesc, ctx, partition, bloomFilterFalsePositiveRate,
                 mergePolicyFactory.createMergePolicy(mergePolicyProperties, ctx), opTrackerFactory,
-                ioSchedulerProvider.getIOScheduler(ctx), ioOpCallbackFactory, false, version, durable);
+                ioSchedulerProvider.getIOScheduler(ctx), ioOpCallbackFactory, false, version, tokenizerFactory, durable);
     }
 
 }

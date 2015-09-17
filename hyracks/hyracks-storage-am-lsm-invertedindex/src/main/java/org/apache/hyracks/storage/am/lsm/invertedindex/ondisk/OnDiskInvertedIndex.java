@@ -550,7 +550,7 @@ public class OnDiskInvertedIndex implements IInvertedIndex {
     // TODO: In the future we should use the real HyracksTaskContext to track
     // frame usage.
     public static class DefaultHyracksCommonContext implements IHyracksCommonContext {
-        private final int FRAME_SIZE = 32768;
+        private final int FRAME_SIZE = 131072;
 
         @Override
         public int getInitialFrameSize() {

@@ -43,11 +43,13 @@ public class LSMBTreeFileManager extends AbstractLSMIndexFileManager {
     private static final String BTREE_STRING = "b";
 
     private final TreeIndexFactory<? extends ITreeIndex> btreeFactory;
+    private final boolean hasBloomFilter;
 
     public LSMBTreeFileManager(IFileMapProvider fileMapProvider, FileReference file,
-            TreeIndexFactory<? extends ITreeIndex> btreeFactory) {
+            TreeIndexFactory<? extends ITreeIndex> btreeFactory, boolean hasBloomFilter) {
         super(fileMapProvider, file, null);
         this.btreeFactory = btreeFactory;
+        this.hasBloomFilter = hasBloomFilter;
     }
 
     @Override
@@ -56,7 +58,7 @@ public class LSMBTreeFileManager extends AbstractLSMIndexFileManager {
         String baseName = baseDir + ts + SPLIT_STRING + ts;
         // Begin timestamp and end timestamp are identical since it is a flush
         return new LSMComponentFileReferences(createFlushFile(baseName + SPLIT_STRING + BTREE_STRING), null,
-                createFlushFile(baseName + SPLIT_STRING + BLOOM_FILTER_STRING));
+                hasBloomFilter ? createFlushFile(baseName + SPLIT_STRING + BLOOM_FILTER_STRING) : null);
     }
 
     @Override
@@ -68,7 +70,7 @@ public class LSMBTreeFileManager extends AbstractLSMIndexFileManager {
         String baseName = baseDir + firstTimestampRange[0] + SPLIT_STRING + lastTimestampRange[1];
         // Get the range of timestamps by taking the earliest and the latest timestamps
         return new LSMComponentFileReferences(createMergeFile(baseName + SPLIT_STRING + BTREE_STRING), null,
-                createMergeFile(baseName + SPLIT_STRING + BLOOM_FILTER_STRING));
+                hasBloomFilter ? createMergeFile(baseName + SPLIT_STRING + BLOOM_FILTER_STRING) : null);
     }
 
     private static FilenameFilter btreeFilter = new FilenameFilter() {
@@ -80,9 +82,18 @@ public class LSMBTreeFileManager extends AbstractLSMIndexFileManager {
 
     @Override
     public List<LSMComponentFileReferences> cleanupAndGetValidFiles() throws HyracksDataException, IndexException {
+        if (hasBloomFilter) {
+            return cleanupAndGetValidFilesWithBloomFilter();
+        } else {
+            return cleanupAndGetValidFilesWithoutBloomFilter();
+        }
+    }
+
+    private List<LSMComponentFileReferences> cleanupAndGetValidFilesWithBloomFilter() throws HyracksDataException,
+            IndexException {
         List<LSMComponentFileReferences> validFiles = new ArrayList<LSMComponentFileReferences>();
         ArrayList<ComparableFileName> allBTreeFiles = new ArrayList<ComparableFileName>();
-        ArrayList<ComparableFileName> allBloomFilterFiles = new ArrayList<ComparableFileName>();
+        ArrayList<ComparableFileName> allBloomFilterFiles = hasBloomFilter ? new ArrayList<ComparableFileName>() : null;
 
         // create transaction filter <to hide transaction files>
         FilenameFilter transactionFilter = getTransactionFileFilter(false);
@@ -96,16 +107,19 @@ public class LSMBTreeFileManager extends AbstractLSMIndexFileManager {
             int index = cmpFileName.fileName.lastIndexOf(SPLIT_STRING);
             btreeFilesSet.add(cmpFileName.fileName.substring(0, index));
         }
-        validateFiles(btreeFilesSet, allBloomFilterFiles, getCompoundFilter(transactionFilter, bloomFilterFilter), null);
 
-        // Sanity check.
-        if (allBTreeFiles.size() != allBloomFilterFiles.size()) {
-            throw new HyracksDataException(
-                    "Unequal number of valid BTree and bloom filter files found. Aborting cleanup.");
+        if (hasBloomFilter) {
+            validateFiles(btreeFilesSet, allBloomFilterFiles, getCompoundFilter(transactionFilter, bloomFilterFilter),
+                    null);
+            // Sanity check.
+            if (allBTreeFiles.size() != allBloomFilterFiles.size()) {
+                throw new HyracksDataException(
+                        "Unequal number of valid BTree and bloom filter files found. Aborting cleanup.");
+            }
         }
 
         // Trivial cases.
-        if (allBTreeFiles.isEmpty() || allBloomFilterFiles.isEmpty()) {
+        if (allBTreeFiles.isEmpty() || hasBloomFilter && allBloomFilterFiles.isEmpty()) {
             return validFiles;
         }
 
@@ -164,6 +178,71 @@ public class LSMBTreeFileManager extends AbstractLSMIndexFileManager {
             ComparableFileName cmpBloomFilterFileName = bloomFilterFileIter.next();
             validFiles.add(new LSMComponentFileReferences(cmpBTreeFileName.fileRef, null,
                     cmpBloomFilterFileName.fileRef));
+        }
+
+        return validFiles;
+    }
+
+    private List<LSMComponentFileReferences> cleanupAndGetValidFilesWithoutBloomFilter() throws HyracksDataException,
+            IndexException {
+        List<LSMComponentFileReferences> validFiles = new ArrayList<LSMComponentFileReferences>();
+        ArrayList<ComparableFileName> allBTreeFiles = new ArrayList<ComparableFileName>();
+
+        // create transaction filter <to hide transaction files>
+        FilenameFilter transactionFilter = getTransactionFileFilter(false);
+
+        // Gather files
+
+        // List of valid BTree files.
+        cleanupAndGetValidFilesInternal(getCompoundFilter(transactionFilter, btreeFilter), btreeFactory, allBTreeFiles);
+        HashSet<String> btreeFilesSet = new HashSet<String>();
+        for (ComparableFileName cmpFileName : allBTreeFiles) {
+            int index = cmpFileName.fileName.lastIndexOf(SPLIT_STRING);
+            btreeFilesSet.add(cmpFileName.fileName.substring(0, index));
+        }
+
+        // Trivial cases.
+        if (allBTreeFiles.isEmpty()) {
+            return validFiles;
+        }
+
+        if (allBTreeFiles.size() == 1) {
+            validFiles.add(new LSMComponentFileReferences(allBTreeFiles.get(0).fileRef, null, null));
+            return validFiles;
+        }
+
+        // Sorts files names from earliest to latest timestamp.
+        Collections.sort(allBTreeFiles);
+
+        List<ComparableFileName> validComparableBTreeFiles = new ArrayList<ComparableFileName>();
+        ComparableFileName lastBTree = allBTreeFiles.get(0);
+        validComparableBTreeFiles.add(lastBTree);
+
+        for (int i = 1; i < allBTreeFiles.size(); i++) {
+            ComparableFileName currentBTree = allBTreeFiles.get(i);
+            // Current start timestamp is greater than last stop timestamp.
+            if (currentBTree.interval[0].compareTo(lastBTree.interval[1]) > 0) {
+                validComparableBTreeFiles.add(currentBTree);
+                lastBTree = currentBTree;
+            } else if (currentBTree.interval[0].compareTo(lastBTree.interval[0]) >= 0
+                    && currentBTree.interval[1].compareTo(lastBTree.interval[1]) <= 0) {
+                // Invalid files are completely contained in last interval.
+                File invalidBTreeFile = new File(currentBTree.fullPath);
+                invalidBTreeFile.delete();
+            } else {
+                // This scenario should not be possible.
+                throw new HyracksDataException("Found LSM files with overlapping but not contained timetamp intervals.");
+            }
+        }
+
+        // Sort valid files in reverse lexicographical order, such that newer
+        // files come first.
+        Collections.sort(validComparableBTreeFiles, recencyCmp);
+
+        Iterator<ComparableFileName> btreeFileIter = validComparableBTreeFiles.iterator();
+        while (btreeFileIter.hasNext()) {
+            ComparableFileName cmpBTreeFileName = btreeFileIter.next();
+            validFiles.add(new LSMComponentFileReferences(cmpBTreeFileName.fileRef, null, null));
         }
 
         return validFiles;

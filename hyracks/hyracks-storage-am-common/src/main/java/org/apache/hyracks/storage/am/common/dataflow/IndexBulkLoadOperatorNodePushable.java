@@ -86,6 +86,7 @@ public class IndexBulkLoadOperatorNodePushable extends
     @Override
     public void nextFrame(ByteBuffer buffer) throws HyracksDataException {
         accessor.reset(buffer);
+//        accessor.prettyPrint();
         int tupleCount = accessor.getTupleCount();
 
         for (int i = 0; i < tupleCount; i++) {

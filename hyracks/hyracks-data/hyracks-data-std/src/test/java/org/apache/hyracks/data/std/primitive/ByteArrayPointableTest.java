@@ -19,18 +19,16 @@
 
 package org.apache.hyracks.data.std.primitive;
 
+import static org.junit.Assert.assertTrue;
+
 import org.junit.Test;
-
-import javax.xml.bind.DatatypeConverter;
-
-import static org.junit.Assert.*;
 
 public class ByteArrayPointableTest {
 
-    public static byte[] generatePointableBytes(byte[] bytes){
+    public static byte[] generatePointableBytes(byte[] bytes) {
         byte[] ret = new byte[bytes.length + ByteArrayPointable.SIZE_OF_LENGTH];
-        for (int i = 0; i < bytes.length; ++i){
-            ret[i+ ByteArrayPointable.SIZE_OF_LENGTH] = bytes[i];
+        for (int i = 0; i < bytes.length; ++i) {
+            ret[i + ByteArrayPointable.SIZE_OF_LENGTH] = bytes[i];
         }
         ByteArrayPointable.putLength(bytes.length, ret, 0);
         return ret;
@@ -38,32 +36,31 @@ public class ByteArrayPointableTest {
 
     @Test
     public void testCompareTo() throws Exception {
-        byte [] bytes = generatePointableBytes(new byte[] { 1, 2, 3, 4});
+        byte[] bytes = generatePointableBytes(new byte[] { 1, 2, 3, 4 });
         ByteArrayPointable byteArrayPointable = new ByteArrayPointable();
         byteArrayPointable.set(bytes, 0, bytes.length);
 
-        testEqual(byteArrayPointable, generatePointableBytes(new byte[] { 1,2 ,3,4}));
+        testEqual(byteArrayPointable, generatePointableBytes(new byte[] { 1, 2, 3, 4 }));
 
-        testLessThan(byteArrayPointable, generatePointableBytes(new byte[] {2}));
-        testLessThan(byteArrayPointable, generatePointableBytes(new byte[] {1,2,3,5}));
-        testLessThan(byteArrayPointable, generatePointableBytes(new byte[] {1,2,3,4,5}));
+        testLessThan(byteArrayPointable, generatePointableBytes(new byte[] { 2 }));
+        testLessThan(byteArrayPointable, generatePointableBytes(new byte[] { 1, 2, 3, 5 }));
+        testLessThan(byteArrayPointable, generatePointableBytes(new byte[] { 1, 2, 3, 4, 5 }));
 
-        testGreaterThan(byteArrayPointable, generatePointableBytes(new byte[] { }));
-        testGreaterThan(byteArrayPointable, generatePointableBytes(new byte[] { 0}));
-        testGreaterThan(byteArrayPointable, generatePointableBytes(new byte[] { 1,2,3}));
+        testGreaterThan(byteArrayPointable, generatePointableBytes(new byte[] {}));
+        testGreaterThan(byteArrayPointable, generatePointableBytes(new byte[] { 0 }));
+        testGreaterThan(byteArrayPointable, generatePointableBytes(new byte[] { 1, 2, 3 }));
 
     }
 
-
-    void testEqual(ByteArrayPointable pointable, byte [] bytes){
+    void testEqual(ByteArrayPointable pointable, byte[] bytes) {
         assertTrue(pointable.compareTo(bytes, 0, bytes.length) == 0);
     }
 
-    void testLessThan(ByteArrayPointable pointable, byte[] bytes){
+    void testLessThan(ByteArrayPointable pointable, byte[] bytes) {
         assertTrue(pointable.compareTo(bytes, 0, bytes.length) < 0);
     }
 
-    void testGreaterThan(ByteArrayPointable pointable, byte[] bytes){
+    void testGreaterThan(ByteArrayPointable pointable, byte[] bytes) {
         assertTrue(pointable.compareTo(bytes, 0, bytes.length) > 0);
     }
 }

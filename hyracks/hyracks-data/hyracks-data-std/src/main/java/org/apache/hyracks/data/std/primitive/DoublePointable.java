@@ -19,6 +19,7 @@
 package org.apache.hyracks.data.std.primitive;
 
 import org.apache.hyracks.api.dataflow.value.ITypeTraits;
+import org.apache.hyracks.data.std.accessors.CollationType;
 import org.apache.hyracks.data.std.api.AbstractPointable;
 import org.apache.hyracks.data.std.api.IComparable;
 import org.apache.hyracks.data.std.api.IHashable;
@@ -27,16 +28,17 @@ import org.apache.hyracks.data.std.api.IPointable;
 import org.apache.hyracks.data.std.api.IPointableFactory;
 
 public final class DoublePointable extends AbstractPointable implements IHashable, IComparable, INumeric {
-    private final static double machineEpsilon;
-    static {
-        float epsilon = 1.0f;
+	private final static double machineEpsilon;
+	   static {
+	        double epsilon = 1.0d;
 
-        do {
-            epsilon /= 2.0f;
-        } while ((float) (1.0 + (epsilon / 2.0)) != 1.0);
-        machineEpsilon = epsilon;
-    }
-
+	        do {
+	           epsilon /= 2.0d;
+	        }
+	        while ((double)(1.0 + (epsilon/2.0)) != 1.0);
+	        machineEpsilon = epsilon;
+	    }
+	
     public static final ITypeTraits TYPE_TRAITS = new ITypeTraits() {
         private static final long serialVersionUID = 1L;
 
@@ -105,9 +107,14 @@ public final class DoublePointable extends AbstractPointable implements IHashabl
     public int compareTo(IPointable pointer) {
         return compareTo(pointer.getByteArray(), pointer.getStartOffset(), pointer.getLength());
     }
-
+    
     @Override
     public int compareTo(byte[] bytes, int start, int length) {
+        return compareTo(bytes, start, length, CollationType.DEFAULT);
+    }
+
+    @Override
+    public int compareTo(byte[] bytes, int start, int length, CollationType ct) {
         double v = getDouble();
         double ov = getDouble(bytes, start);
         return v < ov ? -1 : (v > ov ? 1 : 0);

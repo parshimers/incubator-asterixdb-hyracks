@@ -355,14 +355,28 @@ public class IsomorphismVariableMappingVisitor implements ILogicalOperatorVisito
         if (variablesLeft.size() != variablesRight.size())
             return;
         int size = variablesLeft.size();
+//        for (int i = 0; i < size; i++) {
+//            ILogicalExpression exprLeft = exprsLeft.get(i).getValue();
+//            LogicalVariable left = variablesLeft.get(i);
+//            for (int j = 0; j < size; j++) {
+//                ILogicalExpression exprRight = copyExpressionAndSubtituteVars(exprsRight.get(j)).getValue();
+//                if (exprLeft.equals(exprRight)) {
+//                    LogicalVariable right = variablesRight.get(j);
+//                    variableMapping.put(right, left);
+//                    break;
+//                }
+//            }
+//        }
+        int rightIdx = 0;
         for (int i = 0; i < size; i++) {
             ILogicalExpression exprLeft = exprsLeft.get(i).getValue();
             LogicalVariable left = variablesLeft.get(i);
-            for (int j = 0; j < size; j++) {
+            for (int j = rightIdx; j < size; j++) {
                 ILogicalExpression exprRight = copyExpressionAndSubtituteVars(exprsRight.get(j)).getValue();
                 if (exprLeft.equals(exprRight)) {
                     LogicalVariable right = variablesRight.get(j);
                     variableMapping.put(right, left);
+                    ++rightIdx;
                     break;
                 }
             }

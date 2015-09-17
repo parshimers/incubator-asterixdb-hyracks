@@ -26,7 +26,7 @@ import org.apache.hyracks.api.dataflow.value.RecordDescriptor;
 import org.apache.hyracks.api.exceptions.HyracksDataException;
 import org.apache.hyracks.api.job.IOperatorDescriptorRegistry;
 import org.apache.hyracks.dataflow.std.base.AbstractSingleActivityOperatorDescriptor;
-import org.apache.hyracks.storage.am.lsm.invertedindex.tokenizers.IBinaryTokenizerFactory;
+import org.apache.hyracks.storage.am.common.api.IBinaryTokenizerFactory;
 
 public class BinaryTokenizerOperatorDescriptor extends AbstractSingleActivityOperatorDescriptor {
 
@@ -46,9 +46,16 @@ public class BinaryTokenizerOperatorDescriptor extends AbstractSingleActivityOpe
     // True: [keyfield1, ... n , token, number of token (if a partitioned index)]
     // False: [token, number of token(if a partitioned index), keyfield1, keyfield2 ...]
     private final boolean writeKeyFieldsFirst;
+    // Indicates the number of tokens to be included per output record of this operator( and each token in the record represents a field.) 
+    // This variable's value enforces the number of IBinaryTokenizer.next() call per IBinaryTokenizer.hasNext() only if the hasNext() returns true.
+    // For example, if this value is 2, then next() must be called twice per hasNext(). 
+    private final int numTokensPerOutputRecord;
+    //Indicates whether frame should be flushed immediately.
+    private final boolean flushFramesRapidly;
 
     public BinaryTokenizerOperatorDescriptor(IOperatorDescriptorRegistry spec, RecordDescriptor recDesc,
-            IBinaryTokenizerFactory tokenizerFactory, int docField, int[] keyFields, boolean addNumTokensKey, boolean writeKeyFieldsFirst) {
+            IBinaryTokenizerFactory tokenizerFactory, int docField, int[] keyFields, boolean addNumTokensKey,
+            boolean writeKeyFieldsFirst, int numTokensPerOutputRecord, boolean flushFramesRapidly) {
         super(spec, 1, 1);
         this.tokenizerFactory = tokenizerFactory;
         this.docField = docField;
@@ -56,6 +63,8 @@ public class BinaryTokenizerOperatorDescriptor extends AbstractSingleActivityOpe
         this.addNumTokensKey = addNumTokensKey;
         recordDescriptors[0] = recDesc;
         this.writeKeyFieldsFirst = writeKeyFieldsFirst;
+        this.numTokensPerOutputRecord = numTokensPerOutputRecord;
+        this.flushFramesRapidly = flushFramesRapidly;
     }
 
     @Override
@@ -63,6 +72,6 @@ public class BinaryTokenizerOperatorDescriptor extends AbstractSingleActivityOpe
             IRecordDescriptorProvider recordDescProvider, int partition, int nPartitions) throws HyracksDataException {
         return new BinaryTokenizerOperatorNodePushable(ctx, recordDescProvider.getInputRecordDescriptor(
                 getActivityId(), 0), recordDescriptors[0], tokenizerFactory.createTokenizer(), docField, keyFields,
-                addNumTokensKey, writeKeyFieldsFirst);
+                addNumTokensKey, writeKeyFieldsFirst, numTokensPerOutputRecord, flushFramesRapidly);
     }
 }

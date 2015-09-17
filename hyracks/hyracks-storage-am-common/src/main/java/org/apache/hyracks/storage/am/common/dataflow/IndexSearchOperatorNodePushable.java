@@ -28,6 +28,9 @@ import org.apache.hyracks.api.dataflow.value.INullWriter;
 import org.apache.hyracks.api.dataflow.value.IRecordDescriptorProvider;
 import org.apache.hyracks.api.dataflow.value.RecordDescriptor;
 import org.apache.hyracks.api.exceptions.HyracksDataException;
+import org.apache.hyracks.api.util.ExperimentProfiler;
+import org.apache.hyracks.api.util.SpatialIndexProfiler;
+import org.apache.hyracks.api.util.StopWatch;
 import org.apache.hyracks.dataflow.common.comm.io.ArrayTupleBuilder;
 import org.apache.hyracks.dataflow.common.comm.io.FrameTupleAccessor;
 import org.apache.hyracks.dataflow.common.comm.io.FrameTupleAppender;
@@ -43,6 +46,7 @@ import org.apache.hyracks.storage.am.common.api.ISearchOperationCallback;
 import org.apache.hyracks.storage.am.common.api.ISearchPredicate;
 import org.apache.hyracks.storage.am.common.impls.NoOpOperationCallback;
 import org.apache.hyracks.storage.am.common.tuples.PermutingFrameTupleReference;
+import org.apache.hyracks.storage.common.buffercache.BufferCache;
 
 public abstract class IndexSearchOperatorNodePushable extends AbstractUnaryInputUnaryOutputOperatorNodePushable {
     protected final IIndexOperatorDescriptor opDesc;
@@ -71,6 +75,11 @@ public abstract class IndexSearchOperatorNodePushable extends AbstractUnaryInput
     protected final int[] maxFilterFieldIndexes;
     protected PermutingFrameTupleReference minFilterKey;
     protected PermutingFrameTupleReference maxFilterKey;
+    
+    //for profiler
+    private StopWatch profilerSW;
+    private long profilerCacheMissTemp;
+    private long profilerCacheMissTotalPerQuery;
 
     public IndexSearchOperatorNodePushable(IIndexOperatorDescriptor opDesc, IHyracksTaskContext ctx, int partition,
             IRecordDescriptorProvider recordDescProvider, int[] minFilterFieldIndexes, int[] maxFilterFieldIndexes) {
@@ -93,11 +102,15 @@ public abstract class IndexSearchOperatorNodePushable extends AbstractUnaryInput
             maxFilterKey = new PermutingFrameTupleReference();
             maxFilterKey.setFieldPermutation(maxFilterFieldIndexes);
         }
+        
+        if (ExperimentProfiler.PROFILE_MODE) {
+            profilerSW = new StopWatch();
+        }
     }
 
-    protected abstract ISearchPredicate createSearchPredicate();
+    protected abstract ISearchPredicate createSearchPredicate() throws HyracksDataException;
 
-    protected abstract void resetSearchPredicate(int tupleIndex);
+    protected abstract void resetSearchPredicate(int tupleIndex) throws HyracksDataException;
 
     protected IIndexCursor createCursor() {
         return indexAccessor.createSearchCursor(false);
@@ -144,6 +157,12 @@ public abstract class IndexSearchOperatorNodePushable extends AbstractUnaryInput
             indexHelper.close();
             throw new HyracksDataException(e);
         }
+        
+        if (ExperimentProfiler.PROFILE_MODE) {
+            profilerSW.start();
+            profilerCacheMissTemp = 0;
+            profilerCacheMissTotalPerQuery = 0;
+        }
     }
 
     protected void writeSearchResults(int tupleIndex) throws Exception {
@@ -176,6 +195,12 @@ public abstract class IndexSearchOperatorNodePushable extends AbstractUnaryInput
 
     @Override
     public void nextFrame(ByteBuffer buffer) throws HyracksDataException {
+        
+        if(ExperimentProfiler.PROFILE_MODE) {
+            profilerSW.resume();
+            profilerCacheMissTemp = BufferCache.profilerCacheMiss;
+        }
+        
         accessor.reset(buffer);
         int tupleCount = accessor.getTupleCount();
         try {
@@ -187,6 +212,11 @@ public abstract class IndexSearchOperatorNodePushable extends AbstractUnaryInput
             }
         } catch (Exception e) {
             throw new HyracksDataException(e);
+        }
+        
+        if(ExperimentProfiler.PROFILE_MODE) {
+            profilerSW.stop();
+            profilerCacheMissTotalPerQuery += BufferCache.profilerCacheMiss - profilerCacheMissTemp;
         }
     }
 
@@ -202,6 +232,11 @@ public abstract class IndexSearchOperatorNodePushable extends AbstractUnaryInput
             writer.close();
         } finally {
             indexHelper.close();
+        }
+        
+        if(ExperimentProfiler.PROFILE_MODE) {
+            SpatialIndexProfiler.INSTANCE.pidxSearchTimePerQuery.add("" + profilerSW.getElapsedTime() + "\n");
+            SpatialIndexProfiler.INSTANCE.cacheMissPerQuery.add("" + profilerCacheMissTotalPerQuery + "\n");
         }
     }
 

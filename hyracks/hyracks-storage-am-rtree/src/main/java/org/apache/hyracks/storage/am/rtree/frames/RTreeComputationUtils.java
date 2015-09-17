@@ -24,6 +24,7 @@ import org.apache.hyracks.dataflow.common.data.accessors.ITupleReference;
 import org.apache.hyracks.storage.am.common.api.IPrimitiveValueProvider;
 import org.apache.hyracks.storage.am.common.ophelpers.MultiComparator;
 
+// all methods are called only by interior frame.
 public class RTreeComputationUtils {
 
     public static double enlargedArea(ITupleReference tuple, ITupleReference tupleToBeInserted, MultiComparator cmp,

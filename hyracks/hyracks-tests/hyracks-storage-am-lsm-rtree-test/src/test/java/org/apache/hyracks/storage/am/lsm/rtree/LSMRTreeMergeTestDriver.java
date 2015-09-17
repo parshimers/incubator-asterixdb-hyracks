@@ -78,7 +78,7 @@ public abstract class LSMRTreeMergeTestDriver extends AbstractRTreeTestDriver {
 
             ILSMIndexAccessor accessor = (ILSMIndexAccessor) ctx.getIndexAccessor();
             accessor.scheduleMerge(NoOpIOOperationCallback.INSTANCE,
-                    ((AbstractLSMRTree) ctx.getIndex()).getImmutableComponents());
+                    ((AbstractLSMRTree) ctx.getIndex()).getImmutableComponents(), null);
 
             rTreeTestUtils.checkScan(ctx);
             rTreeTestUtils.checkDiskOrderScan(ctx);

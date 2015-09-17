@@ -862,8 +862,8 @@ public class BTree extends AbstractTreeIndex {
     // TODO: Class should be private. But currently we need to expose the
     // setOpContext() API to the LSM Tree for it to work correctly.
     public class BTreeAccessor implements ITreeIndexAccessor {
-        private BTree btree;
-        private BTreeOpContext ctx;
+        protected BTree btree;
+        protected BTreeOpContext ctx;
 
         public BTreeAccessor(BTree btree, IModificationOperationCallback modificationCalback,
                 ISearchOperationCallback searchCallback) {
@@ -874,31 +874,76 @@ public class BTree extends AbstractTreeIndex {
         @Override
         public void insert(ITupleReference tuple) throws HyracksDataException, TreeIndexException {
             ctx.setOperation(IndexOperation.INSERT);
+            //            if (tokenizerFactory == null) {
             btree.insert(tuple, ctx);
+            //            } else {
+            //                tokenTupleIter.reset(tuple);
+            //                while (tokenTupleIter.hasNext()) {
+            //                    tokenTupleIter.next();
+            //                    ITupleReference tokenTuple = tokenTupleIter.getTuple();
+            //                    btree.insert(tokenTuple, ctx);
+            //                }
+            //            }
         }
 
         @Override
         public void update(ITupleReference tuple) throws HyracksDataException, TreeIndexException {
             ctx.setOperation(IndexOperation.UPDATE);
+            //            if (tokenizerFactory == null) {
             btree.update(tuple, ctx);
+            //            } else {
+            //                tokenTupleIter.reset(tuple);
+            //                while (tokenTupleIter.hasNext()) {
+            //                    tokenTupleIter.next();
+            //                    ITupleReference tokenTuple = tokenTupleIter.getTuple();
+            //                    btree.update(tokenTuple, ctx);
+            //                }
+            //            }
         }
 
         @Override
         public void delete(ITupleReference tuple) throws HyracksDataException, TreeIndexException {
             ctx.setOperation(IndexOperation.DELETE);
+            //            if (tokenizerFactory == null) {
             btree.delete(tuple, ctx);
+            //            } else {
+            //                tokenTupleIter.reset(tuple);
+            //                while (tokenTupleIter.hasNext()) {
+            //                    tokenTupleIter.next();
+            //                    ITupleReference tokenTuple = tokenTupleIter.getTuple();
+            //                    btree.delete(tokenTuple, ctx);
+            //                }
+            //            }
         }
 
         @Override
         public void upsert(ITupleReference tuple) throws HyracksDataException, TreeIndexException {
+            //            if (tokenizerFactory == null) {
             upsertIfConditionElseInsert(tuple, UnconditionalTupleAcceptor.INSTANCE);
+            //            } else {
+            //                tokenTupleIter.reset(tuple);
+            //                while (tokenTupleIter.hasNext()) {
+            //                    tokenTupleIter.next();
+            //                    ITupleReference tokenTuple = tokenTupleIter.getTuple();
+            //                    upsertIfConditionElseInsert(tokenTuple, UnconditionalTupleAcceptor.INSTANCE);
+            //                }
+            //            }
         }
 
         public void upsertIfConditionElseInsert(ITupleReference tuple, ITupleAcceptor acceptor)
                 throws HyracksDataException, TreeIndexException {
             ctx.setOperation(IndexOperation.UPSERT);
             ctx.acceptor = acceptor;
+            //            if (tokenizerFactory == null) {
             btree.upsert(tuple, ctx);
+            //            } else {
+            //                tokenTupleIter.reset(tuple);
+            //                while (tokenTupleIter.hasNext()) {
+            //                    tokenTupleIter.next();
+            //                    ITupleReference tokenTuple = tokenTupleIter.getTuple();
+            //                    btree.upsert(tokenTuple, ctx);
+            //                }
+            //            }
         }
 
         @Override

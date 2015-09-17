@@ -24,10 +24,17 @@ import java.util.List;
 
 import org.apache.hyracks.api.comm.IFrameWriter;
 import org.apache.hyracks.api.exceptions.HyracksDataException;
+import org.apache.hyracks.api.util.ExperimentProfiler;
+import org.apache.hyracks.api.util.SpatialIndexProfiler;
+import org.apache.hyracks.dataflow.common.comm.io.FrameTupleAccessor;
 import org.apache.hyracks.dataflow.common.io.RunFileWriter;
 
 public abstract class AbstractSortRunGenerator implements IRunGenerator {
     protected final List<RunAndMaxFrameSizePair> runAndMaxSizes;
+    
+    //profiler
+    protected FrameTupleAccessor profilerFta;
+    protected long profilerTupleCount;
 
     public AbstractSortRunGenerator() {
         runAndMaxSizes = new LinkedList<>();
@@ -48,6 +55,11 @@ public abstract class AbstractSortRunGenerator implements IRunGenerator {
             } else {
                 flushFramesToRun();
             }
+        }
+        
+        if (ExperimentProfiler.PROFILE_MODE) {
+            SpatialIndexProfiler.INSTANCE.falsePositivePerQuery.add(""+profilerTupleCount+"\n");
+            profilerTupleCount = 0;
         }
     }
 

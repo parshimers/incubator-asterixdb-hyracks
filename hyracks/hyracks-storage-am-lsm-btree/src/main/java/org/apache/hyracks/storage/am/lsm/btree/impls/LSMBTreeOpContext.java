@@ -72,7 +72,7 @@ public final class LSMBTreeOpContext implements ILSMIndexOperationContext {
             this.cmp = null;
         }
 
-        bloomFilterCmp = MultiComparator.create(c.getBTree().getComparatorFactories(), 0, numBloomFilterKeyFields);
+        bloomFilterCmp = numBloomFilterKeyFields == 0 ? null : MultiComparator.create(c.getBTree().getComparatorFactories(), 0, numBloomFilterKeyFields);
 
         mutableBTrees = new BTree[mutableComponents.size()];
         mutableBTreeAccessors = new BTree.BTreeAccessor[mutableComponents.size()];

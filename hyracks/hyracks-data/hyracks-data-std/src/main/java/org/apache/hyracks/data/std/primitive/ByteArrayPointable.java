@@ -20,7 +20,12 @@
 package org.apache.hyracks.data.std.primitive;
 
 import org.apache.hyracks.api.dataflow.value.ITypeTraits;
-import org.apache.hyracks.data.std.api.*;
+import org.apache.hyracks.data.std.accessors.CollationType;
+import org.apache.hyracks.data.std.api.AbstractPointable;
+import org.apache.hyracks.data.std.api.IComparable;
+import org.apache.hyracks.data.std.api.IHashable;
+import org.apache.hyracks.data.std.api.IPointable;
+import org.apache.hyracks.data.std.api.IPointableFactory;
 
 public class ByteArrayPointable extends AbstractPointable implements IHashable, IComparable {
 
@@ -59,13 +64,18 @@ public class ByteArrayPointable extends AbstractPointable implements IHashable, 
 
     @Override
     public int compareTo(byte[] bytes, int start, int length) {
+        return compareTo(bytes, start, length, CollationType.DEFAULT);
+    }
+
+    @Override
+    public int compareTo(byte[] bytes, int start, int length, CollationType ct) {
         int thislen = getLength(this.bytes, this.start);
         int thatlen = getLength(bytes, start);
 
         for (int thisIndex = 0, thatIndex = 0; thisIndex < thislen && thatIndex < thatlen; ++thisIndex, ++thatIndex) {
             if (this.bytes[this.start + SIZE_OF_LENGTH + thisIndex] != bytes[start + SIZE_OF_LENGTH + thatIndex]) {
-                return (0xff & this.bytes[this.start + SIZE_OF_LENGTH + thisIndex]) - (0xff & bytes[start + SIZE_OF_LENGTH
-                        + thatIndex]);
+                return (0xff & this.bytes[this.start + SIZE_OF_LENGTH + thisIndex])
+                        - (0xff & bytes[start + SIZE_OF_LENGTH + thatIndex]);
             }
         }
         return thislen - thatlen;
@@ -82,7 +92,7 @@ public class ByteArrayPointable extends AbstractPointable implements IHashable, 
     }
 
     @Override
-    public int getLength(){
+    public int getLength() {
         return getFullLength(getByteArray(), getStartOffset());
     }
 
@@ -93,7 +103,7 @@ public class ByteArrayPointable extends AbstractPointable implements IHashable, 
         return ((0xFF & bytes[offset]) << 8) + (0xFF & bytes[offset + 1]);
     }
 
-    public static int getFullLength(byte[] bytes, int offset){
+    public static int getFullLength(byte[] bytes, int offset) {
         return getLength(bytes, offset) + SIZE_OF_LENGTH;
     }
 

@@ -68,7 +68,7 @@ public class LSMRTreeMultiThreadTest extends AbstractRTreeMultiThreadTest {
                 harness.getMergePolicy(), harness.getOperationTracker(), harness.getIOScheduler(),
                 harness.getIOOperationCallback(),
                 LSMRTreeUtils.proposeBestLinearizer(typeTraits, rtreeCmpFactories.length), null, btreeFields, null,
-                null, null, true);
+                null, null, true, false);
     }
 
     @Override
