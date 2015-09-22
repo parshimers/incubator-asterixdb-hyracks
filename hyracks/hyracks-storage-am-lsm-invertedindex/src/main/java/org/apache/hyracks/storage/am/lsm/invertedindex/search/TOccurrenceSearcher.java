@@ -40,17 +40,17 @@ public class TOccurrenceSearcher extends AbstractTOccurrenceSearcher {
         super(ctx, invIndex);
     }
 
-    public void search(OnDiskInvertedIndexSearchCursor resultCursor, InvertedIndexSearchPredicate searchPred,
-            IIndexOperationContext ictx) throws HyracksDataException, IndexException {
-        //distinguish search operations based on the given search modifier. 
-        if (searchPred.getSearchModifier() instanceof DisjunctiveSearchModifier) {
-            disjunctiveSearch(resultCursor, searchPred, ictx);
-        } else {
-            toccurenceSearch(resultCursor, searchPred, ictx);
-        }
-    }
+//    public void search(OnDiskInvertedIndexSearchCursor resultCursor, InvertedIndexSearchPredicate searchPred,
+//            IIndexOperationContext ictx) throws HyracksDataException, IndexException {
+//        //distinguish search operations based on the given search modifier. 
+//        if (searchPred.getSearchModifier() instanceof DisjunctiveSearchModifier) {
+//            disjunctiveSearch(resultCursor, searchPred, ictx);
+//        } else {
+//            toccurenceSearch(resultCursor, searchPred, ictx);
+//        }
+//    }
     
-    private void toccurenceSearch(OnDiskInvertedIndexSearchCursor resultCursor, InvertedIndexSearchPredicate searchPred,
+    public void search(OnDiskInvertedIndexSearchCursor resultCursor, InvertedIndexSearchPredicate searchPred,
             IIndexOperationContext ictx) throws HyracksDataException, IndexException {
         tokenizeQuery(searchPred);
         int numQueryTokens = queryTokenAppender.getTupleCount();
@@ -75,28 +75,28 @@ public class TOccurrenceSearcher extends AbstractTOccurrenceSearcher {
         resultCursor.open(null, searchPred);
     }
     
-    private void disjunctiveSearch(OnDiskInvertedIndexSearchCursor resultCursor, InvertedIndexSearchPredicate searchPred,
-            IIndexOperationContext ictx) throws HyracksDataException, IndexException {
-        tokenizeQuery(searchPred);
-        int numQueryTokens = queryTokenAppender.getTupleCount();
-        IInvertedListCursor invListCursor = invListCursorFactory.create();
-        ITupleReference invListTuple = null;
-
-        searchResult.reset();
-        for (int i = 0; i < numQueryTokens; i++) {
-            searchKey.reset(queryTokenAppender, i);
-            invIndex.openInvertedListCursor(invListCursor, searchKey, ictx);
-            invListCursor.pinPages();
-            try {
-                while (invListCursor.hasNext()) {
-                    invListCursor.next();
-                    invListTuple = invListCursor.getTuple();
-                    searchResult.append(invListTuple, 1);
-                }
-            } finally {
-                invListCursor.unpinPages();    
-            }
-        }
-        resultCursor.open(null, searchPred);
-    }
+//    private void disjunctiveSearch(OnDiskInvertedIndexSearchCursor resultCursor, InvertedIndexSearchPredicate searchPred,
+//            IIndexOperationContext ictx) throws HyracksDataException, IndexException {
+//        tokenizeQuery(searchPred);
+//        int numQueryTokens = queryTokenAppender.getTupleCount();
+//        IInvertedListCursor invListCursor = invListCursorFactory.create();
+//        ITupleReference invListTuple = null;
+//
+//        searchResult.reset();
+//        for (int i = 0; i < numQueryTokens; i++) {
+//            searchKey.reset(queryTokenAppender, i);
+//            invIndex.openInvertedListCursor(invListCursor, searchKey, ictx);
+//            invListCursor.pinPages();
+//            try {
+//                while (invListCursor.hasNext()) {
+//                    invListCursor.next();
+//                    invListTuple = invListCursor.getTuple();
+//                    searchResult.append(invListTuple, 1);
+//                }
+//            } finally {
+//                invListCursor.unpinPages();    
+//            }
+//        }
+//        resultCursor.open(null, searchPred);
+//    }
 }

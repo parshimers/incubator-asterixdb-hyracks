@@ -19,7 +19,6 @@
 package org.apache.hyracks.data.std.primitive;
 
 import org.apache.hyracks.api.dataflow.value.ITypeTraits;
-import org.apache.hyracks.data.std.accessors.CollationType;
 import org.apache.hyracks.data.std.api.AbstractPointable;
 import org.apache.hyracks.data.std.api.IComparable;
 import org.apache.hyracks.data.std.api.IHashable;
@@ -96,14 +95,9 @@ public final class FloatPointable extends AbstractPointable implements IHashable
     public int compareTo(IPointable pointer) {
         return compareTo(pointer.getByteArray(), pointer.getStartOffset(), pointer.getLength());
     }
-    
-    @Override
-    public int compareTo(byte[] bytes, int start, int length) {
-        return compareTo(bytes, start, length, CollationType.DEFAULT);
-    }
 
     @Override
-    public int compareTo(byte[] bytes, int start, int length, CollationType ct) {
+    public int compareTo(byte[] bytes, int start, int length) {
         float v = getFloat();
         float ov = getFloat(bytes, start);
         return v < ov ? -1 : (v > ov ? 1 : 0);

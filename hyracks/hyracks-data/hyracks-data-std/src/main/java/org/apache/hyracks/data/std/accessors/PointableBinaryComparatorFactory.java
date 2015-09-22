@@ -21,6 +21,7 @@ package org.apache.hyracks.data.std.accessors;
 import org.apache.hyracks.api.dataflow.value.IBinaryComparator;
 import org.apache.hyracks.api.dataflow.value.IBinaryComparatorFactory;
 import org.apache.hyracks.data.std.api.IComparable;
+import org.apache.hyracks.data.std.api.IComparableForStringWithoutLengthByte;
 import org.apache.hyracks.data.std.api.IPointable;
 import org.apache.hyracks.data.std.api.IPointableFactory;
 
@@ -28,7 +29,6 @@ public class PointableBinaryComparatorFactory implements IBinaryComparatorFactor
     private static final long serialVersionUID = 1L;
 
     private final IPointableFactory pf;
-    private final CollationType ct;
 
     public static PointableBinaryComparatorFactory of(IPointableFactory pf) {
         return new PointableBinaryComparatorFactory(pf);
@@ -36,16 +36,6 @@ public class PointableBinaryComparatorFactory implements IBinaryComparatorFactor
 
     public PointableBinaryComparatorFactory(IPointableFactory pf) {
         this.pf = pf;
-        this.ct = CollationType.DEFAULT;
-    }
-    
-    public static PointableBinaryComparatorFactory of(IPointableFactory pf, CollationType ct) {
-        return new PointableBinaryComparatorFactory(pf, ct);
-    }
-
-    public PointableBinaryComparatorFactory(IPointableFactory pf, CollationType ct) {
-        this.pf = pf;
-        this.ct = ct;
     }
 
     @Override
@@ -59,8 +49,26 @@ public class PointableBinaryComparatorFactory implements IBinaryComparatorFactor
                 if (l1 != 0 && l2 == 0)
                     return 1;
                 p.set(b1, s1, l1);
-                return ((IComparable) p).compareTo(b2, s2, l2, ct);
+                return ((IComparable) p).compareTo(b2, s2, l2);
             }
         };
     }
+
+    // For String Type only. If a string does not include the length (2 byte) in the beginning and
+    // the length for a string is provided by the parameter
+    public IBinaryComparator createBinaryWithoutLengthByteComparator() {
+        final IPointable p = pf.createPointable();
+        return new IBinaryComparator() {
+            @Override
+            public int compare(byte[] b1, int s1, int l1, byte[] b2, int s2, int l2) {
+                if (l1 == 0 && l2 != 0)
+                    return -1;
+                if (l1 != 0 && l2 == 0)
+                    return 1;
+                p.set(b1, s1, l1);
+                return ((IComparableForStringWithoutLengthByte) p).compareToWithoutLengthByte(b2, s2, l2);
+            }
+        };
+    }
+
 }

@@ -19,7 +19,6 @@
 package org.apache.hyracks.data.std.primitive;
 
 import org.apache.hyracks.api.dataflow.value.ITypeTraits;
-import org.apache.hyracks.data.std.accessors.CollationType;
 import org.apache.hyracks.data.std.api.AbstractPointable;
 import org.apache.hyracks.data.std.api.IComparable;
 import org.apache.hyracks.data.std.api.IHashable;
@@ -78,17 +77,10 @@ public final class BooleanPointable extends AbstractPointable implements IHashab
     
     @Override
     public int compareTo(byte[] bytes, int start, int length) {
-        return compareTo(bytes, start, length, CollationType.DEFAULT);
-    }
-
-    @Override
-    public int compareTo(byte[] bytes, int start, int length, CollationType ct) {
         boolean b = getBoolean();
         boolean ob = getBoolean(bytes, start);
         return b == ob ? 0 : (b ? 1 : -1);
     }
-    
-    
 
     @Override
     public int hash() {

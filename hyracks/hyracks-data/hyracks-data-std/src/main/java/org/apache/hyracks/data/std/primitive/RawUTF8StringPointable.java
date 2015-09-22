@@ -19,7 +19,6 @@
 package org.apache.hyracks.data.std.primitive;
 
 import org.apache.hyracks.api.dataflow.value.ITypeTraits;
-import org.apache.hyracks.data.std.accessors.CollationType;
 import org.apache.hyracks.data.std.api.AbstractPointable;
 import org.apache.hyracks.data.std.api.IComparable;
 import org.apache.hyracks.data.std.api.IHashable;
@@ -64,14 +63,9 @@ public final class RawUTF8StringPointable extends AbstractPointable implements I
     public int compareTo(IPointable pointer) {
         return compareTo(pointer.getByteArray(), pointer.getStartOffset(), pointer.getLength());
     }
-    
-    @Override
-    public int compareTo(byte[] bytes, int start, int length) {
-        return compareTo(bytes, start, length, CollationType.DEFAULT);
-    }
 
     @Override
-    public int compareTo(byte[] bytes, int start, int length, CollationType ct) {
+    public int compareTo(byte[] bytes, int start, int length) {
         int utflen1 = UTF8StringPointable.getUTFLength(this.bytes, this.start);
         int utflen2 = UTF8StringPointable.getUTFLength(bytes, start);
 

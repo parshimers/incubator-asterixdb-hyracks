@@ -16,10 +16,21 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+package org.apache.hyracks.api.util;
 
-package org.apache.hyracks.data.std.accessors;
+import java.text.SimpleDateFormat;
+import java.util.Calendar;
 
-public enum CollationType {
-    DEFAULT,
-    SPATIAL_CELL
+public class OperatorExecutionTimeProfiler {
+    public static final OperatorExecutionTimeProfiler INSTANCE = new OperatorExecutionTimeProfiler();
+    public ExecutionTimeProfiler executionTimeProfiler;
+
+    private OperatorExecutionTimeProfiler() {
+        if (ExecutionTimeProfiler.PROFILE_MODE) {
+            SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd-HH-mm-ss-SSS");
+            executionTimeProfiler = new ExecutionTimeProfiler("executionTime"
+                    + sdf.format(Calendar.getInstance().getTime()) + ".txt", 1);
+            executionTimeProfiler.begin();
+        }
+    }
 }
