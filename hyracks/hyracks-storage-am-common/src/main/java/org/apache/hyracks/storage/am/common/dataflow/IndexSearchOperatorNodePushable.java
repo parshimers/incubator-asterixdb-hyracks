@@ -260,7 +260,7 @@ public abstract class IndexSearchOperatorNodePushable extends AbstractUnaryInput
                 //
                 //                Object test = outputRecDesc.getFields()[fieldNo].deserialize(new DataInputStream(inStreamZero));
                 //                System.out.println(test + " ");
-                //
+
                 dos.write(tuple.getFieldData(i), tuple.getFieldStart(i), tuple.getFieldLength(i));
                 tb.addFieldEndOffset();
             }
@@ -336,7 +336,8 @@ public abstract class IndexSearchOperatorNodePushable extends AbstractUnaryInput
         if (!useLimitNumberOfResult || (useLimitNumberOfResult && searchedTupleCount < limitNumberOfResult)) {
             accessor.reset(buffer);
             int tupleCount = accessor.getTupleCount();
-            LOGGER.log(LVL, "***** [Index-only experiment] total tuple count:" + tupleCount);
+            LOGGER.log(LVL, "***** [Index-only experiment] total tuple count:" + tupleCount + " "
+                    + useLimitNumberOfResult);
             try {
                 for (int i = 0; i < tupleCount; i++) {
                     if (!useLimitNumberOfResult || (useLimitNumberOfResult && searchedTupleCount < limitNumberOfResult)) {

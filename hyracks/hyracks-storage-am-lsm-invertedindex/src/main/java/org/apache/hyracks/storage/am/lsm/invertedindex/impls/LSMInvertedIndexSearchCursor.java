@@ -123,7 +123,7 @@ public class LSMInvertedIndexSearchCursor implements IIndexCursor {
         keySearchPred = new RangePredicate(null, null, true, true, keyCmp, keyCmp);
 
         if (useOperationCallbackProceedReturnResult) {
-            tupleBuilderForProceedResult = new ArrayTupleBuilder(recordDescForProceedReturnResult.getFieldCount());
+            tupleBuilderForProceedResult = new ArrayTupleBuilder(keyCmp.getKeyFieldCount() + 1);
             this.copyTuple = new ArrayTupleReference();
         }
     }
