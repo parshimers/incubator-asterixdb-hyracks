@@ -79,7 +79,7 @@ public class LSMInvertedIndexSearchCursor implements IIndexCursor {
     protected int proceedFailCount = 0;
     protected int proceedSuccessCount = 0;
     private static final Logger LOGGER = Logger.getLogger(LSMInvertedIndexSearchCursor.class.getName());
-    private static final Level LVL = Level.WARNING;
+    private static final Level LVL = Level.FINEST;
 
     public LSMInvertedIndexSearchCursor() {
         this(false, null, null);

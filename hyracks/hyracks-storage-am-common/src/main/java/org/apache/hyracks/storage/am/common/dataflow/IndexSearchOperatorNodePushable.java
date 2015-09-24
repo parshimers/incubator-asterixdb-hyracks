@@ -107,7 +107,7 @@ public abstract class IndexSearchOperatorNodePushable extends AbstractUnaryInput
 
     // For the experiment
     private static final Logger LOGGER = Logger.getLogger(IndexSearchOperatorNodePushable.class.getName());
-    private static final Level LVL = Level.WARNING;
+    private static final Level LVL = Level.FINEST;
 
     public IndexSearchOperatorNodePushable(IIndexOperatorDescriptor opDesc, IHyracksTaskContext ctx, int partition,
             IRecordDescriptorProvider recordDescProvider, int[] minFilterFieldIndexes, int[] maxFilterFieldIndexes) {

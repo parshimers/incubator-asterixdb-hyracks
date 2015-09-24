@@ -71,7 +71,8 @@ public class PushSelectDownRule implements IAlgebraicRewriteRule {
     private static boolean propagateSelectionRec(Mutable<ILogicalOperator> sigmaRef, Mutable<ILogicalOperator> opRef2)
             throws AlgebricksException {
         AbstractLogicalOperator op2 = (AbstractLogicalOperator) opRef2.getValue();
-        if (op2.getInputs().size() != 1 || op2.getOperatorTag() == LogicalOperatorTag.DATASOURCESCAN) {
+        if (op2.getInputs().size() != 1 || op2.getOperatorTag() == LogicalOperatorTag.DATASOURCESCAN || 
+                op2.getOperatorTag() == LogicalOperatorTag.SPLIT) {
             return false;
         }
 

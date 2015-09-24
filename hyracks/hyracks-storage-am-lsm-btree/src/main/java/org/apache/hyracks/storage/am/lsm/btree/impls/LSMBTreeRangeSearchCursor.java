@@ -68,7 +68,7 @@ public class LSMBTreeRangeSearchCursor extends LSMIndexSearchCursor {
 
     // For the experiment
     private static final Logger LOGGER = Logger.getLogger(LSMBTreeRangeSearchCursor.class.getName());
-    private static final Level LVL = Level.WARNING;
+    private static final Level LVL = Level.FINEST;
 
     public LSMBTreeRangeSearchCursor(ILSMIndexOperationContext opCtx) {
         this(opCtx, false);

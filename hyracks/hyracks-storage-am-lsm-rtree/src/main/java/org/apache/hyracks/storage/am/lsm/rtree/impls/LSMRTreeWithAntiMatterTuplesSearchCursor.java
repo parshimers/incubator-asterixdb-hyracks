@@ -79,7 +79,7 @@ public class LSMRTreeWithAntiMatterTuplesSearchCursor extends LSMIndexSearchCurs
     protected int proceedFailCount = 0;
     protected int proceedSuccessCount = 0;
     private static final Logger LOGGER = Logger.getLogger(LSMRTreeSearchCursor.class.getName());
-    private static final Level LVL = Level.WARNING;
+    private static final Level LVL = Level.FINEST;
     public LSMRTreeWithAntiMatterTuplesSearchCursor(ILSMIndexOperationContext opCtx) {
         this(opCtx, false);
     }
