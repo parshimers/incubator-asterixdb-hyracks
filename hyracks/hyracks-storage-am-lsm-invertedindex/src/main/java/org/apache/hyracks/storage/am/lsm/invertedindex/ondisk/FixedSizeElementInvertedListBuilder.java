@@ -56,12 +56,13 @@ public class FixedSizeElementInvertedListBuilder implements IInvertedListBuilder
 
         for (int i = 0; i < numElementFields; i++) {
             int field = numTokenFields + i;
+            int fieldLength = tuple.getFieldLength(field);
             System.arraycopy(tuple.getFieldData(field), tuple.getFieldStart(field), targetBuf, pos,
-                    tuple.getFieldLength(field));
+                    fieldLength);
+            pos += fieldLength;
         }
 
         listSize++;
-        pos += listElementSize;
 
         return true;
     }
