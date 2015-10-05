@@ -17,14 +17,14 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>edu.uci.ics.hyracks</groupId>
   <artifactId>hyracks</artifactId>
-  <version>0.2.16-SNAPSHOT</version>
+  <version>0.2.17-SNAPSHOT</version>
   <packaging>pom</packaging>
   <name>hyracks</name>
 
   <parent>
     <groupId>edu.uci.ics.hyracks</groupId>
     <artifactId>fullstack</artifactId>
-    <version>0.2.16-SNAPSHOT</version>
+    <version>0.2.17-SNAPSHOT</version>
   </parent>
 
   <build>
@@ -106,7 +106,7 @@
     <module>hyracks-server</module>
     <module>hyracks-examples</module>
     <module>hyracks-documentation</module>
-    <module>hyracks-hadoop-compat</module>
+    <!--module>hyracks-hadoop-compat</module-->
     <module>hyracks-maven-plugins</module>
     <module>hyracks-hdfs</module>
     <module>hyracks-dist</module>

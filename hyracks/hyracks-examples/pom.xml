@@ -21,7 +21,7 @@
   <parent>
     <groupId>edu.uci.ics.hyracks</groupId>
     <artifactId>hyracks</artifactId>
-    <version>0.2.16-SNAPSHOT</version>
+    <version>0.2.17-SNAPSHOT</version>
   </parent>
 
   <licenses>
@@ -39,7 +39,7 @@
     <module>text-example</module>
     <module>btree-example</module>
     <module>hyracks-integration-tests</module>
-    <module>hadoop-compat-example</module>
+    <!--module>hadoop-compat-example</module-->
     <module>hyracks-shutdown-test</module>
   </modules>
 </project>
