@@ -1,28 +1,32 @@
 /*
- * Copyright 2009-2013 by The Regents of the University of California
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  you may obtain a copy of the License from
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *   http://www.apache.org/licenses/LICENSE-2.0
  *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied.  See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
  */
 
-package edu.uci.ics.hyracks.tests.unit;
+package org.apache.hyracks.tests.unit;
 
-import static edu.uci.ics.hyracks.tests.unit.ExternalSortRunGeneratorTest.ComparatorFactories;
-import static edu.uci.ics.hyracks.tests.unit.ExternalSortRunGeneratorTest.GRandom;
-import static edu.uci.ics.hyracks.tests.unit.ExternalSortRunGeneratorTest.RecordDesc;
-import static edu.uci.ics.hyracks.tests.unit.ExternalSortRunGeneratorTest.SortFields;
-import static edu.uci.ics.hyracks.tests.unit.ExternalSortRunGeneratorTest.generateRandomRecord;
-import static edu.uci.ics.hyracks.tests.unit.ExternalSortRunGeneratorTest.matchResult;
-import static edu.uci.ics.hyracks.tests.unit.ExternalSortRunGeneratorTest.prepareData;
-import static edu.uci.ics.hyracks.tests.unit.ExternalSortRunGeneratorTest.testUtils;
+import static org.apache.hyracks.tests.unit.ExternalSortRunGeneratorTest.ComparatorFactories;
+import static org.apache.hyracks.tests.unit.ExternalSortRunGeneratorTest.GRandom;
+import static org.apache.hyracks.tests.unit.ExternalSortRunGeneratorTest.RecordDesc;
+import static org.apache.hyracks.tests.unit.ExternalSortRunGeneratorTest.SortFields;
+import static org.apache.hyracks.tests.unit.ExternalSortRunGeneratorTest.generateRandomRecord;
+import static org.apache.hyracks.tests.unit.ExternalSortRunGeneratorTest.matchResult;
+import static org.apache.hyracks.tests.unit.ExternalSortRunGeneratorTest.prepareData;
+import static org.apache.hyracks.tests.unit.ExternalSortRunGeneratorTest.testUtils;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
@@ -38,24 +42,24 @@ import java.util.TreeMap;
 
 import org.junit.Test;
 
-import edu.uci.ics.hyracks.api.comm.FrameHelper;
-import edu.uci.ics.hyracks.api.comm.IFrame;
-import edu.uci.ics.hyracks.api.comm.IFrameReader;
-import edu.uci.ics.hyracks.api.comm.VSizeFrame;
-import edu.uci.ics.hyracks.api.context.IHyracksTaskContext;
-import edu.uci.ics.hyracks.api.dataflow.value.IBinaryComparator;
-import edu.uci.ics.hyracks.api.exceptions.HyracksDataException;
-import edu.uci.ics.hyracks.dataflow.common.comm.io.ArrayTupleBuilder;
-import edu.uci.ics.hyracks.dataflow.common.comm.io.FrameTupleAccessor;
-import edu.uci.ics.hyracks.dataflow.common.comm.io.FrameTupleAppender;
-import edu.uci.ics.hyracks.dataflow.common.comm.util.ByteBufferInputStream;
-import edu.uci.ics.hyracks.dataflow.common.data.marshalling.IntegerSerializerDeserializer;
-import edu.uci.ics.hyracks.dataflow.common.data.marshalling.UTF8StringSerializerDeserializer;
-import edu.uci.ics.hyracks.dataflow.std.sort.Algorithm;
-import edu.uci.ics.hyracks.dataflow.std.sort.ExternalSortRunGenerator;
-import edu.uci.ics.hyracks.dataflow.std.sort.RunAndMaxFrameSizePair;
-import edu.uci.ics.hyracks.dataflow.std.sort.RunMergingFrameReader;
-import edu.uci.ics.hyracks.dataflow.std.sort.util.GroupVSizeFrame;
+import org.apache.hyracks.api.comm.FrameHelper;
+import org.apache.hyracks.api.comm.IFrame;
+import org.apache.hyracks.api.comm.IFrameReader;
+import org.apache.hyracks.api.comm.VSizeFrame;
+import org.apache.hyracks.api.context.IHyracksTaskContext;
+import org.apache.hyracks.api.dataflow.value.IBinaryComparator;
+import org.apache.hyracks.api.exceptions.HyracksDataException;
+import org.apache.hyracks.dataflow.common.comm.io.ArrayTupleBuilder;
+import org.apache.hyracks.dataflow.common.comm.io.FrameTupleAccessor;
+import org.apache.hyracks.dataflow.common.comm.io.FrameTupleAppender;
+import org.apache.hyracks.dataflow.common.comm.util.ByteBufferInputStream;
+import org.apache.hyracks.dataflow.common.data.marshalling.IntegerSerializerDeserializer;
+import org.apache.hyracks.dataflow.common.data.marshalling.UTF8StringSerializerDeserializer;
+import org.apache.hyracks.dataflow.std.sort.Algorithm;
+import org.apache.hyracks.dataflow.std.sort.ExternalSortRunGenerator;
+import org.apache.hyracks.dataflow.std.sort.RunAndMaxFrameSizePair;
+import org.apache.hyracks.dataflow.std.sort.RunMergingFrameReader;
+import org.apache.hyracks.dataflow.std.sort.util.GroupVSizeFrame;
 
 public class RunMergingFrameReaderTest {
     static IBinaryComparator[] Comparators = new IBinaryComparator[] {
