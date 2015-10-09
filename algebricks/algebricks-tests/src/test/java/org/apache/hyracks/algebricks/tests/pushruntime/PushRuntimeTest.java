@@ -187,8 +187,8 @@ public class PushRuntimeTest {
 
         // the scanner
         FileSplit[] intFileSplits = new FileSplit[1];
-        intFileSplits[0] = new FileSplit(AlgebricksHyracksIntegrationUtil.NC1_ID, new FileReference(new File(
-                "data/simple/int-part1.tbl")));
+        intFileSplits[0] = new FileSplit(AlgebricksHyracksIntegrationUtil.NC1_ID, new FileReference(
+                "data/simple/int-part1.tbl"));
         IFileSplitProvider intSplitProvider = new ConstantFileSplitProvider(intFileSplits);
         RecordDescriptor intScannerDesc = new RecordDescriptor(
                 new ISerializerDeserializer[] { IntegerSerializerDeserializer.INSTANCE });
@@ -270,8 +270,8 @@ public class PushRuntimeTest {
 
         // the scanner
         FileSplit[] fileSplits = new FileSplit[1];
-        fileSplits[0] = new FileSplit(AlgebricksHyracksIntegrationUtil.NC1_ID, new FileReference(new File(
-                "data/tpch0.001/customer.tbl")));
+        fileSplits[0] = new FileSplit(AlgebricksHyracksIntegrationUtil.NC1_ID, new FileReference(
+                "data/tpch0.001/customer.tbl"));
         IFileSplitProvider splitProvider = new ConstantFileSplitProvider(fileSplits);
 
         RecordDescriptor scannerDesc = new RecordDescriptor(new ISerializerDeserializer[] {
@@ -351,8 +351,8 @@ public class PushRuntimeTest {
 
         // the scanner
         FileSplit[] fileSplits = new FileSplit[1];
-        fileSplits[0] = new FileSplit(AlgebricksHyracksIntegrationUtil.NC1_ID, new FileReference(new File(
-                "data/tpch0.001/customer-part1.tbl")));
+        fileSplits[0] = new FileSplit(AlgebricksHyracksIntegrationUtil.NC1_ID, new FileReference(
+                "data/tpch0.001/customer-part1.tbl"));
         IFileSplitProvider splitProvider = new ConstantFileSplitProvider(fileSplits);
         RecordDescriptor scannerDesc = new RecordDescriptor(new ISerializerDeserializer[] {
                 IntegerSerializerDeserializer.INSTANCE, UTF8StringSerializerDeserializer.INSTANCE,
@@ -403,8 +403,8 @@ public class PushRuntimeTest {
 
         // the scanner
         FileSplit[] fileSplits = new FileSplit[1];
-        fileSplits[0] = new FileSplit(AlgebricksHyracksIntegrationUtil.NC1_ID, new FileReference(new File(
-                "data/tpch0.001/customer.tbl")));
+        fileSplits[0] = new FileSplit(AlgebricksHyracksIntegrationUtil.NC1_ID, new FileReference(
+                "data/tpch0.001/customer.tbl"));
         IFileSplitProvider splitProvider = new ConstantFileSplitProvider(fileSplits);
         RecordDescriptor scannerDesc = new RecordDescriptor(new ISerializerDeserializer[] {
                 IntegerSerializerDeserializer.INSTANCE, UTF8StringSerializerDeserializer.INSTANCE,
@@ -488,8 +488,8 @@ public class PushRuntimeTest {
 
         // the scanner
         FileSplit[] fileSplits = new FileSplit[1];
-        fileSplits[0] = new FileSplit(AlgebricksHyracksIntegrationUtil.NC1_ID, new FileReference(new File(
-                "data/tpch0.001/customer.tbl")));
+        fileSplits[0] = new FileSplit(AlgebricksHyracksIntegrationUtil.NC1_ID, new FileReference(
+                "data/tpch0.001/customer.tbl"));
         IFileSplitProvider splitProvider = new ConstantFileSplitProvider(fileSplits);
         RecordDescriptor scannerDesc = new RecordDescriptor(new ISerializerDeserializer[] {
                 IntegerSerializerDeserializer.INSTANCE, UTF8StringSerializerDeserializer.INSTANCE,
@@ -651,14 +651,13 @@ public class PushRuntimeTest {
         JobSpecification spec = new JobSpecification(FRAME_SIZE);
 
         String inputFileName = "data/tpch0.001/customer.tbl";
-        File inputFile = new File(inputFileName);
         File[] outputFile = new File[outputArity];
         for (int i = 0; i < outputArity; i++) {
             outputFile[i] = File.createTempFile("splitop", null);
         }
 
         FileSplit[] inputSplits = new FileSplit[] { new FileSplit(AlgebricksHyracksIntegrationUtil.NC1_ID,
-                new FileReference(inputFile)) };
+                new FileReference(inputFileName)) };
 
         DelimitedDataTupleParserFactory stringParser = new DelimitedDataTupleParserFactory(
                 new IValueParserFactory[] { UTF8StringParserFactory.INSTANCE }, '\u0000');
@@ -679,7 +678,7 @@ public class PushRuntimeTest {
         IOperatorDescriptor outputOp[] = new IOperatorDescriptor[outputFile.length];
         for (int i = 0; i < outputArity; i++) {
             outputOp[i] = new LineFileWriteOperatorDescriptor(spec, new FileSplit[] { new FileSplit(
-                    AlgebricksHyracksIntegrationUtil.NC1_ID, new FileReference(outputFile[i])) });
+                    AlgebricksHyracksIntegrationUtil.NC1_ID, new FileReference(outputFile[i].getPath())) });
             PartitionConstraintHelper.addAbsoluteLocationConstraint(spec, outputOp[i],
                     new String[] { AlgebricksHyracksIntegrationUtil.NC1_ID });
         }
@@ -705,8 +704,8 @@ public class PushRuntimeTest {
 
         // the scanner
         FileSplit[] fileSplits = new FileSplit[1];
-        fileSplits[0] = new FileSplit(AlgebricksHyracksIntegrationUtil.NC1_ID, new FileReference(new File(
-                "data/tpch0.001/nation.tbl")));
+        fileSplits[0] = new FileSplit(AlgebricksHyracksIntegrationUtil.NC1_ID, new FileReference(
+                "data/tpch0.001/nation.tbl"));
         IFileSplitProvider splitProvider = new ConstantFileSplitProvider(fileSplits);
         RecordDescriptor scannerDesc = new RecordDescriptor(new ISerializerDeserializer[] {
                 IntegerSerializerDeserializer.INSTANCE, UTF8StringSerializerDeserializer.INSTANCE,
@@ -813,8 +812,8 @@ public class PushRuntimeTest {
 
         // the scanner
         FileSplit[] fileSplits = new FileSplit[1];
-        fileSplits[0] = new FileSplit(AlgebricksHyracksIntegrationUtil.NC1_ID, new FileReference(new File(
-                "data/tpch0.001/customer.tbl")));
+        fileSplits[0] = new FileSplit(AlgebricksHyracksIntegrationUtil.NC1_ID, new FileReference(
+                "data/tpch0.001/customer.tbl"));
         IFileSplitProvider splitProvider = new ConstantFileSplitProvider(fileSplits);
         RecordDescriptor scannerDesc = new RecordDescriptor(new ISerializerDeserializer[] {
                 IntegerSerializerDeserializer.INSTANCE, UTF8StringSerializerDeserializer.INSTANCE,

@@ -12,7 +12,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package edu.uci.ics.hyracks.control.nc.io;
+package org.apache.hyracks.control.nc.io;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -21,9 +21,9 @@ import java.nio.ByteBuffer;
 import java.nio.channels.Channels;
 import java.nio.channels.FileChannel;
 
-import edu.uci.ics.hyracks.api.io.FileReference;
-import edu.uci.ics.hyracks.api.io.IFileHandle;
-import edu.uci.ics.hyracks.api.io.IIOManager;
+import org.apache.hyracks.api.io.FileReference;
+import org.apache.hyracks.api.io.IFileHandle;
+import org.apache.hyracks.api.io.IIOManager;
 
 public class FileHandle implements IFileHandle, IFileHandleInternal {
     private final FileReference fileRef;
@@ -37,7 +37,7 @@ public class FileHandle implements IFileHandle, IFileHandleInternal {
     }
 
     /* (non-Javadoc)
-     * @see edu.uci.ics.hyracks.control.nc.io.IFileHandleInternal#open(edu.uci.ics.hyracks.api.io.IIOManager.FileReadWriteMode, edu.uci.ics.hyracks.api.io.IIOManager.FileSyncMode)
+     * @see org.apache.hyracks.control.nc.io.IFileHandleInternal#open(edu.uci.ics.hyracks.api.io.IIOManager.FileReadWriteMode, edu.uci.ics.hyracks.api.io.IIOManager.FileSyncMode)
      */
     @Override
     public void open(IIOManager.FileReadWriteMode rwMode, IIOManager.FileSyncMode syncMode) throws IOException {
@@ -75,7 +75,7 @@ public class FileHandle implements IFileHandle, IFileHandleInternal {
     }
 
     /* (non-Javadoc)
-     * @see edu.uci.ics.hyracks.control.nc.io.IFileHandleInternal#close()
+     * @see org.apache.hyracks.control.nc.io.IFileHandleInternal#close()
      */
     @Override
     public void close() throws IOException {
@@ -84,7 +84,7 @@ public class FileHandle implements IFileHandle, IFileHandleInternal {
     }
 
     /* (non-Javadoc)
-     * @see edu.uci.ics.hyracks.control.nc.io.IFileHandleInternal#getFileReference()
+     * @see org.apache.hyracks.control.nc.io.IFileHandleInternal#getFileReference()
      */
     @Override
     public FileReference getFileReference() {
@@ -92,7 +92,7 @@ public class FileHandle implements IFileHandle, IFileHandleInternal {
     }
 
     /* (non-Javadoc)
-     * @see edu.uci.ics.hyracks.control.nc.io.IFileHandleInternal#getRandomAccessFile()
+     * @see org.apache.hyracks.control.nc.io.IFileHandleInternal#getRandomAccessFile()
      */
     @Override
     public RandomAccessFile getRandomAccessFile() {
@@ -100,7 +100,7 @@ public class FileHandle implements IFileHandle, IFileHandleInternal {
     }
 
     /* (non-Javadoc)
-     * @see edu.uci.ics.hyracks.control.nc.io.IFileHandleInternal#sync(boolean)
+     * @see org.apache.hyracks.control.nc.io.IFileHandleInternal#sync(boolean)
      */
     @Override
     public void sync(boolean metadata) throws IOException {

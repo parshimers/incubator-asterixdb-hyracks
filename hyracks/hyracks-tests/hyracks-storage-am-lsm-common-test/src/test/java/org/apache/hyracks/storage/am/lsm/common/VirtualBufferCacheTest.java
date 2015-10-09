@@ -12,7 +12,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package edu.uci.ics.hyracks.storage.am.lsm.common;
+package org.apache.hyracks.storage.am.lsm.common;
 
 import static org.junit.Assert.assertTrue;
 
@@ -24,13 +24,13 @@ import java.util.Set;
 
 import org.junit.Test;
 
-import edu.uci.ics.hyracks.api.io.FileReference;
-import edu.uci.ics.hyracks.storage.am.lsm.common.impls.VirtualBufferCache;
-import edu.uci.ics.hyracks.storage.common.buffercache.HeapBufferAllocator;
-import edu.uci.ics.hyracks.storage.common.buffercache.ICacheMemoryAllocator;
-import edu.uci.ics.hyracks.storage.common.buffercache.ICachedPage;
-import edu.uci.ics.hyracks.storage.common.file.BufferedFileHandle;
-import edu.uci.ics.hyracks.test.support.TestStorageManagerComponentHolder;
+import org.apache.hyracks.api.io.FileReference;
+import org.apache.hyracks.storage.am.lsm.common.impls.VirtualBufferCache;
+import org.apache.hyracks.storage.common.buffercache.HeapBufferAllocator;
+import org.apache.hyracks.storage.common.buffercache.ICacheMemoryAllocator;
+import org.apache.hyracks.storage.common.buffercache.ICachedPage;
+import org.apache.hyracks.storage.common.file.BufferedFileHandle;
+import org.apache.hyracks.test.support.TestStorageManagerComponentHolder;
 
 public class VirtualBufferCacheTest {
     private static final long SEED = 123456789L;

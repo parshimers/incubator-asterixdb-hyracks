@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-package edu.uci.ics.hyracks.storage.am.btree.impls;
+package org.apache.hyracks.storage.am.btree.impls;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -21,38 +21,38 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
-import edu.uci.ics.hyracks.api.dataflow.value.IBinaryComparatorFactory;
-import edu.uci.ics.hyracks.api.dataflow.value.ISerializerDeserializer;
-import edu.uci.ics.hyracks.api.exceptions.HyracksDataException;
-import edu.uci.ics.hyracks.api.io.FileReference;
-import edu.uci.ics.hyracks.data.std.primitive.IntegerPointable;
-import edu.uci.ics.hyracks.dataflow.common.data.accessors.ITupleReference;
-import edu.uci.ics.hyracks.dataflow.common.util.TupleUtils;
-import edu.uci.ics.hyracks.storage.am.btree.api.IBTreeFrame;
-import edu.uci.ics.hyracks.storage.am.btree.api.IBTreeInteriorFrame;
-import edu.uci.ics.hyracks.storage.am.btree.api.IBTreeLeafFrame;
-import edu.uci.ics.hyracks.storage.am.btree.api.ITupleAcceptor;
-import edu.uci.ics.hyracks.storage.am.btree.exceptions.BTreeException;
-import edu.uci.ics.hyracks.storage.am.btree.exceptions.BTreeNotUpdateableException;
-import edu.uci.ics.hyracks.storage.am.btree.frames.BTreeNSMInteriorFrame;
-import edu.uci.ics.hyracks.storage.am.btree.impls.BTreeOpContext.PageValidationInfo;
-import edu.uci.ics.hyracks.storage.am.common.api.*;
-import edu.uci.ics.hyracks.storage.am.common.api.IMetaDataPageManager;
-import edu.uci.ics.hyracks.storage.am.common.exceptions.TreeIndexDuplicateKeyException;
-import edu.uci.ics.hyracks.storage.am.common.exceptions.TreeIndexNonExistentKeyException;
-import edu.uci.ics.hyracks.storage.am.common.frames.FrameOpSpaceStatus;
-import edu.uci.ics.hyracks.storage.am.common.impls.AbstractTreeIndex;
-import edu.uci.ics.hyracks.storage.am.common.impls.NoOpOperationCallback;
-import edu.uci.ics.hyracks.storage.am.common.impls.NodeFrontier;
-import edu.uci.ics.hyracks.storage.am.common.impls.TreeIndexDiskOrderScanCursor;
-import edu.uci.ics.hyracks.storage.am.common.ophelpers.IndexOperation;
-import edu.uci.ics.hyracks.storage.am.common.ophelpers.MultiComparator;
-import edu.uci.ics.hyracks.storage.common.buffercache.AsyncFIFOPageQueueManager;
-import edu.uci.ics.hyracks.storage.common.buffercache.BufferCache;
-import edu.uci.ics.hyracks.storage.common.buffercache.IBufferCache;
-import edu.uci.ics.hyracks.storage.common.buffercache.ICachedPage;
-import edu.uci.ics.hyracks.storage.common.file.BufferedFileHandle;
-import edu.uci.ics.hyracks.storage.common.file.IFileMapProvider;
+import org.apache.hyracks.api.dataflow.value.IBinaryComparatorFactory;
+import org.apache.hyracks.api.dataflow.value.ISerializerDeserializer;
+import org.apache.hyracks.api.exceptions.HyracksDataException;
+import org.apache.hyracks.api.io.FileReference;
+import org.apache.hyracks.data.std.primitive.IntegerPointable;
+import org.apache.hyracks.dataflow.common.data.accessors.ITupleReference;
+import org.apache.hyracks.dataflow.common.util.TupleUtils;
+import org.apache.hyracks.storage.am.btree.api.IBTreeFrame;
+import org.apache.hyracks.storage.am.btree.api.IBTreeInteriorFrame;
+import org.apache.hyracks.storage.am.btree.api.IBTreeLeafFrame;
+import org.apache.hyracks.storage.am.btree.api.ITupleAcceptor;
+import org.apache.hyracks.storage.am.btree.exceptions.BTreeException;
+import org.apache.hyracks.storage.am.btree.exceptions.BTreeNotUpdateableException;
+import org.apache.hyracks.storage.am.btree.frames.BTreeNSMInteriorFrame;
+import org.apache.hyracks.storage.am.btree.impls.BTreeOpContext.PageValidationInfo;
+import org.apache.hyracks.storage.am.common.api.*;
+import org.apache.hyracks.storage.am.common.api.IMetaDataPageManager;
+import org.apache.hyracks.storage.am.common.exceptions.TreeIndexDuplicateKeyException;
+import org.apache.hyracks.storage.am.common.exceptions.TreeIndexNonExistentKeyException;
+import org.apache.hyracks.storage.am.common.frames.FrameOpSpaceStatus;
+import org.apache.hyracks.storage.am.common.impls.AbstractTreeIndex;
+import org.apache.hyracks.storage.am.common.impls.NoOpOperationCallback;
+import org.apache.hyracks.storage.am.common.impls.NodeFrontier;
+import org.apache.hyracks.storage.am.common.impls.TreeIndexDiskOrderScanCursor;
+import org.apache.hyracks.storage.am.common.ophelpers.IndexOperation;
+import org.apache.hyracks.storage.am.common.ophelpers.MultiComparator;
+import org.apache.hyracks.storage.common.buffercache.AsyncFIFOPageQueueManager;
+import org.apache.hyracks.storage.common.buffercache.BufferCache;
+import org.apache.hyracks.storage.common.buffercache.IBufferCache;
+import org.apache.hyracks.storage.common.buffercache.ICachedPage;
+import org.apache.hyracks.storage.common.file.BufferedFileHandle;
+import org.apache.hyracks.storage.common.file.IFileMapProvider;
 
 public class BTree extends AbstractTreeIndex {
 

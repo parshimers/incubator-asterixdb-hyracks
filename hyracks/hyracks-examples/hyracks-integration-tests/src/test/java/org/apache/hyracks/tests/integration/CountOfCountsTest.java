@@ -63,7 +63,7 @@ public class CountOfCountsTest extends AbstractIntegrationTest {
     public void countOfCountsSingleNC() throws Exception {
         JobSpecification spec = new JobSpecification();
 
-        FileSplit[] splits = new FileSplit[] { new FileSplit(NC1_ID, new FileReference(new File("data/words.txt"))) };
+        FileSplit[] splits = new FileSplit[] { new FileSplit(NC1_ID, new FileReference("data/words.txt")) };
         IFileSplitProvider splitProvider = new ConstantFileSplitProvider(splits);
         RecordDescriptor desc = new RecordDescriptor(
                 new ISerializerDeserializer[] { UTF8StringSerializerDeserializer.INSTANCE });
@@ -135,7 +135,7 @@ public class CountOfCountsTest extends AbstractIntegrationTest {
     public void countOfCountsMultiNC() throws Exception {
         JobSpecification spec = new JobSpecification();
 
-        FileSplit[] splits = new FileSplit[] { new FileSplit(NC1_ID, new FileReference(new File("data/words.txt"))) };
+        FileSplit[] splits = new FileSplit[] { new FileSplit(NC1_ID, new FileReference("data/words.txt")) };
         IFileSplitProvider splitProvider = new ConstantFileSplitProvider(splits);
         RecordDescriptor desc = new RecordDescriptor(
                 new ISerializerDeserializer[] { UTF8StringSerializerDeserializer.INSTANCE });
@@ -208,7 +208,7 @@ public class CountOfCountsTest extends AbstractIntegrationTest {
     public void countOfCountsExternalSortMultiNC() throws Exception {
         JobSpecification spec = new JobSpecification();
 
-        FileSplit[] splits = new FileSplit[] { new FileSplit(NC1_ID, new FileReference(new File("data/words.txt"))) };
+        FileSplit[] splits = new FileSplit[] { new FileSplit(NC1_ID, new FileReference("data/words.txt")) };
         IFileSplitProvider splitProvider = new ConstantFileSplitProvider(splits);
         RecordDescriptor desc = new RecordDescriptor(
                 new ISerializerDeserializer[] { UTF8StringSerializerDeserializer.INSTANCE });

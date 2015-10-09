@@ -138,7 +138,7 @@ public class ExternalGroupClient {
             if (idx < 0) {
                 throw new IllegalArgumentException("File split " + s + " not well formed");
             }
-            fSplits[i] = new FileSplit(s.substring(0, idx), new FileReference(new File(s.substring(idx + 1))));
+            fSplits[i] = new FileSplit(s.substring(0, idx), new FileReference(s.substring(idx + 1)));
         }
         return fSplits;
     }
@@ -152,8 +152,8 @@ public class ExternalGroupClient {
             if (idx < 0) {
                 throw new IllegalArgumentException("File split " + s + " not well formed");
             }
-            fSplits[i] = new FileSplit(s.substring(0, idx), new FileReference(new File(s.substring(idx + 1) + "_"
-                    + count)));
+            fSplits[i] = new FileSplit(s.substring(0, idx), new FileReference(s.substring(idx + 1) + "_"
+                    + count));
         }
         return fSplits;
     }

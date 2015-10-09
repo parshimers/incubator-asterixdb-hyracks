@@ -115,10 +115,10 @@ public abstract class AbstractBTreeOperatorTest extends AbstractIntegrationTest 
         dataflowHelperFactory = createDataFlowHelperFactory();
         primaryFileName = testHelper.getPrimaryIndexName();
         primarySplitProvider = new ConstantFileSplitProvider(new FileSplit[] { new FileSplit(NC1_ID, new FileReference(
-                new File(primaryFileName))) });
+                primaryFileName)) });
         secondaryFileName = testHelper.getSecondaryIndexName();
         secondarySplitProvider = new ConstantFileSplitProvider(new FileSplit[] { new FileSplit(NC1_ID,
-                new FileReference(new File(secondaryFileName))) });
+                new FileReference(secondaryFileName)) });
 
         // field, type and key declarations for primary index
         primaryTypeTraits[0] = UTF8StringPointable.TYPE_TRAITS;
@@ -156,8 +156,8 @@ public abstract class AbstractBTreeOperatorTest extends AbstractIntegrationTest 
     protected void loadPrimaryIndex() throws Exception {
         JobSpecification spec = new JobSpecification();
 
-        FileSplit[] ordersSplits = new FileSplit[] { new FileSplit(NC1_ID, new FileReference(new File(
-                "data/tpch0.001/orders-part1.tbl"))) };
+        FileSplit[] ordersSplits = new FileSplit[] { new FileSplit(NC1_ID, new FileReference(
+                "data/tpch0.001/orders-part1.tbl")) };
         IFileSplitProvider ordersSplitProvider = new ConstantFileSplitProvider(ordersSplits);
         RecordDescriptor ordersDesc = new RecordDescriptor(new ISerializerDeserializer[] {
                 UTF8StringSerializerDeserializer.INSTANCE, UTF8StringSerializerDeserializer.INSTANCE,
@@ -268,8 +268,8 @@ public abstract class AbstractBTreeOperatorTest extends AbstractIntegrationTest 
         IndexOperation pipelineOperation = useUpsert ? IndexOperation.UPSERT : IndexOperation.INSERT;
         JobSpecification spec = new JobSpecification();
 
-        FileSplit[] ordersSplits = new FileSplit[] { new FileSplit(NC1_ID, new FileReference(new File(
-                "data/tpch0.001/orders-part2.tbl"))) };
+        FileSplit[] ordersSplits = new FileSplit[] { new FileSplit(NC1_ID, new FileReference(
+                "data/tpch0.001/orders-part2.tbl")) };
         IFileSplitProvider ordersSplitProvider = new ConstantFileSplitProvider(ordersSplits);
         RecordDescriptor ordersDesc = new RecordDescriptor(new ISerializerDeserializer[] {
                 UTF8StringSerializerDeserializer.INSTANCE, UTF8StringSerializerDeserializer.INSTANCE,

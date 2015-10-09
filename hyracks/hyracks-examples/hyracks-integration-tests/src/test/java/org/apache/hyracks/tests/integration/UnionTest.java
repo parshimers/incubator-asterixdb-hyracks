@@ -48,8 +48,8 @@ public class UnionTest extends AbstractIntegrationTest {
         JobSpecification spec = new JobSpecification();
 
         IFileSplitProvider splitProvider = new ConstantFileSplitProvider(new FileSplit[] {
-                new FileSplit(NC2_ID, new FileReference(new File("data/words.txt"))),
-                new FileSplit(NC1_ID, new FileReference(new File("data/words.txt"))) });
+                new FileSplit(NC2_ID, new FileReference("data/words.txt")),
+                new FileSplit(NC1_ID, new FileReference("data/words.txt")) });
 
         RecordDescriptor desc = new RecordDescriptor(
                 new ISerializerDeserializer[] { UTF8StringSerializerDeserializer.INSTANCE });

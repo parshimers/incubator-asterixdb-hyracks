@@ -56,8 +56,8 @@ public class ScanPrintTest extends AbstractIntegrationTest {
         JobSpecification spec = new JobSpecification();
 
         IFileSplitProvider splitProvider = new ConstantFileSplitProvider(new FileSplit[] {
-                new FileSplit(NC2_ID, new FileReference(new File("data/words.txt"))),
-                new FileSplit(NC1_ID, new FileReference(new File("data/words.txt"))) });
+                new FileSplit(NC2_ID, new FileReference("data/words.txt")),
+                new FileSplit(NC1_ID, new FileReference("data/words.txt")) });
 
         RecordDescriptor desc = new RecordDescriptor(
                 new ISerializerDeserializer[] { UTF8StringSerializerDeserializer.INSTANCE });
@@ -87,8 +87,7 @@ public class ScanPrintTest extends AbstractIntegrationTest {
     public void scanPrint02() throws Exception {
         JobSpecification spec = new JobSpecification();
 
-        FileSplit[] ordersSplits = new FileSplit[] { new FileSplit(NC2_ID, new FileReference(new File(
-                "data/tpch0.001/orders.tbl"))) };
+        FileSplit[] ordersSplits = new FileSplit[] { new FileSplit(NC2_ID, new FileReference("data/tpch0.001/orders.tbl")) };
         IFileSplitProvider ordersSplitsProvider = new ConstantFileSplitProvider(ordersSplits);
         RecordDescriptor ordersDesc = new RecordDescriptor(new ISerializerDeserializer[] {
                 UTF8StringSerializerDeserializer.INSTANCE, UTF8StringSerializerDeserializer.INSTANCE,
@@ -126,8 +125,7 @@ public class ScanPrintTest extends AbstractIntegrationTest {
     public void scanPrint03() throws Exception {
         JobSpecification spec = new JobSpecification();
 
-        FileSplit[] ordersSplits = new FileSplit[] { new FileSplit(NC2_ID, new FileReference(new File(
-                "data/tpch0.001/orders.tbl"))) };
+        FileSplit[] ordersSplits = new FileSplit[] { new FileSplit(NC2_ID, new FileReference("data/tpch0.001/orders.tbl")) };
         IFileSplitProvider ordersSplitsProvider = new ConstantFileSplitProvider(ordersSplits);
         RecordDescriptor ordersDesc = new RecordDescriptor(new ISerializerDeserializer[] {
                 IntegerSerializerDeserializer.INSTANCE, IntegerSerializerDeserializer.INSTANCE,

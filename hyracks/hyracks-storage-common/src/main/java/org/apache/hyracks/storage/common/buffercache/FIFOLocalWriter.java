@@ -1,0 +1,58 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied.  See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
+ */
+
+package org.apache.hyracks.storage.common.buffercache;
+
+import org.apache.hyracks.api.exceptions.HyracksDataException;
+import org.apache.hyracks.storage.common.file.BufferedFileHandle;
+
+public class FIFOLocalWriter implements IFIFOPageWriter {
+    private static FIFOLocalWriter instance;
+    private static boolean DEBUG = false;
+
+    public static FIFOLocalWriter instance() {
+        if(instance == null) {
+            instance = new FIFOLocalWriter();
+        }
+        return instance;
+    }
+
+    @Override
+    public void write(ICachedPage page, IBufferCache ibufferCache) throws HyracksDataException {
+        BufferCache bufferCache = (BufferCache)ibufferCache;
+        CachedPage cPage = (CachedPage)page;
+        BufferedFileHandle fInfo = bufferCache.getFileInfo(cPage);
+        if (fInfo.fileHasBeenDeleted()) {
+            return;
+        }
+        cPage.buffer.position(0);
+        cPage.buffer.limit(bufferCache.getPageSize());
+        bufferCache.ioManager.syncWrite(fInfo.getFileHandle(), (long) BufferedFileHandle.getPageId(cPage.dpid) * bufferCache.getPageSize(),
+                cPage.buffer);
+        bufferCache.returnPage(cPage);
+        if(DEBUG) System.out.println("[FIFO] Return page: " + cPage.cpid + "," + cPage.dpid);
+    }
+    
+    @Override
+    public void sync(int fileId, IBufferCache ibufferCache) throws HyracksDataException {
+        BufferCache bufferCache = (BufferCache)ibufferCache;
+        BufferedFileHandle fInfo = bufferCache.getFileInfo(fileId);
+        bufferCache.ioManager.sync(fInfo.getFileHandle(), true);
+    }
+}
