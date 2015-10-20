@@ -32,6 +32,7 @@ import org.apache.hyracks.storage.am.common.api.IFreePageManager;
 import org.apache.hyracks.storage.am.common.api.IIndexCursor;
 import org.apache.hyracks.storage.am.common.api.IIndexOperationContext;
 import org.apache.hyracks.storage.am.common.api.IModificationOperationCallback;
+import org.apache.hyracks.storage.am.common.api.ISearchOperationCallback;
 import org.apache.hyracks.storage.am.common.api.ISearchPredicate;
 import org.apache.hyracks.storage.am.common.api.ITreeIndex;
 import org.apache.hyracks.storage.am.common.api.ITreeIndexFrameFactory;
@@ -417,11 +418,11 @@ public abstract class AbstractLSMRTree extends AbstractLSMIndex implements ITree
         }
     }
 
-    protected LSMRTreeOpContext createOpContext(IModificationOperationCallback modCallback) {
+    protected LSMRTreeOpContext createOpContext(IModificationOperationCallback modCallback, ISearchOperationCallback searchCallback) {
         return new LSMRTreeOpContext(memoryComponents, (IRTreeLeafFrame) rtreeLeafFrameFactory.createFrame(),
                 (IRTreeInteriorFrame) rtreeInteriorFrameFactory.createFrame(), btreeLeafFrameFactory,
                 btreeInteriorFrameFactory, rtreeCmpFactories, btreeCmpFactories, modCallback,
-                NoOpOperationCallback.INSTANCE, rtreeFields, filterFields);
+                searchCallback, rtreeFields, filterFields);
     }
 
     @Override

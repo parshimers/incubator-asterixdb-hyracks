@@ -99,7 +99,13 @@ public class FrameTupleAppender extends AbstractFrameAppender implements IFrameT
         int length = tEndOffset - tStartOffset;
         if (canHoldNewTuple(0, length)) {
             ByteBuffer src = tupleAccessor.getBuffer();
-            System.arraycopy(src.array(), tStartOffset, array, tupleDataEndOffset, length);
+            try {
+                System.arraycopy(src.array(), tStartOffset, array, tupleDataEndOffset, length);
+            } catch (ArrayIndexOutOfBoundsException e) {
+                throw new ArrayIndexOutOfBoundsException("length:" + length + ", startOffset:" + tStartOffset + 
+                        ", endOffset:" + tEndOffset + ", tupleDataEndOffset:" + tupleDataEndOffset + ", srcBufferSize:" + src.capacity()
+                        + ", destBufferSize:" + array.length);
+            }
             tupleDataEndOffset += length;
             IntSerDeUtils.putInt(array,
                     FrameHelper.getTupleCountOffset(frame.getFrameSize()) - 4 * (tupleCount + 1),
