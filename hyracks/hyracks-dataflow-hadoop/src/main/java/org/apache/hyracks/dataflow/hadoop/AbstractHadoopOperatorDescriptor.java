@@ -24,7 +24,7 @@ import org.apache.hadoop.mapred.JobConf;
 import org.apache.hadoop.mapred.OutputCollector;
 import org.apache.hadoop.mapred.Reporter;
 
-import edu.uci.ics.dcache.client.DCacheClient;
+import org.apache.dcache.client.DCacheClient;
 import org.apache.hyracks.api.dataflow.IDataWriter;
 import org.apache.hyracks.api.dataflow.value.RecordDescriptor;
 import org.apache.hyracks.api.job.IOperatorDescriptorRegistry;

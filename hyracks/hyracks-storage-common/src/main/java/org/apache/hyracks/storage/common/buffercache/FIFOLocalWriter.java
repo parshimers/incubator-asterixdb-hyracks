@@ -13,10 +13,10 @@
  * limitations under the License.
  */
 
-package edu.uci.ics.hyracks.storage.common.buffercache;
+package org.apache.hyracks.storage.common.buffercache;
 
-import edu.uci.ics.hyracks.api.exceptions.HyracksDataException;
-import edu.uci.ics.hyracks.storage.common.file.BufferedFileHandle;
+import org.apache.hyracks.api.exceptions.HyracksDataException;
+import org.apache.hyracks.storage.common.file.BufferedFileHandle;
 
 public class FIFOLocalWriter implements IFIFOPageWriter {
     private static FIFOLocalWriter instance;

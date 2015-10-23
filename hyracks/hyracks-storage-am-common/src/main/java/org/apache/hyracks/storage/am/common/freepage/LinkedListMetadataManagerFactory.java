@@ -13,13 +13,13 @@
  * limitations under the License.
  */
 
-package edu.uci.ics.hyracks.storage.am.common.freepage;
+package org.apache.hyracks.storage.am.common.freepage;
 
-import edu.uci.ics.hyracks.api.exceptions.HyracksDataException;
-import edu.uci.ics.hyracks.storage.am.common.api.IMetaDataPageManager;
-import edu.uci.ics.hyracks.storage.am.common.api.IMetadataManagerFactory;
-import edu.uci.ics.hyracks.storage.am.common.api.ITreeIndexMetaDataFrameFactory;
-import edu.uci.ics.hyracks.storage.common.buffercache.IBufferCache;
+import org.apache.hyracks.api.exceptions.HyracksDataException;
+import org.apache.hyracks.storage.am.common.api.IMetaDataPageManager;
+import org.apache.hyracks.storage.am.common.api.IMetadataManagerFactory;
+import org.apache.hyracks.storage.am.common.api.ITreeIndexMetaDataFrameFactory;
+import org.apache.hyracks.storage.common.buffercache.IBufferCache;
 
 public class LinkedListMetadataManagerFactory implements IMetadataManagerFactory {
 

@@ -16,9 +16,9 @@ package org.apache.hyracks.storage.am.common.util;
 
 import java.text.DecimalFormat;
 
-import edu.uci.ics.hyracks.storage.am.common.api.IMetaDataPageManager;
-import edu.uci.ics.hyracks.storage.am.common.api.ITreeIndexFrame;
-import edu.uci.ics.hyracks.storage.am.common.api.ITreeIndexMetaDataFrame;
+import org.apache.hyracks.storage.am.common.api.IMetaDataPageManager;
+import org.apache.hyracks.storage.am.common.api.ITreeIndexFrame;
+import org.apache.hyracks.storage.am.common.api.ITreeIndexMetaDataFrame;
 
 public class TreeIndexStats {
 

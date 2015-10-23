@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-package edu.uci.ics.hyracks.storage.common.buffercache;
+package org.apache.hyracks.storage.common.buffercache;
 
 import java.nio.Buffer;
 import java.util.concurrent.ConcurrentHashMap;
@@ -23,8 +23,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
-import edu.uci.ics.hyracks.api.exceptions.HyracksDataException;
-import edu.uci.ics.hyracks.storage.common.file.BufferedFileHandle;
+import org.apache.hyracks.api.exceptions.HyracksDataException;
+import org.apache.hyracks.storage.common.file.BufferedFileHandle;
 
 public class AsyncFIFOPageQueueManager implements Runnable {
     private final static boolean DEBUG = false;

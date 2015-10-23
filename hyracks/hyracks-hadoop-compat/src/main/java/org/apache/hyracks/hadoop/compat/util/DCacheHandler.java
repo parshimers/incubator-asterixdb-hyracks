@@ -18,8 +18,8 @@ import java.io.IOException;
 import java.util.LinkedHashSet;
 import java.util.Set;
 
-import edu.uci.ics.dcache.client.DCacheClient;
-import edu.uci.ics.dcache.client.DCacheClientConfig;
+import org.apache.dcache.client.DCacheClient;
+import org.apache.dcache.client.DCacheClientConfig;
 
 public class DCacheHandler {
 

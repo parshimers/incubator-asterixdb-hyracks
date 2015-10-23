@@ -17,10 +17,10 @@ package org.apache.hyracks.storage.am.lsm.common;
 
 import static org.junit.Assert.assertEquals;
 
-import edu.uci.ics.hyracks.storage.am.lsm.common.freepage.VirtualMetaDataPageManager;
+import org.apache.hyracks.storage.am.lsm.common.freepage.VirtualMetaDataPageManager;
 import org.junit.Test;
 
-import edu.uci.ics.hyracks.api.exceptions.HyracksDataException;
+import org.apache.hyracks.api.exceptions.HyracksDataException;
 
 public class VirtualFreePageManagerTest {
 

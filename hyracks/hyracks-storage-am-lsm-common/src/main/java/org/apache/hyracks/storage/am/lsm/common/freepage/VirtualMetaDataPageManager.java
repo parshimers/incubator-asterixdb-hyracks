@@ -13,15 +13,15 @@
  * limitations under the License.
  */
 
-package edu.uci.ics.hyracks.storage.am.lsm.common.freepage;
+package org.apache.hyracks.storage.am.lsm.common.freepage;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
-import edu.uci.ics.hyracks.api.exceptions.HyracksDataException;
-import edu.uci.ics.hyracks.storage.am.common.api.IVirtualMetaDataPageManager;
-import edu.uci.ics.hyracks.storage.am.common.api.ITreeIndexMetaDataFrame;
-import edu.uci.ics.hyracks.storage.am.common.api.ITreeIndexMetaDataFrameFactory;
-import edu.uci.ics.hyracks.storage.common.buffercache.ICachedPage;
+import org.apache.hyracks.api.exceptions.HyracksDataException;
+import org.apache.hyracks.storage.am.common.api.IVirtualMetaDataPageManager;
+import org.apache.hyracks.storage.am.common.api.ITreeIndexMetaDataFrame;
+import org.apache.hyracks.storage.am.common.api.ITreeIndexMetaDataFrameFactory;
+import org.apache.hyracks.storage.common.buffercache.ICachedPage;
 
 public class VirtualMetaDataPageManager implements IVirtualMetaDataPageManager {
     protected final int capacity;

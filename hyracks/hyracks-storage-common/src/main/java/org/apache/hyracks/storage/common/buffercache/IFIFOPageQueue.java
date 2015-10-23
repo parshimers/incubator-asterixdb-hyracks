@@ -13,9 +13,9 @@
  * limitations under the License.
  */
 
-package edu.uci.ics.hyracks.storage.common.buffercache;
+package org.apache.hyracks.storage.common.buffercache;
 
-import edu.uci.ics.hyracks.api.exceptions.HyracksDataException;
+import org.apache.hyracks.api.exceptions.HyracksDataException;
 
 public interface IFIFOPageQueue {
     public void put(ICachedPage page) throws HyracksDataException;
