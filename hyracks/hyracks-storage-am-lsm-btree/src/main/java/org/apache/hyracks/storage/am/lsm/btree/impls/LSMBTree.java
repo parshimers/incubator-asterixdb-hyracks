@@ -699,10 +699,6 @@ public class LSMBTree extends AbstractLSMIndex implements ITreeIndex {
             if (!cleanedUpArtifacts) {
                 cleanedUpArtifacts = true;
                 // We make sure to end the bloom filter load to release latches.
-                if (!endedBloomFilterLoad) {
-                    builder.end();
-                    endedBloomFilterLoad = true;
-                }
                 ((LSMBTreeDiskComponent) component).getBTree().deactivate();
                 ((LSMBTreeDiskComponent) component).getBTree().destroy();
                 ((LSMBTreeDiskComponent) component).getBloomFilter().deactivate();
