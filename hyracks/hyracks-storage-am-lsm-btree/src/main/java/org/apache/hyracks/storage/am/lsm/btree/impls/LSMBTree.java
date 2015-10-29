@@ -698,6 +698,10 @@ public class LSMBTree extends AbstractLSMIndex implements ITreeIndex {
         protected void cleanupArtifacts() throws HyracksDataException, IndexException {
             if (!cleanedUpArtifacts) {
                 cleanedUpArtifacts = true;
+                if (!endedBloomFilterLoad) {
+	                    builder.end();
+	                    endedBloomFilterLoad = true;
+                }
                 ((LSMBTreeDiskComponent) component).getBTree().deactivate();
                 ((LSMBTreeDiskComponent) component).getBTree().destroy();
                 ((LSMBTreeDiskComponent) component).getBloomFilter().deactivate();
