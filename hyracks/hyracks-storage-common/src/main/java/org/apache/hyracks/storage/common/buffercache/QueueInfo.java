@@ -18,22 +18,24 @@
  */
 package org.apache.hyracks.storage.common.buffercache;
 
-import java.nio.ByteBuffer;
+public class QueueInfo implements IQueueInfo{
 
-public interface ICachedPage {
-    public ByteBuffer getBuffer();
+    private final boolean poison;
+    private final boolean waiters;
 
-    public void acquireReadLatch();
+    public QueueInfo(boolean waiters, boolean poison){
+        this.waiters = waiters;
+        this.poison = poison;
+    }
 
-    public void releaseReadLatch();
+    @Override
+    public boolean hasWaiters(){
+        return waiters;
 
-    public void acquireWriteLatch();
+    }
 
-    public void releaseWriteLatch(boolean markDirty);
-
-    public boolean confiscated();
-
-    public IQueueInfo getQueueInfo();
-
-    public void setQueueInfo(IQueueInfo queueInfo);
+    @Override
+    public boolean isPoison(){
+        return poison;
+    }
 }

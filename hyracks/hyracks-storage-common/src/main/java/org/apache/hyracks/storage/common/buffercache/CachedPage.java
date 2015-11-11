@@ -38,6 +38,20 @@ public class CachedPage implements ICachedPageInternal {
     CachedPage next;
     volatile boolean valid;
     final AtomicBoolean confiscated;
+    private IQueueInfo queueInfo;
+
+    //Constructor for making dummy entry for FIFO queue
+    public CachedPage(){
+        this.cpid = -1;
+        this.buffer = null;
+        this.pageReplacementStrategy = null;
+        this.dirty = new AtomicBoolean(false);
+        this.confiscated = new AtomicBoolean(true);
+        pinCount = null;
+        queueInfo = null;
+        replacementStrategyObject = null;
+        latch =null;
+    }
 
     public CachedPage(int cpid, ByteBuffer buffer, IPageReplacementStrategy pageReplacementStrategy) {
         this.cpid = cpid;
@@ -50,6 +64,7 @@ public class CachedPage implements ICachedPageInternal {
         dpid = -1;
         valid = false;
         confiscated = new AtomicBoolean(false);
+        queueInfo = null;
     }
 
     public void reset(long dpid) {
@@ -122,6 +137,16 @@ public class CachedPage implements ICachedPageInternal {
     }
 
     @Override
+    public IQueueInfo getQueueInfo() {
+        return queueInfo;
+    }
+
+    @Override
+    public void setQueueInfo(IQueueInfo queueInfo) {
+        this.queueInfo = queueInfo;
+    }
+
+    @Override
     public long getDiskPageId() {
         return dpid;
     }
@@ -133,4 +158,5 @@ public class CachedPage implements ICachedPageInternal {
     void setNext(CachedPage next) {
         this.next = next;
     }
+
 }

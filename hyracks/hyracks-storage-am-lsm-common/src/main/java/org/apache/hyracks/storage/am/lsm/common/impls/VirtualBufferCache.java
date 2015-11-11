@@ -34,6 +34,7 @@ import org.apache.hyracks.storage.am.lsm.common.api.IVirtualBufferCache;
 import org.apache.hyracks.storage.common.buffercache.ICacheMemoryAllocator;
 import org.apache.hyracks.storage.common.buffercache.ICachedPage;
 import org.apache.hyracks.storage.common.buffercache.IFIFOPageQueue;
+import org.apache.hyracks.storage.common.buffercache.IQueueInfo;
 import org.apache.hyracks.storage.common.file.BufferedFileHandle;
 import org.apache.hyracks.storage.common.file.IFileMapManager;
 import org.apache.hyracks.storage.common.file.TransientFileMapManager;
@@ -352,6 +353,16 @@ public class VirtualBufferCache implements IVirtualBufferCache {
         }
         public boolean confiscated() {
             return false;
+        }
+
+        @Override
+        public IQueueInfo getQueueInfo() {
+            return null;
+        }
+
+        @Override
+        public void setQueueInfo(IQueueInfo queueInfo) {
+
         }
 
     }
