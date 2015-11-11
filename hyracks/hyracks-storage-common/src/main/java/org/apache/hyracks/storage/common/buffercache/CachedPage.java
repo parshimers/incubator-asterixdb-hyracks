@@ -37,7 +37,7 @@ public class CachedPage implements ICachedPageInternal {
     volatile long dpid; // disk page id (composed of file id and page id)
     CachedPage next;
     volatile boolean valid;
-    final AtomicBoolean virtual;
+    final AtomicBoolean confiscated;
 
     public CachedPage(int cpid, ByteBuffer buffer, IPageReplacementStrategy pageReplacementStrategy) {
         this.cpid = cpid;
@@ -49,14 +49,14 @@ public class CachedPage implements ICachedPageInternal {
         replacementStrategyObject = pageReplacementStrategy.createPerPageStrategyObject(cpid);
         dpid = -1;
         valid = false;
-        virtual = new AtomicBoolean(false);
+        confiscated = new AtomicBoolean(false);
     }
 
     public void reset(long dpid) {
         this.dpid = dpid;
         dirty.set(false);
         valid = false;
-        virtual.set(false);
+        confiscated.set(false);
         pageReplacementStrategy.notifyCachePageReset(this);
     }
 
@@ -76,7 +76,7 @@ public class CachedPage implements ICachedPageInternal {
 
     @Override
     public boolean pinIfGoodVictim() {
-        if (virtual.get())
+        if (confiscated.get())
             return false; //i am not a good victim because i cant flush!
         else {
             return pinCount.compareAndSet(0, 1);
@@ -114,6 +114,11 @@ public class CachedPage implements ICachedPageInternal {
         } finally {
             latch.writeLock().unlock();
         }
+    }
+
+    @Override
+    public boolean confiscated() {
+        return confiscated.get();
     }
 
     @Override

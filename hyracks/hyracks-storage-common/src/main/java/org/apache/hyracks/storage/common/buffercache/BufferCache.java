@@ -49,7 +49,6 @@ public class BufferCache implements IBufferCacheInternal, ILifeCycleComponent {
 
     private static final int MIN_CLEANED_COUNT_DIFF = 3;
     private static final int PIN_MAX_WAIT_TIME = 50;
-    public static final int INVALID_DPID = -1;
     public static final boolean DEBUG = false;
 
     private final int pageSize;
@@ -110,6 +109,10 @@ public class BufferCache implements IBufferCacheInternal, ILifeCycleComponent {
 
         this(ioManager, pageReplacementStrategy, pageCleanerPolicy, fileMapManager, maxOpenFiles, threadFactory);
         this.ioReplicationManager = ioReplicationManager;
+    }
+
+    public static void setDpid(ICachedPage page, long dpid) {
+        ((CachedPage) page).dpid = dpid;
     }
 
     @Override
@@ -180,7 +183,7 @@ public class BufferCache implements IBufferCacheInternal, ILifeCycleComponent {
                 confiscateLock.lock();
                 try {
                     for (CachedPage c : confiscatedPages) {
-                        if (c.dpid == dpid && c.virtual.get()) {
+                        if (c.dpid == dpid && c.confiscated.get()) {
                             while(confiscatedPages.contains(c)){
                                 throw new IllegalStateException();
                             }
@@ -209,7 +212,7 @@ public class BufferCache implements IBufferCacheInternal, ILifeCycleComponent {
 
     private boolean isVirtual(long vpid) throws HyracksDataException {
         CachedPage virtPage = findPage(vpid, true);
-        return virtPage.virtual.get();
+        return virtPage.confiscated.get();
     }
 
     public boolean isVirtual(ICachedPage vp) throws HyracksDataException {
@@ -236,7 +239,7 @@ public class BufferCache implements IBufferCacheInternal, ILifeCycleComponent {
                     }
                     if (cPage.dpid == dpid) {
                         if(DEBUG) {
-                            assert !cPage.virtual.get();
+                            assert !cPage.confiscated.get();
                         }
                         cPage.pinCount.incrementAndGet();
                         return cPage;
@@ -258,7 +261,7 @@ public class BufferCache implements IBufferCacheInternal, ILifeCycleComponent {
                  * on the CachedPage. We have to deal with three cases here.
                  * Case 1: The dpid on the CachedPage is invalid (-1). This
                  * indicates that this buffer has never been used or is a
-                 * virtual page. So we are the only ones holding it. Get a lock
+                 * confiscated page. So we are the only ones holding it. Get a lock
                  * on the required dpid's hash bucket, check if someone inserted
                  * the page we want into the table. If so, decrement the
                  * pincount on the victim and return the winner page in the
@@ -303,7 +306,7 @@ public class BufferCache implements IBufferCacheInternal, ILifeCycleComponent {
                                 cPage.pinCount.incrementAndGet();
                                 victim.pinCount.decrementAndGet();
                                 if(DEBUG) {
-                                    assert !cPage.virtual.get();
+                                    assert !cPage.confiscated.get();
                                 }
                                 return cPage;
                             }
@@ -317,7 +320,7 @@ public class BufferCache implements IBufferCacheInternal, ILifeCycleComponent {
                     }
 
                     if(DEBUG) {
-                        assert !victim.virtual.get();
+                        assert !victim.confiscated.get();
                     }
                     return victim;
                 }
@@ -348,7 +351,7 @@ public class BufferCache implements IBufferCacheInternal, ILifeCycleComponent {
                                 cPage.pinCount.incrementAndGet();
                                 victim.pinCount.decrementAndGet();
                                 if(DEBUG) {
-                                    assert !victim.virtual.get();
+                                    assert !victim.confiscated.get();
                                 }
                                 return cPage;
                             }
@@ -359,7 +362,7 @@ public class BufferCache implements IBufferCacheInternal, ILifeCycleComponent {
                         bucket.bucketLock.unlock();
                     }
                     if(DEBUG) {
-                        assert !victim.virtual.get();
+                        assert !victim.confiscated.get();
                     }
                     return victim;
                 } else {
@@ -390,7 +393,7 @@ public class BufferCache implements IBufferCacheInternal, ILifeCycleComponent {
                                 cPage.pinCount.incrementAndGet();
                                 victim.pinCount.decrementAndGet();
                                 if(DEBUG) {
-                                    assert !cPage.virtual.get();
+                                    assert !cPage.confiscated.get();
                                 }
                                 return cPage;
                             }
@@ -416,7 +419,7 @@ public class BufferCache implements IBufferCacheInternal, ILifeCycleComponent {
                         bucket.bucketLock.unlock();
                     }
                     if(DEBUG) {
-                        assert !victim.virtual.get();
+                        assert !victim.confiscated.get();
                     }
                     return victim;
                 }
@@ -449,7 +452,7 @@ public class BufferCache implements IBufferCacheInternal, ILifeCycleComponent {
                 .append('\n');
         buffer.append("Hash table size: ").append(pageMap.length).append('\n');
         buffer.append("Page Map:\n");
-        buffer.append("cpid -> [fileId:pageId, pinCount, valid/invalid, virtual/physical, dirty/clean]");
+        buffer.append("cpid -> [fileId:pageId, pinCount, valid/invalid, confiscated/physical, dirty/clean]");
         int nCachedPages = 0;
         for (int i = 0; i < pageMap.length; ++i) {
             CacheBucket cb = pageMap[i];
@@ -463,7 +466,7 @@ public class BufferCache implements IBufferCacheInternal, ILifeCycleComponent {
                                 .append(BufferedFileHandle.getFileId(cp.dpid)).append(':')
                                 .append(BufferedFileHandle.getPageId(cp.dpid)).append(", ").append(cp.pinCount.get())
                                 .append(", ").append(cp.valid ? "valid" : "invalid").append(", ")
-                                .append(cp.virtual.get() ? "virtual" : "physical").append(", ")
+                                .append(cp.confiscated.get() ? "confiscated" : "physical").append(", ")
                                 .append(cp.dirty.get() ? "dirty" : "clean").append("]\n");
                         cp = cp.next;
                         ++nCachedPages;
@@ -564,7 +567,7 @@ public class BufferCache implements IBufferCacheInternal, ILifeCycleComponent {
         }
 
         public void cleanPage(CachedPage cPage, boolean force) {
-            if (cPage.dirty.get() && !cPage.virtual.get()) {
+            if (cPage.dirty.get() && !cPage.confiscated.get()) {
                 boolean proceed = false;
                 if (force) {
                     cPage.latch.writeLock().lock();
@@ -788,8 +791,8 @@ public class BufferCache implements IBufferCacheInternal, ILifeCycleComponent {
             if (pinCount > 0) {
                 throw new IllegalStateException("Page " + BufferedFileHandle.getFileId(cPage.dpid) + ":"
                         + BufferedFileHandle.getPageId(cPage.dpid)
-                        + " is pinned and file is being closed. Pincount is: " + pinCount + " Page is virtual: "
-                        + cPage.virtual);
+                        + " is pinned and file is being closed. Pincount is: " + pinCount + " Page is confiscated: "
+                        + cPage.confiscated);
             }
             cPage.invalidate();
             return true;
@@ -941,7 +944,7 @@ public class BufferCache implements IBufferCacheInternal, ILifeCycleComponent {
             CachedPage victim = (CachedPage) pageReplacementStrategy.findVictim();
             if (victim != null) {
                 if(DEBUG) {
-                    assert !victim.virtual.get();
+                    assert !victim.confiscated.get();
                 }
                 // find a page that would possibly be evicted anyway
                 // Case 1 from findPage()
@@ -1009,7 +1012,7 @@ public class BufferCache implements IBufferCacheInternal, ILifeCycleComponent {
             }
             // if we found a page after all that, go ahead and finish
             if (returnPage != null) {
-                ((CachedPage) returnPage).virtual.set(true);
+                ((CachedPage) returnPage).confiscated.set(true);
                 if (DEBUG) {
                     confiscateLock.lock();
                     try{
@@ -1052,6 +1055,9 @@ public class BufferCache implements IBufferCacheInternal, ILifeCycleComponent {
     public void returnPage(ICachedPage page, boolean reinsert) {
         CachedPage cPage = (CachedPage) page;
         CacheBucket bucket = null;
+        if(!page.confiscated()){
+            return;
+        }
         if (reinsert) {
             int hash = hash(cPage.dpid);
             bucket = pageMap[hash];

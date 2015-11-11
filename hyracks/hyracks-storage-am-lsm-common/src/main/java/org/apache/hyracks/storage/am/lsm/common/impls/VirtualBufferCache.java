@@ -350,6 +350,9 @@ public class VirtualBufferCache implements IVirtualBufferCache {
         public void releaseWriteLatch(boolean markDirty) {
             latch.writeLock().unlock();
         }
+        public boolean confiscated() {
+            return false;
+        }
 
     }
 
@@ -365,7 +368,7 @@ public class VirtualBufferCache implements IVirtualBufferCache {
 
     @Override
     public int getNumPagesOfFile(int fileId) throws HyracksDataException {
-        throw new UnsupportedOperationException();
+        return numPages;
     }
 
     @Override

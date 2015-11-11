@@ -45,7 +45,6 @@ import org.apache.hyracks.storage.am.rtree.api.IRTreeLeafFrame;
 import org.apache.hyracks.storage.am.rtree.frames.RTreeNSMFrame;
 import org.apache.hyracks.storage.am.rtree.frames.RTreeNSMInteriorFrame;
 import org.apache.hyracks.storage.am.rtree.tuples.RTreeTypeAwareTupleWriter;
-import org.apache.hyracks.storage.common.buffercache.AsyncFIFOPageQueueManager;
 import org.apache.hyracks.storage.common.buffercache.BufferCache;
 import org.apache.hyracks.storage.common.buffercache.IBufferCache;
 import org.apache.hyracks.storage.common.buffercache.ICachedPage;
@@ -766,7 +765,7 @@ public class RTree extends AbstractTreeIndex {
         MultiComparator cmp = MultiComparator.create(cmpFactories);
         SearchPredicate searchPred = new SearchPredicate(null, cmp);
 
-        int currentPageId = BULKLOAD_LEAF_START;
+        int currentPageId = bulkloadLeafStart;
         int maxPageId = freePageManager.getMaxPage(ctx.metaFrame);
 
         ICachedPage page = bufferCache.pin(BufferedFileHandle.getDiskPageId(fileId, currentPageId), false);
@@ -969,7 +968,7 @@ public class RTree extends AbstractTreeIndex {
 
                     int finalPageId = freePageManager.getFreePage(metaFrame);
                     n.pageId = finalPageId;
-                    AsyncFIFOPageQueueManager.setDpid(n.page, BufferedFileHandle.getDiskPageId(fileId, finalPageId));
+                    BufferCache.setDpid(n.page, BufferedFileHandle.getDiskPageId(fileId, finalPageId));
                     //else we are looking at a leaf
                 }
                 //set next guide MBR
@@ -1031,7 +1030,7 @@ public class RTree extends AbstractTreeIndex {
                 } else {
                     prevNodeFrontierPages.set(level, finalPageId);
                 }
-                AsyncFIFOPageQueueManager.setDpid(frontier.page, BufferedFileHandle.getDiskPageId(fileId, finalPageId));
+                BufferCache.setDpid(frontier.page, BufferedFileHandle.getDiskPageId(fileId, finalPageId));
                 pagesToWrite.add(frontier.page);
 
                 lowerFrame = prevInteriorFrame;

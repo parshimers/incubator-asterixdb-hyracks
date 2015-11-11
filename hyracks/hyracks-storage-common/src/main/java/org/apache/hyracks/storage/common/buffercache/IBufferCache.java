@@ -24,6 +24,9 @@ import org.apache.hyracks.api.io.FileReference;
 import org.apache.hyracks.api.replication.IIOReplicationManager;
 
 public interface IBufferCache {
+
+    public static final int INVALID_DPID = -1;
+
     public void createFile(FileReference fileRef) throws HyracksDataException;
     
     public int createMemFile() throws HyracksDataException;

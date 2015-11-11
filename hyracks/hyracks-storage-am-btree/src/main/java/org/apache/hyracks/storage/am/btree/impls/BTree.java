@@ -51,7 +51,6 @@ import org.apache.hyracks.storage.am.common.impls.NodeFrontier;
 import org.apache.hyracks.storage.am.common.impls.TreeIndexDiskOrderScanCursor;
 import org.apache.hyracks.storage.am.common.ophelpers.IndexOperation;
 import org.apache.hyracks.storage.am.common.ophelpers.MultiComparator;
-import org.apache.hyracks.storage.common.buffercache.AsyncFIFOPageQueueManager;
 import org.apache.hyracks.storage.common.buffercache.BufferCache;
 import org.apache.hyracks.storage.common.buffercache.IBufferCache;
 import org.apache.hyracks.storage.common.buffercache.ICachedPage;
@@ -88,7 +87,7 @@ public class BTree extends AbstractTreeIndex {
         ctx.reset();
         RangePredicate diskOrderScanPred = new RangePredicate(null, null, true, true, ctx.cmp, ctx.cmp);
         int maxPageId = freePageManager.getMaxPage(ctx.metaFrame);
-        int currentPageId = BULKLOAD_LEAF_START;
+        int currentPageId = bulkloadLeafStart;
         ICachedPage page = bufferCache.pin(BufferedFileHandle.getDiskPageId(fileId, currentPageId), false);
         page.acquireReadLatch();
         try {
@@ -745,7 +744,7 @@ public class BTree extends AbstractTreeIndex {
                     bufferCache.unpin(node);
                 }
                 if (restartOp) {
-                    // Wait for the SMO to finish before restarting.
+                    // Wait for the SMO to persistFrontiers before restarting.
                     treeLatch.readLock().lock();
                     treeLatch.readLock().unlock();
                     ctx.pageLsns.removeLast();
@@ -1065,7 +1064,7 @@ public class BTree extends AbstractTreeIndex {
 
                 ((IBTreeInteriorFrame) interiorFrame).deleteGreatest();
                 int finalPageId = freePageManager.getFreePage(metaFrame);
-                AsyncFIFOPageQueueManager.setDpid(frontier.page, BufferedFileHandle.getDiskPageId(fileId, finalPageId));
+                BufferCache.setDpid(frontier.page, BufferedFileHandle.getDiskPageId(fileId, finalPageId));
                 pagesToWrite.add(frontier.page);
                 splitKey.setLeftPage(finalPageId);
 
@@ -1077,7 +1076,7 @@ public class BTree extends AbstractTreeIndex {
             ((IBTreeInteriorFrame) interiorFrame).insertSorted(tuple);
         }
 
-        protected void finish(int level, int rightPage) throws HyracksDataException {
+        private void persistFrontiers(int level, int rightPage) throws HyracksDataException {
             if (level >= nodeFrontiers.size()) {
                 //at root
                 if (appendOnly) {
@@ -1089,36 +1088,39 @@ public class BTree extends AbstractTreeIndex {
             if (level < 1) {
                 ICachedPage lastLeaf = nodeFrontiers.get(level).page;
                 int lastLeafPage = nodeFrontiers.get(level).pageId;
-                AsyncFIFOPageQueueManager.setDpid(lastLeaf, BufferedFileHandle.getDiskPageId(fileId, lastLeafPage));
+                setPageDpid(lastLeaf,nodeFrontiers.get(level).pageId);
                 queue.put(lastLeaf);
                 nodeFrontiers.get(level).page = null;
-                finish(level + 1, lastLeafPage);
+                persistFrontiers(level + 1, lastLeafPage);
                 return;
             }
             NodeFrontier frontier = nodeFrontiers.get(level);
             interiorFrame.setPage(frontier.page);
             //just finalize = the layer right above the leaves has correct righthand pointers already
-            if (rightPage > 0) {
-                ((IBTreeInteriorFrame) interiorFrame).setRightmostChildPageId(rightPage);
+            if (rightPage < 0) {
+                throw new HyracksDataException("Error in index creation. Internal node appears to have no rightmost guide");
             }
-            //otherwise...
+            ((IBTreeInteriorFrame) interiorFrame).setRightmostChildPageId(rightPage);
             int finalPageId = freePageManager.getFreePage(metaFrame);
-            AsyncFIFOPageQueueManager.setDpid(frontier.page, BufferedFileHandle.getDiskPageId(fileId, finalPageId));
+            setPageDpid(frontier.page, finalPageId);
             queue.put(frontier.page);
             frontier.pageId = finalPageId;
 
-            finish(level + 1, finalPageId);
+            persistFrontiers(level + 1, finalPageId);
         }
 
         @Override
         protected void handleException() throws HyracksDataException {
-            end();
+            super.handleException();
         }
 
         @Override
         public void end() throws HyracksDataException {
-            finish(0, -1);
+            persistFrontiers(0, -1);
             super.end();
+        }
+        private void setPageDpid(ICachedPage page, int pageId){
+            BufferCache.setDpid(page, BufferedFileHandle.getDiskPageId(fileId,pageId));
         }
     }
 

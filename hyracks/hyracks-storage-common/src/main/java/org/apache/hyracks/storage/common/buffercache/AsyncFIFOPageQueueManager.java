@@ -144,10 +144,6 @@ public class AsyncFIFOPageQueueManager implements Runnable {
         }
     }
 
-    public static void setDpid(ICachedPage page, long dpid) {
-        ((CachedPage) page).dpid = dpid;
-    }
-
     public void finishQueue() {
         if(DEBUG) System.out.println("[FIFO] Finishing Queue");
         try {

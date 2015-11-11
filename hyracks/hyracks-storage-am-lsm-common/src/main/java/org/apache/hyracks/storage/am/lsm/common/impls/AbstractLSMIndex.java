@@ -169,7 +169,6 @@ public abstract class AbstractLSMIndex implements ILSMIndexInternal {
     protected void markAsValidInternal(ITreeIndex treeIndex) throws HyracksDataException {
         int fileId = treeIndex.getFileId();
         IBufferCache bufferCache = treeIndex.getBufferCache();
-        int metaPageId = treeIndex.getMetaManager().closeGivePageId();
         // WARNING: flushing the metadata page should be done after releasing the write latch; otherwise, the page
         // won't be flushed to disk because it won't be dirty until the write latch has been released.
         // Force modified metadata page to disk.
