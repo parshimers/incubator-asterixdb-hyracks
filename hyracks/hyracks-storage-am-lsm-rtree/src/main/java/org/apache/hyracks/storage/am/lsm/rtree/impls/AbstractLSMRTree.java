@@ -162,15 +162,6 @@ public abstract class AbstractLSMRTree extends AbstractLSMIndex implements ITree
         if (isActivated) {
             throw new HyracksDataException("Failed to activate the index since it is already activated.");
         }
-
-        for (ILSMComponent c : memoryComponents) {
-            LSMRTreeMemoryComponent mutableComponent = (LSMRTreeMemoryComponent) c;
-            ((IVirtualBufferCache) mutableComponent.getRTree().getBufferCache()).open();
-            mutableComponent.getRTree().create();
-            mutableComponent.getBTree().create();
-            mutableComponent.getRTree().activate();
-            mutableComponent.getBTree().activate();
-        }
     }
 
     @Override
@@ -189,15 +180,7 @@ public abstract class AbstractLSMRTree extends AbstractLSMIndex implements ITree
                 throw new HyracksDataException(e);
             }
         }
-
-        for (ILSMComponent c : memoryComponents) {
-            LSMRTreeMemoryComponent mutableComponent = (LSMRTreeMemoryComponent) c;
-            mutableComponent.getRTree().deactivate();
-            mutableComponent.getBTree().deactivate();
-            mutableComponent.getRTree().destroy();
-            mutableComponent.getBTree().destroy();
-            ((IVirtualBufferCache) mutableComponent.getRTree().getBufferCache()).close();
-        }
+        deallocateMemoryComponents();
     }
 
     @Override
@@ -212,13 +195,7 @@ public abstract class AbstractLSMRTree extends AbstractLSMIndex implements ITree
         if (!isActivated) {
             throw new HyracksDataException("Failed to clear the index since it is not activated.");
         }
-
-        for (ILSMComponent c : memoryComponents) {
-            LSMRTreeMemoryComponent mutableComponent = (LSMRTreeMemoryComponent) c;
-            mutableComponent.getRTree().clear();
-            mutableComponent.getBTree().clear();
-            mutableComponent.reset();
-        }
+        clearMemoryComponents();
     }
 
     @Override
@@ -227,7 +204,6 @@ public abstract class AbstractLSMRTree extends AbstractLSMIndex implements ITree
         List<ILSMComponent> immutableComponents = diskComponents;
         int cmc = currentMutableComponentId.get();
         ctx.setCurrentMutableComponentId(cmc);
-        int numMutableComponents = memoryComponents.size();
         operationalComponents.clear();
         switch (ctx.getOperation()) {
             case INSERT:
@@ -236,17 +212,9 @@ public abstract class AbstractLSMRTree extends AbstractLSMIndex implements ITree
                 operationalComponents.add(memoryComponents.get(cmc));
                 break;
             case SEARCH:
-                for (int i = 0; i < numMutableComponents - 1; i++) {
-                    ILSMComponent c = memoryComponents.get((cmc + i + 1) % numMutableComponents);
-                    LSMRTreeMemoryComponent mutableComponent = (LSMRTreeMemoryComponent) c;
-                    if (mutableComponent.isReadable()) {
-                        // Make sure newest components are added first
-                        operationalComponents.add(0, mutableComponent);
-                    }
+                if (memoryComponentsAllocated) {
+                    addOperationalMutableComponents(operationalComponents);
                 }
-                // The current mutable component is always added
-                operationalComponents.add(0, memoryComponents.get(cmc));
-
                 if (filterManager != null) {
                     for (ILSMComponent c : immutableComponents) {
                         if (c.getLSMComponentFilter().satisfy(
@@ -259,7 +227,6 @@ public abstract class AbstractLSMRTree extends AbstractLSMIndex implements ITree
                 } else {
                     operationalComponents.addAll(immutableComponents);
                 }
-
                 break;
             case MERGE:
                 operationalComponents.addAll(ctx.getComponentsToBeMerged());
@@ -438,5 +405,64 @@ public abstract class AbstractLSMRTree extends AbstractLSMIndex implements ITree
     @Override
     public String toString() {
         return "LSMRTree [" + fileManager.getBaseDir() + "]";
+    }
+
+    @Override
+    public synchronized void allocateMemoryComponents() throws HyracksDataException {
+        if (!isActivated) {
+            throw new HyracksDataException("Failed to allocate memory components since the index is not active.");
+        }
+        if (memoryComponentsAllocated) {
+            return;
+        }
+        for (ILSMComponent c : memoryComponents) {
+            LSMRTreeMemoryComponent mutableComponent = (LSMRTreeMemoryComponent) c;
+            ((IVirtualBufferCache) mutableComponent.getRTree().getBufferCache()).open();
+            mutableComponent.getRTree().create();
+            mutableComponent.getBTree().create();
+            mutableComponent.getRTree().activate();
+            mutableComponent.getBTree().activate();
+        }
+        memoryComponentsAllocated = true;
+    }
+
+    private void addOperationalMutableComponents(List<ILSMComponent> operationalComponents) {
+        int cmc = currentMutableComponentId.get();
+        int numMutableComponents = memoryComponents.size();
+        for (int i = 0; i < numMutableComponents - 1; i++) {
+            ILSMComponent c = memoryComponents.get((cmc + i + 1) % numMutableComponents);
+            LSMRTreeMemoryComponent mutableComponent = (LSMRTreeMemoryComponent) c;
+            if (mutableComponent.isReadable()) {
+                // Make sure newest components are added first
+                operationalComponents.add(0, mutableComponent);
+            }
+        }
+        // The current mutable component is always added
+        operationalComponents.add(0, memoryComponents.get(cmc));
+    }
+
+    private synchronized void clearMemoryComponents() throws HyracksDataException {
+        if (memoryComponentsAllocated) {
+            for (ILSMComponent c : memoryComponents) {
+                LSMRTreeMemoryComponent mutableComponent = (LSMRTreeMemoryComponent) c;
+                mutableComponent.getRTree().clear();
+                mutableComponent.getBTree().clear();
+                mutableComponent.reset();
+            }
+        }
+    }
+
+    private synchronized void deallocateMemoryComponents() throws HyracksDataException {
+        if (memoryComponentsAllocated) {
+            for (ILSMComponent c : memoryComponents) {
+                LSMRTreeMemoryComponent mutableComponent = (LSMRTreeMemoryComponent) c;
+                mutableComponent.getRTree().deactivate();
+                mutableComponent.getBTree().deactivate();
+                mutableComponent.getRTree().destroy();
+                mutableComponent.getBTree().destroy();
+                ((IVirtualBufferCache) mutableComponent.getRTree().getBufferCache()).close();
+            }
+            memoryComponentsAllocated = false;
+        }
     }
 }

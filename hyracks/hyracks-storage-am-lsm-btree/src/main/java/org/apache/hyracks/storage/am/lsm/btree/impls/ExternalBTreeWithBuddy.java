@@ -897,5 +897,10 @@ public class ExternalBTreeWithBuddy extends AbstractLSMIndex implements ITreeInd
         else{
             return createBulkLoader(fillFactor, verifyInput,numElementsHint,checkIfEmptyIndex);
         }
+   }
+
+    @Override
+    public void allocateMemoryComponents() throws HyracksDataException {
+        //do nothing since external index never use memory components
     }
 }
