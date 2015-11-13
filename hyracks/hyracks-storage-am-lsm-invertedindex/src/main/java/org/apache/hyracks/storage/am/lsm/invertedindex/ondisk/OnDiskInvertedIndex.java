@@ -454,6 +454,13 @@ public class OnDiskInvertedIndex implements IInvertedIndex {
             invListsMaxPageId = currentPageId;
             bufferCache.finishQueue();
         }
+
+        @Override
+        public void abort() throws HyracksDataException {
+            if(btreeBulkloader != null){
+                btreeBulkloader.abort();
+            }
+        }
     }
 
     @Override

@@ -454,6 +454,11 @@ public abstract class AbstractTreeIndex implements ITreeIndex {
             // do nothing
         }
 
+        @Override
+        public void abort() {
+
+        }
+
     }
 
     @Override

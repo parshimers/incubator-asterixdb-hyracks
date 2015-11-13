@@ -73,6 +73,7 @@ public class CachedPage implements ICachedPageInternal {
         valid = false;
         confiscated.set(false);
         pageReplacementStrategy.notifyCachePageReset(this);
+        queueInfo = null;
     }
 
     public void invalidate() {

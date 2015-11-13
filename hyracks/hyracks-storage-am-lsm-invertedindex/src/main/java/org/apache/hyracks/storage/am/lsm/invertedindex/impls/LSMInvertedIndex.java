@@ -770,6 +770,17 @@ public class LSMInvertedIndex extends AbstractLSMIndex implements IInvertedIndex
                 }
             }
         }
+
+        @Override
+        public void abort() throws HyracksDataException {
+            if( invIndexBulkLoader != null){
+                invIndexBulkLoader.abort();
+            }
+
+            if(deletedKeysBTreeBulkLoader != null){
+                deletedKeysBTreeBulkLoader.abort();
+            }
+        }
     }
 
     protected InMemoryInvertedIndex createInMemoryInvertedIndex(IVirtualBufferCache virtualBufferCache,

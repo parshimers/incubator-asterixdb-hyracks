@@ -953,6 +953,11 @@ public class RTree extends AbstractTreeIndex {
             super.end();
         }
 
+        @Override
+        public void abort() throws HyracksDataException {
+            super.handleException();
+        }
+
         protected void finish() throws HyracksDataException {
             int prevPageId = -1;
             //here we assign physical identifiers to everything we can

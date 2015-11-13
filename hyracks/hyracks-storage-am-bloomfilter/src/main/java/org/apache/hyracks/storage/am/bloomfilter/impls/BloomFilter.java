@@ -294,5 +294,19 @@ public class BloomFilter {
             BloomFilter.this.numPages = numPages;
         }
 
+        @Override
+        public void abort() throws HyracksDataException {
+            if (bufferCache != null) {
+                for (ICachedPage p : pages) {
+                    if (p != null) {
+                        bufferCache.returnPage(p, false);
+                    }
+                }
+                if (metaDataPage != null ){
+                    bufferCache.returnPage(metaDataPage,false);
+                }
+            }
+        }
+
     }
 }

@@ -437,6 +437,13 @@ public class LSMRTreeWithAntiMatterTuples extends AbstractLSMRTree {
             }
         }
 
+        @Override
+        public void abort() throws HyracksDataException {
+            if(bulkLoader != null){
+                bulkLoader.abort();
+            }
+        }
+
         protected void cleanupArtifacts() throws HyracksDataException {
             if (!cleanedUpArtifacts) {
                 cleanedUpArtifacts = true;

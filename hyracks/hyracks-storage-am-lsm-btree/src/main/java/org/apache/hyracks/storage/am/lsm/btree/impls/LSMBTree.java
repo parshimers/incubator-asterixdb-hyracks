@@ -666,7 +666,7 @@ public class LSMBTree extends AbstractLSMIndex implements ITreeIndex {
             if (!cleanedUpArtifacts) {
                 cleanedUpArtifacts = true;
                 if (!endedBloomFilterLoad) {
-	                    builder.end();
+                        builder.abort();
 	                    endedBloomFilterLoad = true;
                 }
                 ((LSMBTreeDiskComponent) component).getBTree().deactivate();
@@ -697,6 +697,18 @@ public class LSMBTree extends AbstractLSMIndex implements ITreeIndex {
                     lsmHarness.addBulkLoadedComponent(component);
                 }
             }
+        }
+
+        @Override
+        public void abort() throws HyracksDataException {
+            if(bulkLoader != null){
+                bulkLoader.abort();
+            }
+
+            if(builder != null){
+                builder.abort();
+            }
+
         }
     }
 

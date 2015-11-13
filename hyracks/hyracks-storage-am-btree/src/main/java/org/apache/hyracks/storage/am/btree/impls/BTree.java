@@ -1119,6 +1119,12 @@ public class BTree extends AbstractTreeIndex {
             persistFrontiers(0, -1);
             super.end();
         }
+
+        @Override
+        public void abort() throws HyracksDataException {
+            super.handleException();
+        }
+
         private void setPageDpid(ICachedPage page, int pageId){
             BufferCache.setDpid(page, BufferedFileHandle.getDiskPageId(fileId,pageId));
         }
