@@ -308,7 +308,7 @@ public class LinkedMetaDataPageManager implements IMetaDataPageManager {
 
     @Override
     public void close() throws HyracksDataException {
-        if (appendOnly && fileId >= 0) {
+        if (appendOnly && fileId >= 0 && confiscatedMetaNode != null) {
             IFIFOPageQueue queue = bufferCache.createFIFOQueue();
             writeFilterPage(queue);
             ITreeIndexMetaDataFrame metaFrame = metaDataFrameFactory.createFrame();
@@ -317,6 +317,7 @@ public class LinkedMetaDataPageManager implements IMetaDataPageManager {
             int finalMetaPage = getMaxPage(metaFrame) + 1;
             bufferCache.setPageDiskId(confiscatedMetaNode, BufferedFileHandle.getDiskPageId(fileId,finalMetaPage));
             queue.put(confiscatedMetaNode);
+            confiscatedMetaNode = null;
             bufferCache.finishQueue();
         }
     }
@@ -325,7 +326,6 @@ public class LinkedMetaDataPageManager implements IMetaDataPageManager {
         if(filterPage != null) {
             ITreeIndexMetaDataFrame metaFrame = metaDataFrameFactory.createFrame();
             metaFrame.setPage(confiscatedMetaNode);
-            metaFrame.setValid(true);
             int finalFilterPage = getFreePage(metaFrame);
             bufferCache.setPageDiskId(filterPage, BufferedFileHandle.getDiskPageId(fileId, finalFilterPage));
             queue.put(filterPage);

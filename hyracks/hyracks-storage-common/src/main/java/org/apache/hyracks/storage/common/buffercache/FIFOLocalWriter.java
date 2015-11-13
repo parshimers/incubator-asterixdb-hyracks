@@ -20,7 +20,7 @@ import org.apache.hyracks.storage.common.file.BufferedFileHandle;
 
 public class FIFOLocalWriter implements IFIFOPageWriter {
     private static FIFOLocalWriter instance;
-    private static boolean DEBUG = false;
+    private static boolean DEBUG = true;
 
     public static FIFOLocalWriter instance() {
         if(instance == null) {
