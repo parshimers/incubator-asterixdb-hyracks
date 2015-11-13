@@ -163,7 +163,7 @@ public class LinkedMetaDataPageManager implements IMetaDataPageManager {
     @Override
     public int getMaxPage(ITreeIndexMetaDataFrame metaFrame) throws HyracksDataException {
         ICachedPage metaNode;
-        if (!appendOnly) {
+        if (!appendOnly || (appendOnly && confiscatedMetaNode == null)) {
             int mdPage = getFirstMetadataPage();
             if( mdPage <0 ){
                 return -1;
@@ -217,7 +217,7 @@ public class LinkedMetaDataPageManager implements IMetaDataPageManager {
     public int getFilterPageId() throws HyracksDataException {
         ICachedPage metaNode;
         int filterPageId = NO_FILTER_IN_PLACE;
-        if (!appendOnly) {
+        if (!appendOnly || (appendOnly && confiscatedMetaNode == null)) {
             metaNode = bufferCache.pin(BufferedFileHandle.getDiskPageId(fileId, getFirstMetadataPage()), false);
         } else {
             metaNode = confiscatedMetaNode;
@@ -317,8 +317,8 @@ public class LinkedMetaDataPageManager implements IMetaDataPageManager {
             int finalMetaPage = getMaxPage(metaFrame) + 1;
             bufferCache.setPageDiskId(confiscatedMetaNode, BufferedFileHandle.getDiskPageId(fileId,finalMetaPage));
             queue.put(confiscatedMetaNode);
-            confiscatedMetaNode = null;
             bufferCache.finishQueue();
+            confiscatedMetaNode = null;
         }
     }
 
@@ -395,7 +395,7 @@ public class LinkedMetaDataPageManager implements IMetaDataPageManager {
     @Override
     public long getLSN() throws HyracksDataException {
         ICachedPage metaNode;
-        if (!appendOnly) {
+        if (!appendOnly || (appendOnly && confiscatedMetaNode == null)) {
             metaNode = bufferCache.pin(BufferedFileHandle.getDiskPageId(fileId, getFirstMetadataPage()), false);
         } else {
             metaNode = confiscatedMetaNode;

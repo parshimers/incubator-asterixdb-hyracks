@@ -76,9 +76,6 @@ public class TreeIndexStatsOperatorNodePushable extends AbstractUnaryOutputSourc
             // Write the stats output as a single string field.
             FrameTupleAppender appender = new FrameTupleAppender(new VSizeFrame(ctx));
             ArrayTupleBuilder tb = new ArrayTupleBuilder(1);
-            // Write the stats output as a single string field.
-            FrameTupleAppender appender = new FrameTupleAppender(new VSizeFrame(ctx));
-            ArrayTupleBuilder tb = new ArrayTupleBuilder(1);
             DataOutput dos = tb.getDataOutput();
             tb.reset();
             utf8SerDer.serialize(stats.toString(), dos);
