@@ -32,7 +32,7 @@ public class AsyncFIFOPageQueueManager implements Runnable {
     volatile Thread writerThread;
     protected AtomicBoolean poisoned = new AtomicBoolean(false);
     protected BufferCache bufferCache;
-    protected PageQueue pageQueue;
+    volatile protected PageQueue pageQueue;
 
     public AsyncFIFOPageQueueManager(BufferCache bufferCache){
         this.bufferCache = bufferCache;
