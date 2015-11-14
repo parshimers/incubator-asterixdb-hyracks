@@ -74,9 +74,9 @@ public class AsyncFIFOPageQueueManager implements Runnable {
 
 
     public PageQueue createQueue(IFIFOPageWriter writer) {
-        if (writerThread == null) {
+        if (pageQueue == null) {
             synchronized(this){
-                if (writerThread == null) {
+                if (pageQueue == null) {
                     writerThread = new Thread(this);
                     writerThread.setName("FIFO Writer Thread");
                     writerThread.start();
