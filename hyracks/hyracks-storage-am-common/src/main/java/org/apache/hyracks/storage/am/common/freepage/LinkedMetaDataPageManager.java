@@ -179,7 +179,7 @@ public class LinkedMetaDataPageManager implements IMetaDataPageManager {
             maxPage = metaFrame.getMaxPage();
         } finally {
             metaNode.releaseReadLatch();
-            if (!appendOnly) {
+            if (!appendOnly || (appendOnly && confiscatedMetaNode == null)) {
                 bufferCache.unpin(metaNode);
             }
         }
@@ -233,7 +233,7 @@ public class LinkedMetaDataPageManager implements IMetaDataPageManager {
             }
         } finally {
             metaNode.releaseReadLatch();
-            if (!appendOnly) {
+            if (!appendOnly || (appendOnly && confiscatedMetaNode == null)) {
                 bufferCache.unpin(metaNode);
             }
         }
@@ -407,7 +407,7 @@ public class LinkedMetaDataPageManager implements IMetaDataPageManager {
             return metaFrame.getLSN();
         } finally {
             metaNode.releaseReadLatch();
-            if (!appendOnly) {
+            if (!appendOnly || (appendOnly && confiscatedMetaNode == null)) {
                 bufferCache.unpin(metaNode);
             }
         }

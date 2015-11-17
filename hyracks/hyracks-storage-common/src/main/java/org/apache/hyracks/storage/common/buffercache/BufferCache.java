@@ -26,6 +26,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
@@ -66,6 +67,7 @@ public class BufferCache implements IBufferCacheInternal, ILifeCycleComponent {
     private ArrayList<CachedPage> confiscatedPages;
     private Lock confiscateLock;
     private HashMap<CachedPage, StackTraceElement[]> confiscatedPagesOwner;
+    private ConcurrentHashMap<CachedPage, StackTraceElement[]> pinnedPageOwner;
     //!DEBUG
     private IIOReplicationManager ioReplicationManager;
     public List<ICachedPageInternal> cachedPages = new ArrayList<ICachedPageInternal>();
@@ -99,6 +101,7 @@ public class BufferCache implements IBufferCacheInternal, ILifeCycleComponent {
             confiscatedPages = new ArrayList<CachedPage>();
             confiscatedPagesOwner = new HashMap<CachedPage, StackTraceElement[]>();
             confiscateLock = new ReentrantLock();
+            pinnedPageOwner = new ConcurrentHashMap<>();
         }
     }
 
@@ -205,6 +208,9 @@ public class BufferCache implements IBufferCacheInternal, ILifeCycleComponent {
             cPage.valid = true;
         }
         pageReplacementStrategy.notifyCachePageAccess(cPage);
+        if(DEBUG){
+            pinnedPageOwner.put((CachedPage) cPage, Thread.currentThread().getStackTrace());
+        }
         return cPage;
     }
 
@@ -525,6 +531,9 @@ public class BufferCache implements IBufferCacheInternal, ILifeCycleComponent {
     public void unpin(ICachedPage page) throws HyracksDataException {
         if (closed) {
             throw new HyracksDataException("unpin called on a closed cache");
+        }
+        if(DEBUG){
+            pinnedPageOwner.remove(page);
         }
         ((CachedPage) page).pinCount.decrementAndGet();
     }
