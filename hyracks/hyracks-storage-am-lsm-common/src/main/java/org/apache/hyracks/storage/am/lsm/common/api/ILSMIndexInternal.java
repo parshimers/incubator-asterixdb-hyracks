@@ -12,7 +12,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.hyracks.storage.am.lsm.common.api;
 
 import java.util.List;
@@ -81,8 +80,15 @@ public interface ILSMIndexInternal extends ILSMIndex {
     public void markAsValid(ILSMComponent lsmComponent) throws HyracksDataException;
 
     public boolean isCurrentMutableComponentEmpty() throws HyracksDataException;
-    
-    public void scheduleReplication(ILSMIndexOperationContext ctx, List<ILSMComponent> lsmComponents, boolean bulkload,
-            ReplicationOperation operation) throws HyracksDataException;
 
+    public void scheduleReplication(ILSMIndexOperationContext ctx, List<ILSMComponent> lsmComponents, boolean bulkload,
+            ReplicationOperation operation, LSMOperationType opType) throws HyracksDataException;
+
+    /**
+     * Allocates the memory components of an LSM index in the buffer cache.
+     * @throws HyracksDataException
+     */
+    public void allocateMemoryComponents() throws HyracksDataException;
+
+    public boolean isMemoryComponentsAllocated();
 }

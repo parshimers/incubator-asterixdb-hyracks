@@ -1,16 +1,20 @@
 /*
- * Copyright 2009-2013 by The Regents of the University of California
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * you may obtain a copy of the License from
- * 
- *     http://www.apache.org/licenses/LICENSE-2.0
- * 
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied.  See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
  */
 package org.apache.hyracks.storage.common.buffercache;
 
@@ -33,8 +37,21 @@ public class CachedPage implements ICachedPageInternal {
     volatile long dpid; // disk page id (composed of file id and page id)
     CachedPage next;
     volatile boolean valid;
-    final AtomicBoolean virtual;
-    volatile boolean readOnly;
+    final AtomicBoolean confiscated;
+    private IQueueInfo queueInfo;
+
+    //Constructor for making dummy entry for FIFO queue
+    public CachedPage(){
+        this.cpid = -1;
+        this.buffer = null;
+        this.pageReplacementStrategy = null;
+        this.dirty = new AtomicBoolean(false);
+        this.confiscated = new AtomicBoolean(true);
+        pinCount = null;
+        queueInfo = null;
+        replacementStrategyObject = null;
+        latch =null;
+    }
 
     public CachedPage(int cpid, ByteBuffer buffer, IPageReplacementStrategy pageReplacementStrategy) {
         this.cpid = cpid;
@@ -46,17 +63,17 @@ public class CachedPage implements ICachedPageInternal {
         replacementStrategyObject = pageReplacementStrategy.createPerPageStrategyObject(cpid);
         dpid = -1;
         valid = false;
-        virtual = new AtomicBoolean(false);
-        readOnly = false;
+        confiscated = new AtomicBoolean(false);
+        queueInfo = null;
     }
 
     public void reset(long dpid) {
         this.dpid = dpid;
         dirty.set(false);
         valid = false;
-        virtual.set(false);
+        confiscated.set(false);
         pageReplacementStrategy.notifyCachePageReset(this);
-        readOnly = false;
+        queueInfo = null;
     }
 
     public void invalidate() {
@@ -75,7 +92,7 @@ public class CachedPage implements ICachedPageInternal {
 
     @Override
     public boolean pinIfGoodVictim() {
-        if (virtual.get())
+        if (confiscated.get())
             return false; //i am not a good victim because i cant flush!
         else {
             return pinCount.compareAndSet(0, 1);
@@ -116,6 +133,21 @@ public class CachedPage implements ICachedPageInternal {
     }
 
     @Override
+    public boolean confiscated() {
+        return confiscated.get();
+    }
+
+    @Override
+    public IQueueInfo getQueueInfo() {
+        return queueInfo;
+    }
+
+    @Override
+    public void setQueueInfo(IQueueInfo queueInfo) {
+        this.queueInfo = queueInfo;
+    }
+
+    @Override
     public long getDiskPageId() {
         return dpid;
     }
@@ -127,4 +159,5 @@ public class CachedPage implements ICachedPageInternal {
     void setNext(CachedPage next) {
         this.next = next;
     }
+
 }

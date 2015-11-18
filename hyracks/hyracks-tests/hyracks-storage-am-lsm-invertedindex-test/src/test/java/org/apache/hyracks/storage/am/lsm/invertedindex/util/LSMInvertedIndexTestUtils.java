@@ -84,7 +84,7 @@ public class LSMInvertedIndexTestUtils {
         fieldGens[0] = new DocumentStringFieldValueGenerator(2, 10, 10000, rnd);
         fieldGens[1] = new SortedIntegerFieldValueGenerator(0);
         ISerializerDeserializer[] fieldSerdes = new ISerializerDeserializer[] {
-                UTF8StringSerializerDeserializer.INSTANCE, IntegerSerializerDeserializer.INSTANCE };
+                new UTF8StringSerializerDeserializer(), IntegerSerializerDeserializer.INSTANCE };
         TupleGenerator tupleGen = new TupleGenerator(fieldGens, fieldSerdes, 0);
         return tupleGen;
     }
@@ -94,7 +94,7 @@ public class LSMInvertedIndexTestUtils {
         fieldGens[0] = new PersonNameFieldValueGenerator(rnd, 0.5f);
         fieldGens[1] = new SortedIntegerFieldValueGenerator(0);
         ISerializerDeserializer[] fieldSerdes = new ISerializerDeserializer[] {
-                UTF8StringSerializerDeserializer.INSTANCE, IntegerSerializerDeserializer.INSTANCE };
+                new UTF8StringSerializerDeserializer(), IntegerSerializerDeserializer.INSTANCE };
         TupleGenerator tupleGen = new TupleGenerator(fieldGens, fieldSerdes, 0);
         return tupleGen;
     }
@@ -106,7 +106,7 @@ public class LSMInvertedIndexTestUtils {
             case INMEMORY:
             case ONDISK:
             case LSM: {
-                fieldSerdes = new ISerializerDeserializer[] { UTF8StringSerializerDeserializer.INSTANCE,
+                fieldSerdes = new ISerializerDeserializer[] { new UTF8StringSerializerDeserializer(),
                         IntegerSerializerDeserializer.INSTANCE };
                 break;
             }
@@ -114,7 +114,7 @@ public class LSMInvertedIndexTestUtils {
             case PARTITIONED_ONDISK:
             case PARTITIONED_LSM: {
                 // Such indexes also include the set-size for partitioning.
-                fieldSerdes = new ISerializerDeserializer[] { UTF8StringSerializerDeserializer.INSTANCE,
+                fieldSerdes = new ISerializerDeserializer[] { new UTF8StringSerializerDeserializer(),
                         ShortSerializerDeserializer.INSTANCE, IntegerSerializerDeserializer.INSTANCE };
                 break;
             }

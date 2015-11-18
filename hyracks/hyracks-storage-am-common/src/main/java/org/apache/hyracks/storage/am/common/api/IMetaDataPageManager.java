@@ -37,14 +37,6 @@ public interface IMetaDataPageManager {
     public void close() throws HyracksDataException;
 
     /**
-     * Close, and give the metadata page's location within the file
-     * @return
-     * @throws HyracksDataException
-     */
-
-    public int closeGivePageId() throws HyracksDataException;
-
-    /**
      * Get the locaiton of a free page to use for index operations
      * @param metaFrame A metadata frame to use to wrap the raw page
      * @return A page location, or -1 if no free page could be found or allocated
@@ -131,5 +123,7 @@ public interface IMetaDataPageManager {
     void setFilterPage(ICachedPage page);
 
     ICachedPage getFilterPage();
+
+    boolean appendOnlyMode();
 
 }

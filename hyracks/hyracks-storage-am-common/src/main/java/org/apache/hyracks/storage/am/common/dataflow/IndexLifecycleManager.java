@@ -21,6 +21,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 
 import org.apache.hyracks.api.exceptions.HyracksDataException;
 import org.apache.hyracks.api.lifecycle.ILifeCycleComponent;
@@ -30,9 +31,8 @@ import org.apache.hyracks.storage.am.common.api.IIndexLifecycleManager;
 public class IndexLifecycleManager implements IIndexLifecycleManager, ILifeCycleComponent {
     private static final long DEFAULT_MEMORY_BUDGET = 1024 * 1024 * 100; // 100 megabytes
 
-    private final Map<Long, IndexInfo> indexInfos;
+    private final Map<String, IndexInfo> indexInfos;
     private final long memoryBudget;
-
     private long memoryUsed;
 
     public IndexLifecycleManager() {
@@ -40,7 +40,7 @@ public class IndexLifecycleManager implements IIndexLifecycleManager, ILifeCycle
     }
 
     public IndexLifecycleManager(long memoryBudget) {
-        this.indexInfos = new HashMap<Long, IndexInfo>();
+        this.indexInfos = new HashMap<>();
         this.memoryBudget = memoryBudget;
         this.memoryUsed = 0;
     }
@@ -57,70 +57,15 @@ public class IndexLifecycleManager implements IIndexLifecycleManager, ILifeCycle
         }
 
         info.index.deactivate();
-        memoryUsed -= info.index.getMemoryAllocationSize();
-        info.isOpen = false;
-
-        return true;
-    }
-
-    @Override
-    public IIndex getIndex(long resourceID) {
-        IndexInfo info = indexInfos.get(resourceID);
-        return info == null ? null : info.index;
-    }
-
-    @Override
-    public void register(long resourceID, IIndex index) throws HyracksDataException {
-        if (indexInfos.containsKey(resourceID)) {
-            throw new HyracksDataException("Index with resource ID " + resourceID + " already exists.");
-        }
-
-        indexInfos.put(resourceID, new IndexInfo(index));
-    }
-
-    @Override
-    public void unregister(long resourceID) throws HyracksDataException {
-        IndexInfo info = indexInfos.remove(resourceID);
-        if (info == null) {
-            throw new HyracksDataException("Index with resource ID " + resourceID + " does not exist.");
-        }
-
-        if (info.referenceCount != 0) {
-            indexInfos.put(resourceID, info);
-            throw new HyracksDataException("Cannot remove index while it is open.");
-        }
-
-        if (info.isOpen) {
-            info.index.deactivate();
-            memoryUsed -= info.index.getMemoryAllocationSize();
-        }
-    }
-
-    @Override
-    public void open(long resourceID) throws HyracksDataException {
-        IndexInfo info = indexInfos.get(resourceID);
-        if (info == null) {
-            throw new HyracksDataException("Failed to open index with resource ID " + resourceID
-                    + " since it does not exist.");
-        }
-
-        if (!info.isOpen) {
-            long inMemorySize = info.index.getMemoryAllocationSize();
-            while (memoryUsed + inMemorySize > memoryBudget) {
-                if (!evictCandidateIndex()) {
-                    throw new HyracksDataException("Cannot activate index since memory budget would be exceeded.");
-                }
+        //find resource name and deallocate its memory
+        for (Entry<String, IndexInfo> entry : indexInfos.entrySet()) {
+            if (entry.getValue() == info) {
+                deallocateMemory(entry.getKey());
+                break;
             }
-            info.index.activate();
-            info.isOpen = true;
-            memoryUsed += inMemorySize;
         }
-        info.touch();
-    }
-
-    @Override
-    public void close(long resourceID) {
-        indexInfos.get(resourceID).untouch();
+        info.isOpen = false;
+        return true;
     }
 
     private class IndexInfo implements Comparable<IndexInfo> {
@@ -128,12 +73,14 @@ public class IndexLifecycleManager implements IIndexLifecycleManager, ILifeCycle
         private int referenceCount;
         private long lastAccess;
         private boolean isOpen;
+        private boolean memoryAllocated;
 
         public IndexInfo(IIndex index) {
             this.index = index;
             this.lastAccess = -1;
             this.referenceCount = 0;
             this.isOpen = false;
+            this.memoryAllocated = false;
         }
 
         public void touch() {
@@ -178,7 +125,6 @@ public class IndexLifecycleManager implements IIndexLifecycleManager, ILifeCycle
                     }
                 }
             }
-
         }
 
         public String toString() {
@@ -223,12 +169,98 @@ public class IndexLifecycleManager implements IIndexLifecycleManager, ILifeCycle
 
         String headerFormat = "%-20s %-10s %-20s %-20s %-20s\n";
         String rowFormat = "%-20d %-10b %-20d %-20s %-20s\n";
-        sb.append(String.format(headerFormat, "ResourceID", "Open", "Reference Count", "Last Access", "Index Name"));
+        sb.append(String.format(headerFormat, "ResourceName", "Open", "Reference Count", "Last Access", "Index Name"));
         IndexInfo ii;
-        for (Map.Entry<Long, IndexInfo> entry : indexInfos.entrySet()) {
+        for (Map.Entry<String, IndexInfo> entry : indexInfos.entrySet()) {
             ii = entry.getValue();
             sb.append(String.format(rowFormat, entry.getKey(), ii.isOpen, ii.referenceCount, ii.lastAccess, ii.index));
         }
         os.write(sb.toString().getBytes());
+    }
+
+    @Override
+    public void register(String resourceName, IIndex index) throws HyracksDataException {
+        if (indexInfos.containsKey(resourceName)) {
+            throw new HyracksDataException("Index with resource name " + resourceName + " already exists.");
+        }
+        indexInfos.put(resourceName, new IndexInfo(index));
+    }
+
+    @Override
+    public void open(String resourceName) throws HyracksDataException {
+        IndexInfo info = indexInfos.get(resourceName);
+        if (info == null) {
+            throw new HyracksDataException(
+                    "Failed to open index with resource name " + resourceName + " since it does not exist.");
+        }
+
+        if (!info.isOpen) {
+            allocateMemory(resourceName);
+            info.index.activate();
+            info.isOpen = true;
+        }
+        info.touch();
+    }
+
+    @Override
+    public void close(String resourceName) throws HyracksDataException {
+        indexInfos.get(resourceName).untouch();
+    }
+
+    @Override
+    public IIndex getIndex(String resourceName) throws HyracksDataException {
+        IndexInfo info = indexInfos.get(resourceName);
+        return info == null ? null : info.index;
+    }
+
+    @Override
+    public void unregister(String resourceName) throws HyracksDataException {
+        IndexInfo info = indexInfos.get(resourceName);
+        if (info == null) {
+            throw new HyracksDataException("Index with resource name " + resourceName + " does not exist.");
+        }
+
+        if (info.referenceCount != 0) {
+            indexInfos.put(resourceName, info);
+            throw new HyracksDataException("Cannot remove index while it is open.");
+        }
+
+        if (info.isOpen) {
+            info.index.deactivate();
+            deallocateMemory(resourceName);
+        }
+        indexInfos.remove(resourceName);
+    }
+
+    @Override
+    public void allocateMemory(String resourceName) throws HyracksDataException {
+        IndexInfo info = indexInfos.get(resourceName);
+        if (info == null) {
+            throw new HyracksDataException("Failed to allocate memory for index with resource ID " + resourceName
+                    + " since it does not exist.");
+        }
+        if (!info.memoryAllocated) {
+            long inMemorySize = info.index.getMemoryAllocationSize();
+            while (memoryUsed + inMemorySize > memoryBudget) {
+                if (!evictCandidateIndex()) {
+                    throw new HyracksDataException(
+                            "Cannot allocate memory for index since memory budget would be exceeded.");
+                }
+            }
+            memoryUsed += inMemorySize;
+            info.memoryAllocated = true;
+        }
+    }
+
+    private void deallocateMemory(String resourceName) throws HyracksDataException {
+        IndexInfo info = indexInfos.get(resourceName);
+        if (info == null) {
+            throw new HyracksDataException("Failed to deallocate memory for index with resource name " + resourceName
+                    + " since it does not exist.");
+        }
+        if (info.isOpen && info.memoryAllocated) {
+            memoryUsed -= info.index.getMemoryAllocationSize();
+            info.memoryAllocated = false;
+        }
     }
 }

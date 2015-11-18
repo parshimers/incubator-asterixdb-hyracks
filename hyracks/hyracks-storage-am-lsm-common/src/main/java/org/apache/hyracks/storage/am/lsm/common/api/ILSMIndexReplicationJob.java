@@ -20,4 +20,11 @@ import org.apache.hyracks.api.replication.IReplicationJob;
 public interface ILSMIndexReplicationJob extends IReplicationJob {
 
     public void endReplication() throws HyracksDataException;
+
+    public ILSMIndexOperationContext getLSMIndexOperationContext();
+
+    public ILSMIndex getLSMIndex();
+
+    public LSMOperationType getLSMOpType();
+
 }

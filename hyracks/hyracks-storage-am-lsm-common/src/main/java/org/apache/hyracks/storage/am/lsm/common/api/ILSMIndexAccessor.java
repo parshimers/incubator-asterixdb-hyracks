@@ -12,7 +12,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.hyracks.storage.am.lsm.common.api;
 
 import java.util.List;
@@ -114,6 +113,7 @@ public interface ILSMIndexAccessor extends IIndexAccessor {
     public void forceInsert(ITupleReference tuple) throws HyracksDataException, IndexException;
 
     public void forceDelete(ITupleReference tuple) throws HyracksDataException, IndexException;
-    
-    public void scheduleReplication(List<ILSMComponent> lsmComponents, boolean bulkload) throws HyracksDataException;
+
+    public void scheduleReplication(List<ILSMComponent> lsmComponents, boolean bulkload, LSMOperationType opType)
+            throws HyracksDataException;
 }

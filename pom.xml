@@ -18,28 +18,14 @@
  !-->
 
 
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
-  <modelVersion>4.0.0</modelVersion>
-  <groupId>org.apache.hyracks</groupId>
-  <artifactId>fullstack</artifactId>
-  <version>0.2.17-SNAPSHOT</version>
-  <packaging>pom</packaging>
-  <name>hyracks-ecosystem-full-stack</name>
-
-  <parent>
-    <groupId>org.apache</groupId>
-    <artifactId>apache</artifactId>
-    <version>LATEST</version>
-  </parent>
-
-  <licenses>
-    <license>
-      <name>Apache License, Version 2.0</name>
-      <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
-      <distribution>repo</distribution>
-      <comments>A business-friendly OSS license</comments>
-    </license>
-  </licenses>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <groupId>org.apache.hyracks</groupId>
+    <artifactId>fullstack</artifactId>
+    <version>0.2.17-SNAPSHOT</version>
+    <packaging>pom</packaging>
+    <name>hyracks-ecosystem-full-stack</name>
 
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -166,6 +152,7 @@
            <exclude>**/*.conf</exclude>
            <exclude>**/src/main/resources/*.cleaned</exclude>
            <exclude>**/ClusterControllerService/**</exclude>
+           <exclude>**/target/**</exclude>
            <exclude>**/output/**</exclude>
            <exclude>**/*.iml</exclude>
       </excludes>
@@ -190,24 +177,24 @@
           <excludes>
             <exclude>${global.test.excludes},${test.excludes}</exclude>
           </excludes>
-	</configuration>
-      </plugin>
-      <plugin>
+   </configuration>
+   </plugin>
+   <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-assembly-plugin</artifactId>
-<!-- We override the configuration plugin to override the descriptor to use for building
-  the source release zip. Specifically, we would like to control the inclusions/exclusions.
-  For example, we exclude the KEYS file from the zip -->
+          <!-- We override the configuration plugin to override the descriptor to use for building
+            the source release zip. Specifically, we would like to control the inclusions/exclusions.
+            For example, we exclude the KEYS file from the zip -->
           <executions>
               <execution>
-    <!-- Use this id to match the id mentioned in the assembly plugin configuration in
-      the apache parent POM under the apache-release profile -->
+                  <!-- Use this id to match the id mentioned in the assembly plugin configuration in
+                    the apache parent POM under the apache-release profile -->
                   <id>source-release-assembly</id>
                   <phase>package</phase>
                   <goals>
                       <goal>single</goal>
                   </goals>
-    <!-- combine.self should be override to replace the configuration in the parent POM -->
+                  <!-- combine.self should be override to replace the configuration in the parent POM -->
                   <configuration combine.self="override">
                       <runOnlyAtExecutionRoot>true</runOnlyAtExecutionRoot>
                       <descriptors>
@@ -216,6 +203,16 @@
                   </configuration>
               </execution>
           </executions>
+      </plugin>
+      <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-compiler-plugin</artifactId>
+            <version>3.1</version>
+            <configuration>
+               <source>${jdk.version}</source>
+               <target>${jdk.version}</target>
+               <compilerArgument>-Xlint:all</compilerArgument>
+            </configuration>
       </plugin>
     </plugins>
   </build>
@@ -234,6 +231,65 @@
       <properties>
         <hanging.pregelix.tests />
       </properties>
+    </profile>
+    <profile>
+      <id>asterix-release</id>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-assembly-plugin</artifactId>
+            <!-- We override the configuration plugin to override the descriptor to use for building
+            the source release zip. Specifically, we would like to control the inclusions/exclusions.
+            For example, we exclude the KEYS file from the zip -->
+            <executions>
+              <execution>
+                <!-- Use this id to match the id mentioned in the assembly plugin configuration in
+                the apache parent POM under the apache-release profile -->
+                <id>source-release-assembly</id>
+                <phase>package</phase>
+                <goals>
+                  <goal>single</goal>
+                </goals>
+                <!-- combine.self should be override to replace the configuration in the parent POM -->
+                <configuration combine.self="override">
+                  <runOnlyAtExecutionRoot>true</runOnlyAtExecutionRoot>
+                  <descriptors>
+                    <descriptor>src/main/assembly/source.xml</descriptor>
+                  </descriptors>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+    <profile>
+        <id>java6</id>
+        <activation>
+            <jdk>1.6</jdk>
+        </activation>
+         <properties>
+            <jdk.version>1.6</jdk.version>
+         </properties>
+    </profile>
+    <profile>
+        <id>java7</id>
+        <activation>
+            <jdk>1.7</jdk>
+        </activation>
+         <properties>
+            <jdk.version>1.7</jdk.version>
+         </properties>
+    </profile>
+    <profile>
+        <id>java8</id>
+        <activation>
+            <jdk>1.8</jdk>
+        </activation>
+         <properties>
+            <jdk.version>1.8</jdk.version>
+         </properties>
     </profile>
   </profiles>
 

@@ -597,6 +597,16 @@ public class LSMRTree extends AbstractLSMRTree {
             }
         }
 
+        @Override
+        public void abort() throws HyracksDataException {
+            if(bulkLoader != null){
+                bulkLoader.abort();
+            }
+            if(buddyBTreeBulkloader != null){
+                buddyBTreeBulkloader.abort();
+            }
+        }
+
         protected void cleanupArtifacts() throws HyracksDataException {
             if (!cleanedUpArtifacts) {
                 cleanedUpArtifacts = true;

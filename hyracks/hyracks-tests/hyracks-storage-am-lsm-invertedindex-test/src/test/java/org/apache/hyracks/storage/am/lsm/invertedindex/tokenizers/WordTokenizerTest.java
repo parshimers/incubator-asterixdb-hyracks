@@ -16,21 +16,19 @@
 package org.apache.hyracks.storage.am.lsm.invertedindex.tokenizers;
 
 import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.DataInput;
 import java.io.DataInputStream;
-import java.io.DataOutput;
-import java.io.DataOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 
-import junit.framework.Assert;
-
+import org.apache.hyracks.data.std.util.GrowableArray;
+import org.apache.hyracks.util.string.UTF8StringReader;
+import org.apache.hyracks.util.string.UTF8StringUtil;
 import org.junit.Before;
 import org.junit.Test;
 
-import org.apache.hyracks.data.std.util.GrowableArray;
+import junit.framework.Assert;
 
 public class WordTokenizerTest {
 
@@ -42,7 +40,8 @@ public class WordTokenizerTest {
     private ArrayList<Integer> expectedCountedHashedUTF8Tokens = new ArrayList<Integer>();
 
     private boolean isSeparator(char c) {
-        return !(Character.isLetterOrDigit(c) || Character.getType(c) == Character.OTHER_LETTER || Character.getType(c) == Character.OTHER_NUMBER);
+        return !(Character.isLetterOrDigit(c) || Character.getType(c) == Character.OTHER_LETTER
+                || Character.getType(c) == Character.OTHER_NUMBER);
     }
 
     private void tokenize(String text, ArrayList<String> tokens) {
@@ -74,10 +73,7 @@ public class WordTokenizerTest {
     @Before
     public void init() throws IOException {
         // serialize text into bytes
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        DataOutput dos = new DataOutputStream(baos);
-        dos.writeUTF(text);
-        inputBuffer = baos.toByteArray();
+        inputBuffer = UTF8StringUtil.writeStringToBytes(text);
 
         // init expected string tokens
         tokenize(text, expectedUTF8Tokens);
@@ -140,7 +136,8 @@ public class WordTokenizerTest {
     public void testWordTokenizerWithHashedUTF8Tokens() throws IOException {
 
         HashedUTF8WordTokenFactory tokenFactory = new HashedUTF8WordTokenFactory();
-        DelimitedUTF8StringBinaryTokenizer tokenizer = new DelimitedUTF8StringBinaryTokenizer(true, false, tokenFactory);
+        DelimitedUTF8StringBinaryTokenizer tokenizer = new DelimitedUTF8StringBinaryTokenizer(true, false,
+                tokenFactory);
 
         tokenizer.reset(inputBuffer, 0, inputBuffer.length);
 
@@ -171,7 +168,8 @@ public class WordTokenizerTest {
     public void testWordTokenizerWithUTF8Tokens() throws IOException {
 
         UTF8WordTokenFactory tokenFactory = new UTF8WordTokenFactory();
-        DelimitedUTF8StringBinaryTokenizer tokenizer = new DelimitedUTF8StringBinaryTokenizer(true, false, tokenFactory);
+        DelimitedUTF8StringBinaryTokenizer tokenizer = new DelimitedUTF8StringBinaryTokenizer(true, false,
+                tokenFactory);
 
         tokenizer.reset(inputBuffer, 0, inputBuffer.length);
 
@@ -190,7 +188,8 @@ public class WordTokenizerTest {
             ByteArrayInputStream bais = new ByteArrayInputStream(tokenData.getByteArray());
             DataInput in = new DataInputStream(bais);
 
-            String strToken = in.readUTF();
+            UTF8StringReader reader = new UTF8StringReader();
+            String strToken = reader.readUTF(in);
 
             Assert.assertEquals(expectedUTF8Tokens.get(tokenCount), strToken);
 

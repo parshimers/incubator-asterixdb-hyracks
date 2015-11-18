@@ -114,6 +114,7 @@ class ExternalGroupMergeOperatorNodePushable extends AbstractUnaryOutputSourceOp
         this.outRecordDescriptor = outRecordDescriptor;
     }
 
+    @Override
     public void initialize() throws HyracksDataException {
         aggState = (ExternalGroupState) ctx.getStateObject(stateId);
         runs = aggState.getRuns();
@@ -277,7 +278,7 @@ class ExternalGroupMergeOperatorNodePushable extends AbstractUnaryOutputSourceOp
              * file list
              */
             if (!finalPass) {
-                runs.add(0, ((RunFileWriter) writer).createReader());
+                runs.add(0, ((RunFileWriter) writer).createDeleteOnCloseReader());
             }
         } finally {
             if (!finalPass) {

@@ -17,18 +17,18 @@ package org.apache.hyracks.storage.am.common.api;
 import java.util.List;
 
 import org.apache.hyracks.api.exceptions.HyracksDataException;
+import org.apache.hyracks.storage.common.IResourceMemoryManager;
 
-public interface IIndexLifecycleManager {
-    public IIndex getIndex(long resourceID) throws HyracksDataException;
-
-    public void register(long resourceID, IIndex index) throws HyracksDataException;
-
-    public void unregister(long resourceID) throws HyracksDataException;
-
-    public void open(long resourceID) throws HyracksDataException;
-
-    public void close(long resourceID) throws HyracksDataException;
-
+public interface IIndexLifecycleManager extends IResourceMemoryManager {
     public List<IIndex> getOpenIndexes();
-    
+
+    public void register(String resourceName, IIndex index) throws HyracksDataException;
+
+    public void open(String resourceName) throws HyracksDataException;
+
+    public void close(String resourceName) throws HyracksDataException;
+
+    public IIndex getIndex(String resourceName) throws HyracksDataException;
+
+    public void unregister(String resourceName) throws HyracksDataException;
 }

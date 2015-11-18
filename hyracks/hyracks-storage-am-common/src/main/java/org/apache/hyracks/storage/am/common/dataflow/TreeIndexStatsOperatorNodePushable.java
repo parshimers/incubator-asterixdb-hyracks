@@ -34,6 +34,7 @@ public class TreeIndexStatsOperatorNodePushable extends AbstractUnaryOutputSourc
     private final AbstractTreeIndexOperatorDescriptor opDesc;
     private final IHyracksTaskContext ctx;
     private final TreeIndexDataflowHelper treeIndexHelper;
+    private final UTF8StringSerializerDeserializer utf8SerDer = new UTF8StringSerializerDeserializer();
     private TreeIndexStatsGatherer statsGatherer;
 
     public TreeIndexStatsOperatorNodePushable(AbstractTreeIndexOperatorDescriptor opDesc, IHyracksTaskContext ctx,
@@ -73,16 +74,16 @@ public class TreeIndexStatsOperatorNodePushable extends AbstractUnaryOutputSourc
             ArrayTupleBuilder tb = new ArrayTupleBuilder(1);
             DataOutput dos = tb.getDataOutput();
             tb.reset();
-            UTF8StringSerializerDeserializer.INSTANCE.serialize(stats.toString(), dos);
+            utf8SerDer.serialize(stats.toString(), dos);
             tb.addFieldEndOffset();
             if (!appender.append(tb.getFieldEndOffsets(), tb.getByteArray(), 0, tb.getSize())) {
-                throw new HyracksDataException(
-                        "Record size (" + tb.getSize() + ") larger than frame size (" + appender.getBuffer().capacity()
-                                + ")");
+                throw new HyracksDataException("Record size (" + tb.getSize() + ") larger than frame size ("
+                        + appender.getBuffer().capacity() + ")");
             }
             appender.flush(writer, false);
         } catch (Exception e) {
             writer.fail();
+            throw new HyracksDataException(e);
         } finally {
             writer.close();
             treeIndexHelper.close();

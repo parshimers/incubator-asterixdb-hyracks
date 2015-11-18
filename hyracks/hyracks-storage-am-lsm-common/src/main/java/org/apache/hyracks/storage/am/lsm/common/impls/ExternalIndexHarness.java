@@ -33,11 +33,13 @@ import org.apache.hyracks.storage.am.lsm.common.api.ILSMIndexOperationContext;
 import org.apache.hyracks.storage.am.lsm.common.api.ILSMMergePolicy;
 import org.apache.hyracks.storage.am.lsm.common.api.ILSMOperationTracker;
 import org.apache.hyracks.storage.am.lsm.common.api.ITwoPCIndex;
+import org.apache.hyracks.storage.am.lsm.common.api.LSMOperationType;
 
 public class ExternalIndexHarness extends LSMHarness {
     private static final Logger LOGGER = Logger.getLogger(ExternalIndexHarness.class.getName());
 
-    public ExternalIndexHarness(ILSMIndexInternal lsmIndex, ILSMMergePolicy mergePolicy, ILSMOperationTracker opTracker, boolean replicationEnabled) {
+    public ExternalIndexHarness(ILSMIndexInternal lsmIndex, ILSMMergePolicy mergePolicy,
+            ILSMOperationTracker opTracker, boolean replicationEnabled) {
         super(lsmIndex, mergePolicy, opTracker, replicationEnabled);
     }
 
@@ -115,7 +117,8 @@ public class ExternalIndexHarness extends LSMHarness {
                             if (replicationEnabled) {
                                 componentsToBeReplicated.clear();
                                 componentsToBeReplicated.add(c);
-                                lsmIndex.scheduleReplication(null, componentsToBeReplicated, false, ReplicationOperation.DELETE);
+                                lsmIndex.scheduleReplication(null, componentsToBeReplicated, false,
+                                        ReplicationOperation.DELETE, opType);
                             }
                             ((AbstractDiskLSMComponent) c).destroy();
                             break;
@@ -133,7 +136,7 @@ public class ExternalIndexHarness extends LSMHarness {
                             if (replicationEnabled) {
                                 componentsToBeReplicated.clear();
                                 componentsToBeReplicated.add(newComponent);
-                                triggerReplication(componentsToBeReplicated, false);
+                                triggerReplication(componentsToBeReplicated, false, opType);
                             }
                             mergePolicy.diskComponentAdded(lsmIndex, fullMergeIsRequested.get());
                         }
@@ -237,7 +240,7 @@ public class ExternalIndexHarness extends LSMHarness {
             if (replicationEnabled) {
                 componentsToBeReplicated.clear();
                 componentsToBeReplicated.add(c);
-                triggerReplication(componentsToBeReplicated, true);
+                triggerReplication(componentsToBeReplicated, true, LSMOperationType.MERGE);
             }
             // Enter the component
             enterComponent(c);
@@ -330,7 +333,7 @@ public class ExternalIndexHarness extends LSMHarness {
             if (replicationEnabled) {
                 componentsToBeReplicated.clear();
                 componentsToBeReplicated.add(diskComponent);
-                lsmIndex.scheduleReplication(null, componentsToBeReplicated, false, ReplicationOperation.DELETE);
+                lsmIndex.scheduleReplication(null, componentsToBeReplicated, false, ReplicationOperation.DELETE, null);
             }
             ((AbstractDiskLSMComponent) diskComponent).destroy();
         }

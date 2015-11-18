@@ -29,7 +29,6 @@ import org.apache.hyracks.api.io.IIOManager;
 import org.apache.hyracks.api.job.JobId;
 import org.apache.hyracks.dataflow.common.io.RunFileReader;
 import org.apache.hyracks.dataflow.common.io.RunFileWriter;
-import org.apache.hyracks.dataflow.common.util.IntSerDeUtils;
 import org.apache.hyracks.dataflow.std.base.AbstractStateObject;
 
 public class MaterializerTaskState extends AbstractStateObject {
@@ -68,7 +67,7 @@ public class MaterializerTaskState extends AbstractStateObject {
     }
 
     public void writeOut(IFrameWriter writer, IFrame frame) throws HyracksDataException {
-        RunFileReader in = out.createReader();
+        RunFileReader in = out.createDeleteOnCloseReader();
         writer.open();
         try {
             in.open();
@@ -83,7 +82,7 @@ public class MaterializerTaskState extends AbstractStateObject {
             writer.close();
         }
     }
-    
+
     public void deleteFile() {
         ioManager.delete(out.getFileReference());
     }

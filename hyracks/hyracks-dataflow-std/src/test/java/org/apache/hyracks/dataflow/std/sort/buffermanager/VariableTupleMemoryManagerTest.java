@@ -42,7 +42,7 @@ import org.apache.hyracks.dataflow.std.structures.TuplePointer;
 
 public class VariableTupleMemoryManagerTest {
     ISerializerDeserializer[] fieldsSerDer = new ISerializerDeserializer[] {
-            IntegerSerializerDeserializer.INSTANCE, UTF8StringSerializerDeserializer.INSTANCE };
+            IntegerSerializerDeserializer.INSTANCE, new UTF8StringSerializerDeserializer() };
     RecordDescriptor recordDescriptor = new RecordDescriptor(fieldsSerDer);
     ArrayTupleBuilder tupleBuilder = new ArrayTupleBuilder(recordDescriptor.getFieldCount());
     VariableTupleMemoryManager tupleMemoryManager;

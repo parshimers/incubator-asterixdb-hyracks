@@ -44,8 +44,7 @@ public class ExternalBTreeWithBuddyDataflowHelper extends AbstractLSMIndexDatafl
     public ExternalBTreeWithBuddyDataflowHelper(IIndexOperatorDescriptor opDesc, IHyracksTaskContext ctx,
             int partition, double bloomFilterFalsePositiveRate, ILSMMergePolicy mergePolicy,
             ILSMOperationTrackerProvider opTrackerFactory, ILSMIOOperationScheduler ioScheduler,
-            ILSMIOOperationCallbackFactory ioOpCallbackFactory, int[] buddyBtreeFields, int version,
-            boolean durable) {
+            ILSMIOOperationCallbackFactory ioOpCallbackFactory, int[] buddyBtreeFields, int version, boolean durable) {
         super(opDesc, ctx, partition, null, bloomFilterFalsePositiveRate, mergePolicy, opTrackerFactory, ioScheduler,
                 ioOpCallbackFactory, null, null, null, durable);
         this.buddyBtreeFields = buddyBtreeFields;
@@ -57,14 +56,8 @@ public class ExternalBTreeWithBuddyDataflowHelper extends AbstractLSMIndexDatafl
         if (index != null)
             return index;
         synchronized (lcManager) {
-            long resourceID;
             try {
-                resourceID = getResourceID();
-            } catch (HyracksDataException e) {
-                return null;
-            }
-            try {
-                index = lcManager.getIndex(resourceID);
+                index = lcManager.getIndex(resourceName);
             } catch (HyracksDataException e) {
                 return null;
             }

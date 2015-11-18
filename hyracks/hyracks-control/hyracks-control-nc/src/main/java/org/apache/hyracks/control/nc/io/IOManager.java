@@ -1,16 +1,20 @@
 /*
- * Copyright 2009-2013 by The Regents of the University of California
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * you may obtain a copy of the License from
- * 
- *     http://www.apache.org/licenses/LICENSE-2.0
- * 
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied.  See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
  */
 package org.apache.hyracks.control.nc.io;
 
@@ -34,13 +38,12 @@ import org.apache.hyracks.api.io.IIOManager;
 import org.apache.hyracks.api.io.IODeviceHandle;
 
 public class IOManager implements IIOManager {
-	public static final boolean DEBUG = true;
+
+    public static final boolean DEBUG = true;
+    private static final String WORKSPACE_FILE_SUFFIX = ".waf";
     private final List<IODeviceHandle> ioDevices;
-
     private Executor executor;
-
     private final List<IODeviceHandle> workAreaIODevices;
-
     private int workAreaDeviceIndex;
     
     private IIOSubSystem[] ioSubSystems = new IIOSubSystem[FileReferenceType.values().length];
@@ -194,7 +197,7 @@ public class IOManager implements IIOManager {
         String waPath = dev.getWorkAreaPath();
         File waf;
         try {
-            waf = File.createTempFile(prefix, ".waf", new File(dev.getPath(), waPath));
+            waf = File.createTempFile(prefix, WORKSPACE_FILE_SUFFIX, new File(dev.getPath(), waPath));
         } catch (IOException e) {
             throw new HyracksDataException(e);
         }
@@ -383,5 +386,22 @@ public class IOManager implements IIOManager {
         }
     }
 
+    @Override
+    public void deleteWorkspaceFiles() {
+        for (IODeviceHandle ioDevice : workAreaIODevices) {
+            File workspaceFolder = new File(ioDevice.getPath(), ioDevice.getWorkAreaPath());
+            if (workspaceFolder.exists() && workspaceFolder.isDirectory()) {
+                File[] workspaceFiles = workspaceFolder.listFiles(WORKSPACE_FILES_FILTER);
+                for (File workspaceFile : workspaceFiles) {
+                    workspaceFile.delete();
+                }
+            }
+        }
+    }
 
+    private static final FilenameFilter WORKSPACE_FILES_FILTER = new FilenameFilter() {
+        public boolean accept(File dir, String name) {
+            return name.endsWith(WORKSPACE_FILE_SUFFIX);
+        }
+    };
 }

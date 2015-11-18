@@ -77,7 +77,9 @@ public class PipelinedPartition implements IFrameWriter, IPartition {
     @Override
     public void nextFrame(ByteBuffer buffer) throws HyracksDataException {
         ensureConnected();
-        delegate.nextFrame(buffer);
+        if (!failed) {
+            delegate.nextFrame(buffer);
+        }
     }
 
     private void ensureConnected() throws HyracksDataException {

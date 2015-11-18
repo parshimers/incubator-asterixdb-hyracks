@@ -133,6 +133,6 @@ class ExternalGroupBuildOperatorNodePushable extends AbstractUnaryInputSinkOpera
             writer.close();
         }
         gTable.reset();
-        state.getRuns().add(((RunFileWriter) writer).createReader());
+        state.getRuns().add(writer.createDeleteOnCloseReader());
     }
 }

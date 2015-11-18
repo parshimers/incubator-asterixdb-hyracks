@@ -91,8 +91,8 @@ public class VirtualMetaDataPageManager implements IVirtualMetaDataPageManager {
 
     @Override
     public int getFirstMetadataPage() {
-        // Method doesn't make sense for this free page manager.
-        return -1;
+        //MD page in a virtual context is always 0, because it is by nature an in-place modification tree
+        return 0;
     }
 
     @Override
@@ -118,12 +118,6 @@ public class VirtualMetaDataPageManager implements IVirtualMetaDataPageManager {
     @Override
     public void init(ITreeIndexMetaDataFrame metaFrame) throws HyracksDataException {
         // Method doesn't make sense for this free page manager.
-    }
-
-    @Override
-    public int closeGivePageId() throws HyracksDataException {
-        // Method doesn't make sense for this free page manager.
-        return 0;
     }
 
     @Override
@@ -154,6 +148,11 @@ public class VirtualMetaDataPageManager implements IVirtualMetaDataPageManager {
 
     public ICachedPage getFilterPage(){
         return null;
+    }
+
+    @Override
+    public boolean appendOnlyMode() {
+        return false;
     }
 
 }

@@ -156,15 +156,6 @@ public class LSMInvertedIndex extends AbstractLSMIndex implements IInvertedIndex
 
         try {
             List<ILSMComponent> immutableComponents = diskComponents;
-            for (ILSMComponent c : memoryComponents) {
-                LSMInvertedIndexMemoryComponent mutableComponent = (LSMInvertedIndexMemoryComponent) c;
-                ((IVirtualBufferCache) mutableComponent.getInvIndex().getBufferCache()).open();
-                mutableComponent.getInvIndex().create();
-                mutableComponent.getInvIndex().activate();
-                mutableComponent.getDeletedKeysBTree().create();
-                mutableComponent.getDeletedKeysBTree().activate();
-            }
-
             immutableComponents.clear();
             List<LSMComponentFileReferences> validFileReferences = fileManager.cleanupAndGetValidFiles();
             for (LSMComponentFileReferences lsmComonentFileReference : validFileReferences) {
@@ -180,7 +171,6 @@ public class LSMInvertedIndex extends AbstractLSMIndex implements IInvertedIndex
                 immutableComponents.add(component);
             }
             isActivated = true;
-            // TODO: Maybe we can make activate throw an index exception?
         } catch (IndexException e) {
             throw new HyracksDataException(e);
         }
@@ -192,12 +182,7 @@ public class LSMInvertedIndex extends AbstractLSMIndex implements IInvertedIndex
             throw new HyracksDataException("Failed to clear the index since it is not activated.");
         }
 
-        for (ILSMComponent c : memoryComponents) {
-            LSMInvertedIndexMemoryComponent mutableComponent = (LSMInvertedIndexMemoryComponent) c;
-            mutableComponent.getInvIndex().clear();
-            mutableComponent.getDeletedKeysBTree().clear();
-            mutableComponent.reset();
-        }
+        clearMemoryComponents();
         List<ILSMComponent> immutableComponents = diskComponents;
         for (ILSMComponent c : immutableComponents) {
             LSMInvertedIndexDiskComponent component = (LSMInvertedIndexDiskComponent) c;
@@ -216,8 +201,6 @@ public class LSMInvertedIndex extends AbstractLSMIndex implements IInvertedIndex
         if (!isActivated) {
             throw new HyracksDataException("Failed to deactivate the index since it is already deactivated.");
         }
-
-        isActivated = false;
         if (flushOnExit) {
             BlockingIOOperationCallbackWrapper cb = new BlockingIOOperationCallbackWrapper(ioOpCallback);
             ILSMIndexAccessor accessor = createAccessor(NoOpOperationCallback.INSTANCE, NoOpOperationCallback.INSTANCE);
@@ -236,14 +219,8 @@ public class LSMInvertedIndex extends AbstractLSMIndex implements IInvertedIndex
             component.getInvIndex().deactivate();
             component.getDeletedKeysBTree().deactivate();
         }
-        for (ILSMComponent c : memoryComponents) {
-            LSMInvertedIndexMemoryComponent mutableComponent = (LSMInvertedIndexMemoryComponent) c;
-            mutableComponent.getInvIndex().deactivate();
-            mutableComponent.getDeletedKeysBTree().deactivate();
-            mutableComponent.getInvIndex().destroy();
-            mutableComponent.getDeletedKeysBTree().destroy();
-            ((IVirtualBufferCache) mutableComponent.getInvIndex().getBufferCache()).close();
-        }
+        deallocateMemoryComponents();
+        isActivated = false;
     }
 
     @Override
@@ -278,7 +255,6 @@ public class LSMInvertedIndex extends AbstractLSMIndex implements IInvertedIndex
         List<ILSMComponent> operationalComponents = ctx.getComponentHolder();
         int cmc = currentMutableComponentId.get();
         ctx.setCurrentMutableComponentId(cmc);
-        int numMutableComponents = memoryComponents.size();
         operationalComponents.clear();
         switch (ctx.getOperation()) {
             case FLUSH:
@@ -287,17 +263,9 @@ public class LSMInvertedIndex extends AbstractLSMIndex implements IInvertedIndex
                 operationalComponents.add(memoryComponents.get(cmc));
                 break;
             case SEARCH:
-                for (int i = 0; i < numMutableComponents - 1; i++) {
-                    ILSMComponent c = memoryComponents.get((cmc + i + 1) % numMutableComponents);
-                    LSMInvertedIndexMemoryComponent mutableComponent = (LSMInvertedIndexMemoryComponent) c;
-                    if (mutableComponent.isReadable()) {
-                        // Make sure newest components are added first
-                        operationalComponents.add(0, mutableComponent);
-                    }
+                if (memoryComponentsAllocated) {
+                    addOperationalMutableComponents(operationalComponents);
                 }
-                // The current mutable component is always added
-                operationalComponents.add(0, memoryComponents.get(cmc));
-
                 if (filterManager != null) {
                     for (ILSMComponent c : immutableComponents) {
                         if (c.getLSMComponentFilter().satisfy(
@@ -310,7 +278,6 @@ public class LSMInvertedIndex extends AbstractLSMIndex implements IInvertedIndex
                 } else {
                     operationalComponents.addAll(immutableComponents);
                 }
-
                 break;
             case MERGE:
                 operationalComponents.addAll(ctx.getComponentsToBeMerged());
@@ -394,7 +361,6 @@ public class LSMInvertedIndex extends AbstractLSMIndex implements IInvertedIndex
             throws HyracksDataException, IndexException {
         List<ILSMComponent> operationalComponents = ictx.getComponentHolder();
         int numComponents = operationalComponents.size();
-        assert numComponents > 0;
         boolean includeMutableComponent = false;
         ArrayList<IIndexAccessor> indexAccessors = new ArrayList<IIndexAccessor>(numComponents);
         ArrayList<IIndexAccessor> deletedKeysBTreeAccessors = new ArrayList<IIndexAccessor>(numComponents);
@@ -802,6 +768,17 @@ public class LSMInvertedIndex extends AbstractLSMIndex implements IInvertedIndex
                 }
             }
         }
+
+        @Override
+        public void abort() throws HyracksDataException {
+            if( invIndexBulkLoader != null){
+                invIndexBulkLoader.abort();
+            }
+
+            if(deletedKeysBTreeBulkLoader != null){
+                deletedKeysBTreeBulkLoader.abort();
+            }
+        }
     }
 
     protected InMemoryInvertedIndex createInMemoryInvertedIndex(IVirtualBufferCache virtualBufferCache,
@@ -913,11 +890,7 @@ public class LSMInvertedIndex extends AbstractLSMIndex implements IInvertedIndex
 
     @Override
     public void validate() throws HyracksDataException {
-        for (ILSMComponent c : memoryComponents) {
-            LSMInvertedIndexMemoryComponent mutableComponent = (LSMInvertedIndexMemoryComponent) c;
-            mutableComponent.getInvIndex().validate();
-            mutableComponent.getDeletedKeysBTree().validate();
-        }
+        validateMemoryComponents();
         List<ILSMComponent> immutableComponents = diskComponents;
         for (ILSMComponent c : immutableComponents) {
             LSMInvertedIndexDiskComponent component = (LSMInvertedIndexDiskComponent) c;
@@ -954,5 +927,74 @@ public class LSMInvertedIndex extends AbstractLSMIndex implements IInvertedIndex
         files.add(invIndexComponent.getDeletedKeysBTree().getFileReference().toString());
 
         return files;
+    }
+
+    @Override
+    public synchronized void allocateMemoryComponents() throws HyracksDataException {
+        if (!isActivated) {
+            throw new HyracksDataException("Failed to allocate memory components since the index is not active.");
+        }
+        if (memoryComponentsAllocated) {
+            return;
+        }
+        for (ILSMComponent c : memoryComponents) {
+            LSMInvertedIndexMemoryComponent mutableComponent = (LSMInvertedIndexMemoryComponent) c;
+            ((IVirtualBufferCache) mutableComponent.getInvIndex().getBufferCache()).open();
+            mutableComponent.getInvIndex().create();
+            mutableComponent.getInvIndex().activate();
+            mutableComponent.getDeletedKeysBTree().create();
+            mutableComponent.getDeletedKeysBTree().activate();
+        }
+        memoryComponentsAllocated = true;
+    }
+
+    private void addOperationalMutableComponents(List<ILSMComponent> operationalComponents) {
+        int cmc = currentMutableComponentId.get();
+        int numMutableComponents = memoryComponents.size();
+        for (int i = 0; i < numMutableComponents - 1; i++) {
+            ILSMComponent c = memoryComponents.get((cmc + i + 1) % numMutableComponents);
+            LSMInvertedIndexMemoryComponent mutableComponent = (LSMInvertedIndexMemoryComponent) c;
+            if (mutableComponent.isReadable()) {
+                // Make sure newest components are added first
+                operationalComponents.add(0, mutableComponent);
+            }
+        }
+        // The current mutable component is always added
+        operationalComponents.add(0, memoryComponents.get(cmc));
+    }
+
+    private synchronized void clearMemoryComponents() throws HyracksDataException {
+        if (memoryComponentsAllocated) {
+            for (ILSMComponent c : memoryComponents) {
+                LSMInvertedIndexMemoryComponent mutableComponent = (LSMInvertedIndexMemoryComponent) c;
+                mutableComponent.getInvIndex().clear();
+                mutableComponent.getDeletedKeysBTree().clear();
+                mutableComponent.reset();
+            }
+        }
+    }
+
+    private synchronized void validateMemoryComponents() throws HyracksDataException {
+        if (memoryComponentsAllocated) {
+            for (ILSMComponent c : memoryComponents) {
+                LSMInvertedIndexMemoryComponent mutableComponent = (LSMInvertedIndexMemoryComponent) c;
+                mutableComponent.getInvIndex().validate();
+                mutableComponent.getDeletedKeysBTree().validate();
+            }
+        }
+    }
+
+    private synchronized void deallocateMemoryComponents() throws HyracksDataException {
+        if (memoryComponentsAllocated) {
+            for (ILSMComponent c : memoryComponents) {
+                LSMInvertedIndexMemoryComponent mutableComponent = (LSMInvertedIndexMemoryComponent) c;
+                mutableComponent.getInvIndex().deactivate();
+                mutableComponent.getDeletedKeysBTree().deactivate();
+                mutableComponent.getInvIndex().destroy();
+                mutableComponent.getDeletedKeysBTree().destroy();
+                ((IVirtualBufferCache) mutableComponent.getInvIndex().getBufferCache()).close();
+            }
+            memoryComponentsAllocated = false;
+        }
     }
 }

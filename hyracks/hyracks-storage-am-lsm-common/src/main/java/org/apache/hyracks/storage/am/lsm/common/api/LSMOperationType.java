@@ -12,7 +12,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.hyracks.storage.am.lsm.common.impls;
+package org.apache.hyracks.storage.am.lsm.common.api;
 
 public enum LSMOperationType {
     SEARCH,
