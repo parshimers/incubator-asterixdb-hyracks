@@ -21,6 +21,7 @@ package org.apache.hyracks.storage.common.buffercache;
 import org.apache.hyracks.api.exceptions.HyracksDataException;
 import org.apache.hyracks.api.io.IFileHandle;
 import org.apache.hyracks.api.io.FileReference;
+import org.apache.hyracks.api.io.IIOManager;
 import org.apache.hyracks.api.replication.IIOReplicationManager;
 
 public interface IBufferCache {

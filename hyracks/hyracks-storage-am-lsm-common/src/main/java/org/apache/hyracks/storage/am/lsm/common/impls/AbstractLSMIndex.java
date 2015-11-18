@@ -308,7 +308,7 @@ public abstract class AbstractLSMIndex implements ILSMIndexInternal {
         LSMIndexReplicationJob job = new LSMIndexReplicationJob(this, ctx, componentFiles, operation, executionType,
                 opType);
         try {
-            diskBufferCache.getIOReplicationManager().submitJob(job);
+            diskBufferCache.getIIOReplicationManager().submitJob(job);
         } catch (IOException e) {
             throw new HyracksDataException(e);
         }

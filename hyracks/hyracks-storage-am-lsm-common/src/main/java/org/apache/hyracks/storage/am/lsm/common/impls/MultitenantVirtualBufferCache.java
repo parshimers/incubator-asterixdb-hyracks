@@ -193,6 +193,11 @@ public class MultitenantVirtualBufferCache implements IVirtualBufferCache {
     }
 
     @Override
+    public IIOReplicationManager getIIOReplicationManager() {
+        return null;
+    }
+
+    @Override
     public void purgeHandle(int fileId) throws HyracksDataException {
 
     }
@@ -212,8 +217,4 @@ public class MultitenantVirtualBufferCache implements IVirtualBufferCache {
         return false;
     }
 
-    @Override
-    public IIOReplicationManager getIOReplicationManager() {
-        return null;
-    }
 }

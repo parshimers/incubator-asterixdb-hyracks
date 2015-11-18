@@ -45,10 +45,6 @@ import org.apache.hyracks.storage.am.rtree.api.IRTreeLeafFrame;
 import org.apache.hyracks.storage.am.rtree.frames.RTreeNSMFrame;
 import org.apache.hyracks.storage.am.rtree.frames.RTreeNSMInteriorFrame;
 import org.apache.hyracks.storage.am.rtree.tuples.RTreeTypeAwareTupleWriter;
-<<<<<<< HEAD
-import org.apache.hyracks.storage.common.buffercache.AsyncFIFOPageQueueManager;
-=======
->>>>>>> imaxon/lsm-append-only
 import org.apache.hyracks.storage.common.buffercache.BufferCache;
 import org.apache.hyracks.storage.common.buffercache.IBufferCache;
 import org.apache.hyracks.storage.common.buffercache.ICachedPage;

@@ -1150,16 +1150,16 @@ public class BufferCache implements IBufferCacheInternal, ILifeCycleComponent {
     }
 
     @Override
+    public IIOReplicationManager getIIOReplicationManager() {
+        return ioReplicationManager;
+    }
+
+    @Override
     public boolean isReplicationEnabled() {
         if (ioReplicationManager != null) {
             return ioReplicationManager.isReplicationEnabled();
         }
         return false;
-    }
-
-    @Override
-    public IIOReplicationManager getIOReplicationManager() {
-        return ioReplicationManager;
     }
 
     @Override

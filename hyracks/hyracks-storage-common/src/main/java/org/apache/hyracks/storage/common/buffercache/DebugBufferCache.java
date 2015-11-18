@@ -238,6 +238,11 @@ public class DebugBufferCache implements IBufferCache {
     }
 
     @Override
+    public IIOReplicationManager getIIOReplicationManager() {
+        return bufferCache.getIIOReplicationManager();
+    }
+
+    @Override
     public int getFileReferenceCount(int fileId) {
         return bufferCache.getFileReferenceCount(fileId);
     }
@@ -245,11 +250,6 @@ public class DebugBufferCache implements IBufferCache {
     @Override
     public boolean isReplicationEnabled() {
         return false;
-    }
-
-    @Override
-    public IIOReplicationManager getIOReplicationManager() {
-        return null;
     }
 
     @Override

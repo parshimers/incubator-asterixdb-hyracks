@@ -170,6 +170,11 @@ public class VirtualBufferCache implements IVirtualBufferCache {
         public InputStream getInputStream(IFileHandle fileHandle) {
             return null;
         }
+
+        @Override
+        public void deleteWorkspaceFiles() {
+
+        }
     }
 
 
@@ -545,16 +550,14 @@ public class VirtualBufferCache implements IVirtualBufferCache {
     }
 
     @Override
-    public boolean isReplicationEnabled() {
-        return false;
-    }
-
-    @Override
-    public IIOReplicationManager getIOReplicationManager() {
+    public IIOReplicationManager getIIOReplicationManager() {
         return null;
     }
 
-    
+    @Override
+    public boolean isReplicationEnabled() {
+        return false;
+    }
 
     @Override
     public void purgeHandle(int fileId) throws HyracksDataException {
