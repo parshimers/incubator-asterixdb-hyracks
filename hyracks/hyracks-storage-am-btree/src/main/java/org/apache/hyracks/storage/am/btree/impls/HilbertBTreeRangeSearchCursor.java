@@ -20,8 +20,6 @@
 package org.apache.hyracks.storage.am.btree.impls;
 
 import org.apache.hyracks.api.exceptions.HyracksDataException;
-import org.apache.hyracks.api.util.ExperimentProfiler;
-import org.apache.hyracks.api.util.SpatialIndexProfiler;
 import org.apache.hyracks.data.std.primitive.DoublePointable;
 import org.apache.hyracks.dataflow.common.comm.io.ArrayTupleBuilder;
 import org.apache.hyracks.dataflow.common.comm.io.ArrayTupleReference;
@@ -84,16 +82,12 @@ public class HilbertBTreeRangeSearchCursor implements ITreeIndexCursor {
 
     private boolean isPointQuery;
     private int pointQueryNextMatchCallCount;
-    
-    //for profiler
-    private int profileSearchCount;
 
     private final HilbertState[] states = new HilbertState[] {
             new HilbertState(new int[] { 3, 0, 1, 0 }, new int[] { 0, 1, 3, 2 }),
             new HilbertState(new int[] { 1, 1, 0, 2 }, new int[] { 2, 1, 3, 0 }),
             new HilbertState(new int[] { 2, 3, 2, 1 }, new int[] { 2, 3, 1, 0 }),
             new HilbertState(new int[] { 0, 2, 3, 3 }, new int[] { 0, 3, 1, 2 }) };
-    
 
     public HilbertBTreeRangeSearchCursor(IBTreeLeafFrame frame, boolean exclusiveLatchNodes) {
         this.frame = frame;
@@ -101,7 +95,7 @@ public class HilbertBTreeRangeSearchCursor implements ITreeIndexCursor {
         this.currentSearchCtx = new HilbertRangeSearchContext();
         tBuilderNextMatch = new ArrayTupleBuilder(1);
         firstOpen = true;
-        for(int i = 0; i < DIMENSION; i++) {
+        for (int i = 0; i < DIMENSION; i++) {
             pageKey[i] = Double.MAX_VALUE;
         }
     }
@@ -114,6 +108,17 @@ public class HilbertBTreeRangeSearchCursor implements ITreeIndexCursor {
         if (!firstOpen) {
             this.cursorInitialiState = initialState;
             btreeAccessor = ((BTreeCursorInitialState) initialState).getAccessor();
+            //            if (!(searchPred instanceof ILinearizerSearchPredicate)) {
+            //                tRefNextMatch = ((RangePredicate) searchPred).getLowKey();
+            //                ((RangePredicate) linearizerSearchPredicate).setLowKey(tRefNextMatch, true);
+            //                if (cursor != null) {
+            //                    cursor.close();
+            //                    cursor = null;
+            //                }
+            //                cursor = new BTreeRangeSearchCursor(frame, exclusiveLatchNodes);
+            //                cursor.open(cursorInitialiState, linearizerSearchPredicate);
+            //                prevPageId = cursor.getPageId();
+            //            }
             return;
         }
 
@@ -136,9 +141,6 @@ public class HilbertBTreeRangeSearchCursor implements ITreeIndexCursor {
                 pointQueryNextMatchCallCount = 0;
             } else {
                 isPointQuery = false;
-            }
-            if (ExperimentProfiler.PROFILE_MODE) {
-                profileSearchCount = 0;
             }
         }
 
@@ -168,19 +170,11 @@ public class HilbertBTreeRangeSearchCursor implements ITreeIndexCursor {
         }
         while (true) {
             if (cursor == null) {
-                if (ExperimentProfiler.PROFILE_MODE) {
-                    SpatialIndexProfiler.INSTANCE.dhbtreeNumOfSearchPerQuery.add("" + profileSearchCount +"\n");
-                    profileSearchCount = 0;
-                }
                 return false;
             }
             if (!cursor.hasNext()) {
                 cursor.close();
                 cursor = null;
-                if (ExperimentProfiler.PROFILE_MODE) {
-                    SpatialIndexProfiler.INSTANCE.dhbtreeNumOfSearchPerQuery.add("" + profileSearchCount +"\n");
-                    profileSearchCount = 0;
-                }
                 return false;
             }
             if (prevPageId == cursor.getPageId()) {
@@ -341,9 +335,6 @@ public class HilbertBTreeRangeSearchCursor implements ITreeIndexCursor {
                 if (search) {
                     btreeAccessor.search(this, linearizerSearchPredicate);
                 }
-                if (ExperimentProfiler.PROFILE_MODE) {
-                    ++profileSearchCount;
-                }
                 cursor.open(cursorInitialiState, linearizerSearchPredicate);
                 return cursor;
             }
@@ -400,7 +391,7 @@ public class HilbertBTreeRangeSearchCursor implements ITreeIndexCursor {
                     throw new IllegalStateException("Illegal HilbertBTree search state: " + currentSearchCtx.state);
             }
         }
-        
+
         linearizerSearchHelper.convertTwoDoubles2PointField(nextMatch, tBuilderNextMatch);
         ((ArrayTupleReference) tRefNextMatch).reset(tBuilderNextMatch.getFieldEndOffsets(),
                 tBuilderNextMatch.getByteArray());
@@ -424,9 +415,9 @@ public class HilbertBTreeRangeSearchCursor implements ITreeIndexCursor {
         updateSearchCtx(currentSearchCtx, currentSearchCtx, nextSearchCoordinates[0]);
 
         if (DEBUG) {
-            System.out.println("sSpace: " + currentSearchCtx.sBottomLeft[0] + "\t" + currentSearchCtx.sBottomLeft[1] + "\t"
-                    + currentSearchCtx.sTopRight[0] + "\t" + currentSearchCtx.sTopRight[1] + "\t" + 
-                    "qRegion: " + currentSearchCtx.qBottomLeft[0] + "\t" + currentSearchCtx.qBottomLeft[1] + "\t"
+            System.out.println("sSpace: " + currentSearchCtx.sBottomLeft[0] + "\t" + currentSearchCtx.sBottomLeft[1]
+                    + "\t" + currentSearchCtx.sTopRight[0] + "\t" + currentSearchCtx.sTopRight[1] + "\t" + "qRegion: "
+                    + currentSearchCtx.qBottomLeft[0] + "\t" + currentSearchCtx.qBottomLeft[1] + "\t"
                     + currentSearchCtx.qTopRight[0] + "\t" + currentSearchCtx.qTopRight[1] + "\tcenterPoint: "
                     + currentSearchCtx.centerPoint[0] + "\t" + currentSearchCtx.centerPoint[1] + "\tstep: "
                     + currentSearchCtx.stepSize + "\tstate: " + currentSearchCtx.state);
@@ -458,13 +449,13 @@ public class HilbertBTreeRangeSearchCursor implements ITreeIndexCursor {
         //store current center point at previous center point
         nextCtx.prevCenterPoint[0] = currentCtx.centerPoint[0];
         nextCtx.prevCenterPoint[1] = currentCtx.centerPoint[1];
-        
+
         //store previous search space
         nextCtx.psBottomLeft[0] = currentCtx.sBottomLeft[0];
         nextCtx.psBottomLeft[1] = currentCtx.sBottomLeft[1];
         nextCtx.psTopRight[0] = currentCtx.sTopRight[0];
         nextCtx.psTopRight[1] = currentCtx.sTopRight[1];
-        
+
         switch (nextCoordinate) {
             case 0:
                 //update query region
@@ -476,11 +467,11 @@ public class HilbertBTreeRangeSearchCursor implements ITreeIndexCursor {
                     nextCtx.qTopRight[1] = currentCtx.centerPoint[1];
                     nextCtx.qTopLeft[1] = currentCtx.centerPoint[1];
                 }
-                
+
                 //update search space
                 nextCtx.sTopRight[0] = currentCtx.centerPoint[0];
                 nextCtx.sTopRight[1] = currentCtx.centerPoint[1];
-                
+
                 //update center point and step size
                 nextCtx.centerPoint[0] = currentCtx.centerPoint[0] - currentCtx.stepSize;
                 nextCtx.centerPoint[1] = currentCtx.centerPoint[1] - currentCtx.stepSize;
@@ -498,11 +489,11 @@ public class HilbertBTreeRangeSearchCursor implements ITreeIndexCursor {
                     nextCtx.qBottomLeft[1] = currentCtx.centerPoint[1];
                     nextCtx.qBottomRight[1] = currentCtx.centerPoint[1];
                 }
-                
+
                 //update search space
                 nextCtx.sTopRight[0] = currentCtx.centerPoint[0];
                 nextCtx.sBottomLeft[1] = currentCtx.centerPoint[1];
-                
+
                 //update center point and step size
                 nextCtx.centerPoint[0] = currentCtx.centerPoint[0] - currentCtx.stepSize;
                 nextCtx.centerPoint[1] = currentCtx.centerPoint[1] + currentCtx.stepSize;
@@ -519,11 +510,11 @@ public class HilbertBTreeRangeSearchCursor implements ITreeIndexCursor {
                     nextCtx.qTopRight[1] = currentCtx.centerPoint[1];
                     nextCtx.qTopLeft[1] = currentCtx.centerPoint[1];
                 }
-                
+
                 //update search space
                 nextCtx.sBottomLeft[0] = currentCtx.centerPoint[0];
-                nextCtx.sTopRight[1] = currentCtx.centerPoint[1]; 
-                
+                nextCtx.sTopRight[1] = currentCtx.centerPoint[1];
+
                 //update center point and step size
                 nextCtx.centerPoint[0] = currentCtx.centerPoint[0] + currentCtx.stepSize;
                 nextCtx.centerPoint[1] = currentCtx.centerPoint[1] - currentCtx.stepSize;
@@ -540,11 +531,11 @@ public class HilbertBTreeRangeSearchCursor implements ITreeIndexCursor {
                     nextCtx.qBottomLeft[1] = currentCtx.centerPoint[1];
                     nextCtx.qBottomRight[1] = currentCtx.centerPoint[1];
                 }
-                
+
                 //update search space
                 nextCtx.sBottomLeft[0] = currentCtx.centerPoint[0];
                 nextCtx.sBottomLeft[1] = currentCtx.centerPoint[1];
-                
+
                 //update center point and step size
                 nextCtx.centerPoint[0] = currentCtx.centerPoint[0] + currentCtx.stepSize;
                 nextCtx.centerPoint[1] = currentCtx.centerPoint[1] + currentCtx.stepSize;
@@ -638,26 +629,30 @@ public class HilbertBTreeRangeSearchCursor implements ITreeIndexCursor {
                     + currentSearchCtx.qTopRight[1]);
         }
     }
-    
+
     private boolean areCurrentQueryRegionAndCurrentSearchSpaceEqual() {
         //stop if (sBottomLeft[0] >= sTopRight[0] ||  sBottomLeft[1] >= sTopRight[1]) 
         //which means that due to the double value's computation error, search should be stopped at this level.
         //Then, in the previous search space, pick the smallest possible point and use it as the nextMatch   
-        if (currentSearchCtx.sBottomLeft[0] >= currentSearchCtx.sTopRight[0] || currentSearchCtx.sBottomLeft[1] >= currentSearchCtx.sTopRight[1]) {
+        if (currentSearchCtx.sBottomLeft[0] >= currentSearchCtx.sTopRight[0]
+                || currentSearchCtx.sBottomLeft[1] >= currentSearchCtx.sTopRight[1]) {
             usePreviousSearchSpaceForNextMatch = true;
             return true;
         }
-        
+
         //stop if step size <= a threshold
         if (currentSearchCtx.stepSize <= MIN_STEP_SIZE) {
             return true;
         }
-        
+
         //stop if searchSpace and queryRegion are within epsilon distance
         if (Math.abs(currentSearchCtx.sBottomLeft[0] - currentSearchCtx.qBottomLeft[0]) <= DoublePointable.getEpsilon()
-            && Math.abs(currentSearchCtx.sBottomLeft[1] - currentSearchCtx.qBottomLeft[1]) <= DoublePointable.getEpsilon()
-            && Math.abs(currentSearchCtx.sTopRight[0] - currentSearchCtx.qTopRight[0]) <= DoublePointable.getEpsilon() 
-            && Math.abs(currentSearchCtx.sTopRight[1] - currentSearchCtx.qTopRight[1]) <= DoublePointable.getEpsilon()) {
+                && Math.abs(currentSearchCtx.sBottomLeft[1] - currentSearchCtx.qBottomLeft[1]) <= DoublePointable
+                        .getEpsilon()
+                && Math.abs(currentSearchCtx.sTopRight[0] - currentSearchCtx.qTopRight[0]) <= DoublePointable
+                        .getEpsilon()
+                && Math.abs(currentSearchCtx.sTopRight[1] - currentSearchCtx.qTopRight[1]) <= DoublePointable
+                        .getEpsilon()) {
             return true;
         }
         return false;
@@ -689,7 +684,7 @@ public class HilbertBTreeRangeSearchCursor implements ITreeIndexCursor {
         public double qTopRight[] = new double[2]; //queryRegionTopRight
         public double qBottomRight[] = new double[2];//queryRegionBottomRight
         public double qTopLeft[] = new double[2]; //queryRegionTopLeft
-        
+
         public double sBottomLeft[] = new double[2]; //searchSpaceBottomLeft
         public double sTopRight[] = new double[2]; //searchSpaceTopRight
         public double psBottomLeft[] = new double[2]; //previousSearchSpaceBottomLeft

@@ -118,7 +118,6 @@ public class UnionAllOperatorDescriptor extends AbstractOperatorDescriptor {
                         // Initialize the counter for this runtime instance
                         OperatorExecutionTimeProfiler.INSTANCE.executionTimeProfiler.add(nodeJobSignature, taskId,
                                 ExecutionTimeProfiler.INIT, false);
-                        System.out.println("UNION_ALL open() " + nodeJobSignature + " " + taskId);
                     }
 
                     synchronized (UnionOperator.this) {
@@ -166,7 +165,6 @@ public class UnionAllOperatorDescriptor extends AbstractOperatorDescriptor {
                         OperatorExecutionTimeProfiler.INSTANCE.executionTimeProfiler.add(nodeJobSignature, taskId,
                                 profilerSW.getMessage("UNION_ALL\t" + ctx.getTaskAttemptId() + "\t" + this.toString(),
                                         profilerSW.getStartTimeStamp()), false);
-                        System.out.println("UNION_ALL fail() " + nodeJobSignature + " " + taskId);
                     }
                 }
 
@@ -183,7 +181,6 @@ public class UnionAllOperatorDescriptor extends AbstractOperatorDescriptor {
                         OperatorExecutionTimeProfiler.INSTANCE.executionTimeProfiler.add(nodeJobSignature, taskId,
                                 profilerSW.getMessage("UNION_ALL\t" + ctx.getTaskAttemptId() + "\t" + this.toString(),
                                         profilerSW.getStartTimeStamp()), false);
-                        System.out.println("UNION_ALL close() " + nodeJobSignature + " " + taskId);
                     }
 
                 }

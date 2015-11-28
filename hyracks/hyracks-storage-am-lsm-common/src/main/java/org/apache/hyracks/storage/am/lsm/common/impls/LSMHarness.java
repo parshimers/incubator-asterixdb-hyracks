@@ -23,7 +23,6 @@ import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import org.apache.hyracks.api.exceptions.HyracksDataException;
@@ -49,14 +48,19 @@ import org.apache.hyracks.storage.am.lsm.common.api.ILSMOperationTracker;
 public class LSMHarness implements ILSMHarness {
     private static final Logger LOGGER = Logger.getLogger(LSMHarness.class.getName());
 
+    private static final boolean DEBUG_MODE = false;
+
+    private static final boolean EXPERIMENT_MODE = true;
+
     protected final ILSMIndexInternal lsmIndex;
     protected final ILSMMergePolicy mergePolicy;
     protected final ILSMOperationTracker opTracker;
     protected final AtomicBoolean fullMergeIsRequested;
     protected final boolean replicationEnabled;
     protected List<ILSMComponent> componentsToBeReplicated;
-    
-    public LSMHarness(ILSMIndexInternal lsmIndex, ILSMMergePolicy mergePolicy, ILSMOperationTracker opTracker, boolean replicationEnabled) {
+
+    public LSMHarness(ILSMIndexInternal lsmIndex, ILSMMergePolicy mergePolicy, ILSMOperationTracker opTracker,
+            boolean replicationEnabled) {
         this.lsmIndex = lsmIndex;
         this.opTracker = opTracker;
         this.mergePolicy = mergePolicy;
@@ -186,12 +190,12 @@ public class LSMHarness implements ILSMHarness {
         try {
             synchronized (opTracker) {
                 try {
-                    
+
                     /**
                      * flow control according to the merge policy
                      */
                     if (opType == LSMOperationType.FLUSH) {
-                        while(mergePolicy.isMergeLagging(lsmIndex)) {
+                        while (mergePolicy.isMergeLagging(lsmIndex)) {
                             try {
                                 opTracker.wait();
                             } catch (InterruptedException e) {
@@ -201,8 +205,8 @@ public class LSMHarness implements ILSMHarness {
                     } else if (opType == LSMOperationType.MERGE) {
                         opTracker.notifyAll();
                     }
-                    
-                	int i = 0;
+
+                    int i = 0;
                     // First check if there is any action that is needed to be taken based on the state of each component.
                     for (ILSMComponent c : ctx.getComponentHolder()) {
                         boolean isMutableComponent = i == 0 && c.getType() == LSMComponentType.MEMORY ? true : false;
@@ -248,7 +252,8 @@ public class LSMHarness implements ILSMHarness {
                                     componentsToBeReplicated.add(newComponent);
                                     triggerReplication(componentsToBeReplicated, false);
                                 }
-                                mergePolicy.diskComponentAdded(lsmIndex, false, (AbstractDiskLSMComponent)newComponent);
+                                mergePolicy
+                                        .diskComponentAdded(lsmIndex, false, (AbstractDiskLSMComponent) newComponent);
                             }
                             break;
                         case MERGE:
@@ -260,7 +265,8 @@ public class LSMHarness implements ILSMHarness {
                                     componentsToBeReplicated.add(newComponent);
                                     triggerReplication(componentsToBeReplicated, false);
                                 }
-                                mergePolicy.diskComponentAdded(lsmIndex, fullMergeIsRequested.get(), (AbstractDiskLSMComponent)newComponent);
+                                mergePolicy.diskComponentAdded(lsmIndex, fullMergeIsRequested.get(),
+                                        (AbstractDiskLSMComponent) newComponent);
                             }
                             break;
                         default:
@@ -314,7 +320,7 @@ public class LSMHarness implements ILSMHarness {
                         lsmIndex.scheduleReplication(null, inactiveDiskComponentsToBeDeleted, false,
                                 ReplicationOperation.DELETE);
                     }
-                    
+
                     for (ILSMComponent c : inactiveDiskComponentsToBeDeleted) {
                         ((AbstractDiskLSMComponent) c).destroy();
                     }
@@ -399,8 +405,12 @@ public class LSMHarness implements ILSMHarness {
     @Override
     public void flush(ILSMIndexOperationContext ctx, ILSMIOOperation operation) throws HyracksDataException,
             IndexException {
-        if (LOGGER.isLoggable(Level.INFO)) {
-            LOGGER.info("Started a flush operation for index: " + lsmIndex + " ...");
+        if (DEBUG_MODE || EXPERIMENT_MODE) {
+            LOGGER.severe("[" + Thread.currentThread().getName() + "] Started a flush operation for index: " + lsmIndex
+                    + " ...");
+        } else {
+            LOGGER.info("[" + Thread.currentThread().getName() + "] Started a flush operation for index: " + lsmIndex
+                    + " ...");
         }
 
         ILSMComponent newComponent = null;
@@ -415,8 +425,12 @@ public class LSMHarness implements ILSMHarness {
             exitComponents(ctx, LSMOperationType.FLUSH, newComponent, false);
             operation.getCallback().afterFinalize(LSMOperationType.FLUSH, newComponent);
         }
-        if (LOGGER.isLoggable(Level.INFO)) {
-            LOGGER.info("Finished the flush operation for index: " + lsmIndex);
+        if (DEBUG_MODE || EXPERIMENT_MODE) {
+            LOGGER.severe("[" + Thread.currentThread().getName() + "] Finished the flush operation for index: "
+                    + lsmIndex);
+        } else {
+            LOGGER.info("[" + Thread.currentThread().getName() + "] Finished the flush operation for index: "
+                    + lsmIndex);
         }
     }
 
@@ -447,8 +461,12 @@ public class LSMHarness implements ILSMHarness {
     @Override
     public void merge(ILSMIndexOperationContext ctx, ILSMIOOperation operation) throws HyracksDataException,
             IndexException {
-        if (LOGGER.isLoggable(Level.INFO)) {
-            LOGGER.info("Started a merge operation for index: " + lsmIndex + " ...");
+        if (DEBUG_MODE || EXPERIMENT_MODE) {
+            LOGGER.severe("[" + Thread.currentThread().getName() + "] Started a merge operation for index: " + lsmIndex
+                    + " ...");
+        } else {
+            LOGGER.info("[" + Thread.currentThread().getName() + "] Started a merge operation for index: " + lsmIndex
+                    + " ...");
         }
 
         ILSMComponent newComponent = null;
@@ -463,8 +481,12 @@ public class LSMHarness implements ILSMHarness {
             exitComponents(ctx, LSMOperationType.MERGE, newComponent, false);
             operation.getCallback().afterFinalize(LSMOperationType.MERGE, newComponent);
         }
-        if (LOGGER.isLoggable(Level.INFO)) {
-            LOGGER.info("Finished the merge operation for index: " + lsmIndex);
+        if (DEBUG_MODE || EXPERIMENT_MODE) {
+            LOGGER.severe("[" + Thread.currentThread().getName() + "] Finished the merge operation for index: "
+                    + lsmIndex);
+        } else {
+            LOGGER.info("[" + Thread.currentThread().getName() + "] Finished the merge operation for index: "
+                    + lsmIndex);
         }
     }
 
@@ -478,7 +500,7 @@ public class LSMHarness implements ILSMHarness {
                 componentsToBeReplicated.add(c);
                 triggerReplication(componentsToBeReplicated, true);
             }
-            mergePolicy.diskComponentAdded(lsmIndex, false, (AbstractDiskLSMComponent)c);
+            mergePolicy.diskComponentAdded(lsmIndex, false, (AbstractDiskLSMComponent) c);
         }
     }
 
@@ -486,13 +508,13 @@ public class LSMHarness implements ILSMHarness {
     public ILSMOperationTracker getOperationTracker() {
         return opTracker;
     }
-    
+
     protected void triggerReplication(List<ILSMComponent> lsmComponents, boolean bulkload) throws HyracksDataException {
         ILSMIndexAccessorInternal accessor = lsmIndex.createAccessor(NoOpOperationCallback.INSTANCE,
                 NoOpOperationCallback.INSTANCE);
         accessor.scheduleReplication(lsmComponents, bulkload);
     }
-    
+
     @Override
     public void scheduleReplication(ILSMIndexOperationContext ctx, List<ILSMComponent> lsmComponents, boolean bulkload)
             throws HyracksDataException {

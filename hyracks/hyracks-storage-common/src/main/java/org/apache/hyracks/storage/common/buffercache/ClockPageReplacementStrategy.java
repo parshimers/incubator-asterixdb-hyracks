@@ -20,9 +20,11 @@ package org.apache.hyracks.storage.common.buffercache;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.logging.Logger;
 
 public class ClockPageReplacementStrategy implements IPageReplacementStrategy {
     private static final int MAX_UNSUCCESSFUL_CYCLE_COUNT = 3;
+    private static final Logger LOGGER = Logger.getLogger(ClockPageReplacementStrategy.class.getName());
 
     private IBufferCacheInternal bufferCache;
     private int clockPtr;
@@ -66,7 +68,18 @@ public class ClockPageReplacementStrategy implements IPageReplacementStrategy {
         if (pageCount >= maxAllowedNumPages) {
             cachedPage = findVictimByEviction();
         } else {
-            cachedPage = allocatePage();
+            try {
+                //                LOGGER.info("calling allocatePage()\n -> maxAllowedNumPages: " + maxAllowedNumPages
+                //                        + "\n -> currentAllocatedNumPages(getNumPages()): " + getNumPages()
+                //                        + "\n -> currentAllocatedNumPages(pageCount): " + pageCount);
+                cachedPage = allocatePage();
+            } catch (OutOfMemoryError E) {
+                LOGGER.severe("BufferCachePage allocation failed!!\n -> maxAllowedNumPages: " + maxAllowedNumPages
+                        + "\n -> currentAllocatedNumPages(getNumPages()): " + getNumPages()
+                        + "\n -> currentAllocatedNumPages(pageCount): " + pageCount);
+                E.printStackTrace();
+                throw E;
+            }
         }
         return cachedPage;
     }

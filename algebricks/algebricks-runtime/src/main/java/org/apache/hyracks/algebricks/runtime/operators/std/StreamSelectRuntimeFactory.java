@@ -35,7 +35,9 @@ import org.apache.hyracks.api.dataflow.value.INullWriterFactory;
 import org.apache.hyracks.api.exceptions.HyracksDataException;
 import org.apache.hyracks.api.util.ExecutionTimeProfiler;
 import org.apache.hyracks.api.util.ExecutionTimeStopWatch;
+import org.apache.hyracks.api.util.ExperimentProfiler;
 import org.apache.hyracks.api.util.OperatorExecutionTimeProfiler;
+import org.apache.hyracks.api.util.SpatialIndexProfiler;
 import org.apache.hyracks.data.std.api.IPointable;
 import org.apache.hyracks.data.std.primitive.VoidPointable;
 import org.apache.hyracks.dataflow.common.comm.io.ArrayTupleBuilder;
@@ -92,6 +94,8 @@ public class StreamSelectRuntimeFactory extends AbstractOneInputOneOutputRuntime
             private ExecutionTimeStopWatch profilerSW;
             private String nodeJobSignature;
             private String taskId;
+            private int inputTupleCount;
+            private int outputTupleCount;
 
             @Override
             public void open() throws HyracksDataException {
@@ -110,7 +114,10 @@ public class StreamSelectRuntimeFactory extends AbstractOneInputOneOutputRuntime
                     // Initialize the counter for this runtime instance
                     OperatorExecutionTimeProfiler.INSTANCE.executionTimeProfiler.add(nodeJobSignature, taskId,
                             ExecutionTimeProfiler.INIT, false);
-                    System.out.println("STREAM_SELECT open() " + nodeJobSignature + " " + taskId);
+                }
+                if (ExperimentProfiler.PROFILE_MODE) {
+                    inputTupleCount = 0;
+                    outputTupleCount = 0;
                 }
 
                 if (eval == null) {
@@ -142,6 +149,9 @@ public class StreamSelectRuntimeFactory extends AbstractOneInputOneOutputRuntime
 
                 tAccess.reset(buffer);
                 int nTuple = tAccess.getTupleCount();
+                if (ExperimentProfiler.PROFILE_MODE) {
+                    inputTupleCount += nTuple;
+                }
                 for (int t = 0; t < nTuple; t++) {
                     tRef.reset(tAccess, t);
                     try {
@@ -164,6 +174,9 @@ public class StreamSelectRuntimeFactory extends AbstractOneInputOneOutputRuntime
                                 // Added to measure the execution time when the profiler setting is enabled
                                 appendTupleToFrame(t, profilerSW);
                             }
+                        }
+                        if (ExperimentProfiler.PROFILE_MODE) {
+                            ++outputTupleCount;
                         }
                     } else {
                         if (retainNull) {
@@ -208,7 +221,15 @@ public class StreamSelectRuntimeFactory extends AbstractOneInputOneOutputRuntime
                     OperatorExecutionTimeProfiler.INSTANCE.executionTimeProfiler.add(nodeJobSignature, taskId,
                             profilerSW.getMessage("STREAM_SELECT\t" + ctx.getTaskAttemptId() + "\t" + this.toString(),
                                     profilerSW.getStartTimeStamp()), false);
-                    System.out.println("STREAM_SELECT close() " + nodeJobSignature + " " + taskId);
+                }
+
+                if (ExperimentProfiler.PROFILE_MODE) {
+                    if (inputTupleCount > 0) {
+                        SpatialIndexProfiler.INSTANCE.falsePositivePerQuery.add(""
+                                + (inputTupleCount - outputTupleCount) + "\n");
+                        inputTupleCount = 0;
+                        outputTupleCount = 0;
+                    }
                 }
 
             }

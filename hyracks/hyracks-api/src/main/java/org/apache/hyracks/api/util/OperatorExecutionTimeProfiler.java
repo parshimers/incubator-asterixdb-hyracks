@@ -18,18 +18,23 @@
  */
 package org.apache.hyracks.api.util;
 
-import java.text.SimpleDateFormat;
-import java.util.Calendar;
+import java.net.Inet4Address;
+import java.net.UnknownHostException;
 
 public class OperatorExecutionTimeProfiler {
     public static final OperatorExecutionTimeProfiler INSTANCE = new OperatorExecutionTimeProfiler();
     public ExecutionTimeProfiler executionTimeProfiler;
 
     private OperatorExecutionTimeProfiler() {
+        String profileHomeDir = SpatialIndexProfiler.PROFILE_HOME_DIR;
         if (ExecutionTimeProfiler.PROFILE_MODE) {
-            SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd-HH-mm-ss-SSS");
-            executionTimeProfiler = new ExecutionTimeProfiler("executionTime"
-                    + sdf.format(Calendar.getInstance().getTime()) + ".txt", 1);
+            //SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd-HH-mm-ss-SSS");
+            try {
+                executionTimeProfiler = new ExecutionTimeProfiler(profileHomeDir + "executionTime-"
+                        + Inet4Address.getLocalHost().getHostAddress() + ".txt", 1);
+            } catch (UnknownHostException e) {
+                e.printStackTrace();
+            }
             executionTimeProfiler.begin();
         }
     }

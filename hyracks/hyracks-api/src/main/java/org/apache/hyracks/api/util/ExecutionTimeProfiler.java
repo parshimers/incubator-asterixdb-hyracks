@@ -86,7 +86,6 @@ public class ExecutionTimeProfiler {
                 }
                 fos.write(sb.toString().getBytes());
                 fos.flush();
-                System.out.println("Flushing " + jobSignature);
                 spentTimePerJobMap.get(jobSignature).clear();
                 sb.setLength(0);
             }

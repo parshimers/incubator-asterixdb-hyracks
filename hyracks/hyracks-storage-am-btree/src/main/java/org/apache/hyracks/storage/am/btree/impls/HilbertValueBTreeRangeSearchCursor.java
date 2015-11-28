@@ -20,8 +20,6 @@
 package org.apache.hyracks.storage.am.btree.impls;
 
 import org.apache.hyracks.api.exceptions.HyracksDataException;
-import org.apache.hyracks.api.util.ExperimentProfiler;
-import org.apache.hyracks.api.util.SpatialIndexProfiler;
 import org.apache.hyracks.dataflow.common.comm.io.ArrayTupleBuilder;
 import org.apache.hyracks.dataflow.common.comm.io.ArrayTupleReference;
 import org.apache.hyracks.dataflow.common.data.accessors.ITupleReference;
@@ -81,9 +79,6 @@ public class HilbertValueBTreeRangeSearchCursor implements ITreeIndexCursor {
     private long prevHilbertValue;
     private long curHilbertValue;
 
-    //for profiler
-    private int profileSearchCount;
-
     private final HilbertState[] states = new HilbertState[] {
             new HilbertState(new int[] { 3, 0, 0, 1 }, new int[] { 0, 1, 3, 2 }, new int[] { 0, 1, 3, 2 }),
             new HilbertState(new int[] { 2, 1, 1, 0 }, new int[] { 2, 1, 3, 0 }, new int[] { 3, 1, 0, 2 }),
@@ -106,6 +101,12 @@ public class HilbertValueBTreeRangeSearchCursor implements ITreeIndexCursor {
         if (!firstOpen) {
             this.cursorInitialiState = initialState;
             btreeAccessor = ((BTreeCursorInitialState) initialState).getAccessor();
+            //            if (!(searchPred instanceof ILinearizerSearchPredicate)) {
+            //                tRefNextMatch = ((RangePredicate) searchPred).getLowKey();
+            //                ((RangePredicate) linearizerSearchPredicate).setLowKey(tRefNextMatch, true);
+            //                cursor = new BTreeRangeSearchCursor(frame, exclusiveLatchNodes);
+            //                cursor.open(cursorInitialiState, linearizerSearchPredicate);
+            //            }
             return;
         }
 
@@ -129,9 +130,6 @@ public class HilbertValueBTreeRangeSearchCursor implements ITreeIndexCursor {
                 pointQueryNextMatchCallCount = 0;
             } else {
                 isPointQuery = false;
-            }
-            if (ExperimentProfiler.PROFILE_MODE) {
-                profileSearchCount = 0;
             }
         }
 
@@ -163,19 +161,11 @@ public class HilbertValueBTreeRangeSearchCursor implements ITreeIndexCursor {
         }
         while (true) {
             if (cursor == null) {
-                if (ExperimentProfiler.PROFILE_MODE) {
-                    SpatialIndexProfiler.INSTANCE.dhvbtreeNumOfSearchPerQuery.add("" + profileSearchCount + "\n");
-                    profileSearchCount = 0;
-                }
                 return false;
             }
             if (!cursor.hasNext()) {
                 cursor.close();
                 cursor = null;
-                if (ExperimentProfiler.PROFILE_MODE) {
-                    SpatialIndexProfiler.INSTANCE.dhvbtreeNumOfSearchPerQuery.add("" + profileSearchCount + "\n");
-                    profileSearchCount = 0;
-                }
                 return false;
             }
             if (prevPageId == cursor.getPageId()) {
@@ -366,9 +356,6 @@ public class HilbertValueBTreeRangeSearchCursor implements ITreeIndexCursor {
         cursor = new BTreeRangeSearchCursor(frame, exclusiveLatchNodes);
         if (search) {
             btreeAccessor.search(this, linearizerSearchPredicate);
-        }
-        if (ExperimentProfiler.PROFILE_MODE) {
-            ++profileSearchCount;
         }
         cursor.open(cursorInitialiState, linearizerSearchPredicate);
         return cursor;

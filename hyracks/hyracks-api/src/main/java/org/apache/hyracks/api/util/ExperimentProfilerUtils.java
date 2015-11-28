@@ -22,6 +22,7 @@ package org.apache.hyracks.api.util;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.OutputStream;
 
 public class ExperimentProfilerUtils {
     public static void printToOutputFile(StringBuffer sb, FileOutputStream fos) throws IllegalStateException,
@@ -38,9 +39,9 @@ public class ExperimentProfilerUtils {
         return new FileOutputStream(file);
     }
 
-    public static void closeOutputFile(FileOutputStream fos) throws IOException {
-        fos.flush();
-        fos.close();
-        fos = null;
+    public static void closeOutputFile(OutputStream os) throws IOException {
+        os.flush();
+        os.close();
+        os = null;
     }
 }

@@ -20,9 +20,6 @@
 package org.apache.hyracks.storage.am.rtree.impls;
 
 import org.apache.hyracks.api.exceptions.HyracksDataException;
-import org.apache.hyracks.api.util.ExperimentProfiler;
-import org.apache.hyracks.api.util.SpatialIndexProfiler;
-import org.apache.hyracks.api.util.StopWatch;
 import org.apache.hyracks.dataflow.common.data.accessors.ITupleReference;
 import org.apache.hyracks.storage.am.common.api.ICursorInitialState;
 import org.apache.hyracks.storage.am.common.api.ISearchPredicate;
@@ -57,18 +54,11 @@ public class RTreeSearchCursor implements ITreeIndexCursor {
 
     private ITreeIndexTupleReference frameTuple;
     private boolean readLatched = false;
-    
-    //for profiler
-    private int profilerLeafPageFetchCount;
-    private StopWatch sw;
 
     public RTreeSearchCursor(IRTreeInteriorFrame interiorFrame, IRTreeLeafFrame leafFrame) {
         this.interiorFrame = interiorFrame;
         this.leafFrame = leafFrame;
         this.frameTuple = leafFrame.createTupleReference();
-        if (ExperimentProfiler.PROFILE_MODE) {
-            sw = new StopWatch();
-        }
     }
 
     @Override
@@ -110,12 +100,6 @@ public class RTreeSearchCursor implements ITreeIndexCursor {
             readLatched = false;
         }
 
-        if (ExperimentProfiler.PROFILE_MODE) {
-            if (!pathList.isEmpty()) {
-                ++profilerLeafPageFetchCount;
-            }
-        }
-        
         while (!pathList.isEmpty()) {
             int pageId = pathList.getLastPageId();
             long parentLsn = pathList.getLastPageLsn();
@@ -141,9 +125,6 @@ public class RTreeSearchCursor implements ITreeIndexCursor {
                     // We do DFS so that we get the tuples ordered (for disk
                     // RTrees only) in the case we we are using total order
                     // (such as Hilbert order)
-                    if (ExperimentProfiler.PROFILE_MODE) {
-                        sw.resume();
-                    }
                     if (searchKey != null) {
                         for (int i = interiorFrame.getTupleCount() - 1; i >= 0; i--) {
                             int childPageId = interiorFrame.getChildPageIdIfIntersect(searchKey, i, cmp);
@@ -156,9 +137,6 @@ public class RTreeSearchCursor implements ITreeIndexCursor {
                             int childPageId = interiorFrame.getChildPageId(i);
                             pathList.add(childPageId, pageLsn, -1);
                         }
-                    }
-                    if (ExperimentProfiler.PROFILE_MODE) {
-                        sw.stop();
                     }
 
                 } else {
@@ -186,31 +164,16 @@ public class RTreeSearchCursor implements ITreeIndexCursor {
     @Override
     public boolean hasNext() throws HyracksDataException {
         if (page == null) {
-            if (ExperimentProfiler.PROFILE_MODE) {
-                SpatialIndexProfiler.INSTANCE.rtreeNumOfSearchPerQuery.add(""+profilerLeafPageFetchCount+"\n");
-                profilerLeafPageFetchCount = 0;
-                SpatialIndexProfiler.INSTANCE.sidxCPUCostProfiler.add(""+sw.getElapsedTime()+"\n");
-                sw.start();
-            }
             return false;
         }
 
         if (tupleIndex == leafFrame.getTupleCount()) {
             if (!fetchNextLeafPage()) {
-                if (ExperimentProfiler.PROFILE_MODE) {
-                    SpatialIndexProfiler.INSTANCE.rtreeNumOfSearchPerQuery.add(""+profilerLeafPageFetchCount+"\n");
-                    profilerLeafPageFetchCount = 0;
-                    SpatialIndexProfiler.INSTANCE.sidxCPUCostProfiler.add(""+sw.getElapsedTime()+"\n");
-                    sw.start();
-                }
                 return false;
             }
         }
 
         do {
-            if (ExperimentProfiler.PROFILE_MODE) {
-                sw.resume();
-            }
             for (int i = tupleIndex; i < leafFrame.getTupleCount(); i++) {
                 if (searchKey != null) {
                     if (leafFrame.intersect(searchKey, i, cmp)) {
@@ -218,9 +181,6 @@ public class RTreeSearchCursor implements ITreeIndexCursor {
                         currentTupleIndex = i; // This is only needed for the
                                                // LSMRTree flush operation
                         tupleIndexInc = i + 1;
-                        if (ExperimentProfiler.PROFILE_MODE) {
-                            sw.stop();
-                        }
                         return true;
                     }
                 } else {
@@ -229,19 +189,10 @@ public class RTreeSearchCursor implements ITreeIndexCursor {
                                            // LSMRTree
                                            // flush operation
                     tupleIndexInc = i + 1;
-                    if (ExperimentProfiler.PROFILE_MODE) {
-                        sw.resume();
-                    }
                     return true;
                 }
             }
         } while (fetchNextLeafPage());
-        if (ExperimentProfiler.PROFILE_MODE) {
-            SpatialIndexProfiler.INSTANCE.rtreeNumOfSearchPerQuery.add(""+profilerLeafPageFetchCount+"\n");
-            profilerLeafPageFetchCount = 0;
-            SpatialIndexProfiler.INSTANCE.sidxCPUCostProfiler.add(""+sw.getElapsedTime()+"\n");
-            sw.start();
-        }
         return false;
     }
 
@@ -258,10 +209,6 @@ public class RTreeSearchCursor implements ITreeIndexCursor {
             readLatched = false;
             bufferCache.unpin(this.page);
             pathList.clear();
-        }
-        
-        if (ExperimentProfiler.PROFILE_MODE) {
-            profilerLeafPageFetchCount = 0;
         }
 
         pathList = ((RTreeCursorInitialState) initialState).getPathList();
@@ -309,7 +256,7 @@ public class RTreeSearchCursor implements ITreeIndexCursor {
     public boolean exclusiveLatchNodes() {
         return false;
     }
-    
+
     @Override
     public void markCurrentTupleAsUpdated() throws HyracksDataException {
         throw new HyracksDataException("Updating tuples is not supported with this cursor.");

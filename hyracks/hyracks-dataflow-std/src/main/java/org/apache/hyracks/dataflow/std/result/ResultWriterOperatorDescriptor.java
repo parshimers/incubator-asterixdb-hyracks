@@ -107,7 +107,6 @@ public class ResultWriterOperatorDescriptor extends AbstractSingleActivityOperat
                     // Initialize the counter for this runtime instance
                     OperatorExecutionTimeProfiler.INSTANCE.executionTimeProfiler.add(nodeJobSignature, taskId,
                             ExecutionTimeProfiler.INIT, false);
-                    System.out.println("DISTRIBUTE_RESULT open() " + nodeJobSignature + " " + taskId);
                 }
 
                 try {
@@ -164,7 +163,6 @@ public class ResultWriterOperatorDescriptor extends AbstractSingleActivityOperat
                             profilerSW.getMessage(
                                     "DISTRIBUTE_RESULT\t" + ctx.getTaskAttemptId() + "\t" + this.toString(),
                                     profilerSW.getStartTimeStamp()), false);
-                    System.out.println("DISTRIBUTE_RESULT fail() " + nodeJobSignature + " " + taskId);
                 }
             }
 
@@ -183,7 +181,6 @@ public class ResultWriterOperatorDescriptor extends AbstractSingleActivityOperat
                             profilerSW.getMessage(
                                     "DISTRIBUTE_RESULT\t" + ctx.getTaskAttemptId() + "\t" + this.toString(),
                                     profilerSW.getStartTimeStamp()), false);
-                    System.out.println("DISTRIBUTE_RESULT close() " + nodeJobSignature + " " + taskId);
                 }
 
             }

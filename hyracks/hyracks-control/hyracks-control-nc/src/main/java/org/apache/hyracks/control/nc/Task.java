@@ -29,11 +29,11 @@ import java.util.Set;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Semaphore;
 
-import org.apache.hyracks.api.comm.VSizeFrame;
 import org.apache.hyracks.api.comm.IFrameReader;
 import org.apache.hyracks.api.comm.IFrameWriter;
 import org.apache.hyracks.api.comm.IPartitionCollector;
 import org.apache.hyracks.api.comm.PartitionChannel;
+import org.apache.hyracks.api.comm.VSizeFrame;
 import org.apache.hyracks.api.context.IHyracksJobletContext;
 import org.apache.hyracks.api.context.IHyracksTaskContext;
 import org.apache.hyracks.api.dataflow.IOperatorNodePushable;
@@ -251,7 +251,7 @@ public class Task implements IHyracksTaskContext, ICounterContext, Runnable {
         String threadName = ct.getName();
         addPendingThread(ct);
         try {
-            ct.setName(displayName + ":" + taskAttemptId + ":" + 0);
+            ct.setName("[" + threadName + "]" + displayName + ":" + taskAttemptId + ":" + 0);
             operator.initialize();
             try {
                 if (collectors.length > 0) {
@@ -334,7 +334,7 @@ public class Task implements IHyracksTaskContext, ICounterContext, Runnable {
                     writer.open();
                     try {
                         VSizeFrame frame = new VSizeFrame(this);
-                        while( reader.nextFrame(frame)){
+                        while (reader.nextFrame(frame)) {
                             if (aborted) {
                                 return;
                             }

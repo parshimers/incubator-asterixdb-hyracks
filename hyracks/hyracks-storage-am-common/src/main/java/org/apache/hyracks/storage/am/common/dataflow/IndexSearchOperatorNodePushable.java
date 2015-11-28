@@ -31,13 +31,11 @@ import org.apache.hyracks.api.dataflow.value.INullWriter;
 import org.apache.hyracks.api.dataflow.value.IRecordDescriptorProvider;
 import org.apache.hyracks.api.dataflow.value.RecordDescriptor;
 import org.apache.hyracks.api.exceptions.HyracksDataException;
-
-//TODO remove duplicated or redundant imports. 
-import org.apache.hyracks.api.util.SpatialIndexProfiler;
 import org.apache.hyracks.api.util.ExecutionTimeProfiler;
 import org.apache.hyracks.api.util.ExecutionTimeStopWatch;
 import org.apache.hyracks.api.util.OperatorExecutionTimeProfiler;
-
+//TODO remove duplicated or redundant imports. 
+import org.apache.hyracks.api.util.SpatialIndexProfiler;
 import org.apache.hyracks.dataflow.common.comm.io.ArrayTupleBuilder;
 import org.apache.hyracks.dataflow.common.comm.io.FrameTupleAccessor;
 import org.apache.hyracks.dataflow.common.comm.io.FrameTupleAppender;
@@ -165,7 +163,6 @@ public abstract class IndexSearchOperatorNodePushable extends AbstractUnaryInput
             profilerSW = new ExecutionTimeStopWatch();
             profilerSW.start();
             profilerCacheMissTemp = 0;
-            profilerCacheMissTotalPerQuery = 0;
 
             // The key of this job: nodeId + JobId + Joblet hash code
             nodeJobSignature = ctx.getJobletContext().getApplicationContext().getNodeId() + "_"
@@ -187,7 +184,6 @@ public abstract class IndexSearchOperatorNodePushable extends AbstractUnaryInput
                     indexType = "BTREE_SECONDARY_INDEX";
                 }
             }
-            System.out.println(indexType + "_SEARCH start " + nodeJobSignature + " " + taskId);
         }
 
         accessor = new FrameTupleAccessor(inputRecDesc);
@@ -246,7 +242,6 @@ public abstract class IndexSearchOperatorNodePushable extends AbstractUnaryInput
                     //                    Object test = inputRecDesc.getFields()[i].deserialize(new DataInputStream(inStreamZero));
                     //                    System.out.println("input " + test + " " + opDesc.getActivityId());
                 }
-
             }
             ITupleReference tuple = cursor.getTuple();
             for (int i = 0; i < tuple.getFieldCount(); i++) {
@@ -378,8 +373,6 @@ public abstract class IndexSearchOperatorNodePushable extends AbstractUnaryInput
                         taskId,
                         profilerSW.getMessage(searchPred.applicableIndexType() + "_SEARCH\t" + ctx.getTaskAttemptId()
                                 + "\t" + this.toString(), profilerSW.getStartTimeStamp()), false);
-                System.out.println(indexType + "_SEARCH close() " + nodeJobSignature + " " + taskId);
-                SpatialIndexProfiler.INSTANCE.pidxSearchTimePerQuery.add("" + profilerSW.getElapsedTime() + "\n");
                 SpatialIndexProfiler.INSTANCE.cacheMissPerQuery.add("" + profilerCacheMissTotalPerQuery + "\n");
             }
         } finally {

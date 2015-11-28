@@ -79,7 +79,6 @@ public class StreamProjectRuntimeFactory extends AbstractOneInputOneOutputRuntim
                     // Initialize the counter for this runtime instance
                     OperatorExecutionTimeProfiler.INSTANCE.executionTimeProfiler.add(nodeJobSignature, taskId,
                             ExecutionTimeProfiler.INIT, false);
-                    System.out.println("STREAM_PROJECT open() " + nodeJobSignature + " " + taskId);
                 }
 
                 if (first) {
@@ -145,7 +144,6 @@ public class StreamProjectRuntimeFactory extends AbstractOneInputOneOutputRuntim
                     OperatorExecutionTimeProfiler.INSTANCE.executionTimeProfiler.add(nodeJobSignature, taskId,
                             profilerSW.getMessage("STREAM_PROJECT\t" + ctx.getTaskAttemptId() + "\t" + this.toString(),
                                     profilerSW.getStartTimeStamp()), false);
-                    System.out.println("STREAM_PROJECT close() " + nodeJobSignature + " " + taskId);
                 }
 
             }

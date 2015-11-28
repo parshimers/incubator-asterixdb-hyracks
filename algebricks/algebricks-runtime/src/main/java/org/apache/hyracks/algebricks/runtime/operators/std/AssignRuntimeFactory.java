@@ -122,7 +122,6 @@ public class AssignRuntimeFactory extends AbstractOneInputOneOutputRuntimeFactor
                     // Initialize the counter for this runtime instance
                     OperatorExecutionTimeProfiler.INSTANCE.executionTimeProfiler.add(nodeJobSignature, taskId,
                             ExecutionTimeProfiler.INIT, false);
-                    System.out.println("ASSIGN open() " + nodeJobSignature + " " + taskId);
                 }
 
                 if (first) {
@@ -225,7 +224,6 @@ public class AssignRuntimeFactory extends AbstractOneInputOneOutputRuntimeFactor
                     OperatorExecutionTimeProfiler.INSTANCE.executionTimeProfiler.add(nodeJobSignature, taskId,
                             profilerSW.getMessage("ASSIGN\t" + ctx.getTaskAttemptId() + "\t" + this.toString(),
                                     profilerSW.getStartTimeStamp()), false);
-                    System.out.println("ASSIGN close() " + nodeJobSignature + " " + taskId);
                 }
 
             }

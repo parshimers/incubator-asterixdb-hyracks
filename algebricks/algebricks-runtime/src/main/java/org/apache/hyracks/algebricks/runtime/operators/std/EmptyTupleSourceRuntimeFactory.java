@@ -72,7 +72,6 @@ public class EmptyTupleSourceRuntimeFactory implements IPushRuntimeFactory {
                     // Initialize the counter for this runtime instance
                     OperatorExecutionTimeProfiler.INSTANCE.executionTimeProfiler.add(nodeJobSignature, taskId,
                             ExecutionTimeProfiler.INIT, false);
-                    System.out.println("EMPTY_TUPLE_SOURCE finish " + nodeJobSignature + " " + taskId);
                 }
 
                 writer.open();
@@ -105,7 +104,6 @@ public class EmptyTupleSourceRuntimeFactory implements IPushRuntimeFactory {
                             taskId,
                             profilerSW.getMessage("EMPTY_TUPLE_SOURCE\t" + ctx.getTaskAttemptId(),
                                     profilerSW.getStartTimeStamp()), false);
-                    System.out.println("EMPTY_TUPLE_SOURCE end " + nodeJobSignature + " " + taskId);
                 }
             }
 

@@ -155,7 +155,6 @@ public class SplitOperatorDescriptor extends AbstractOperatorDescriptor {
                         // Initialize the counter for this runtime instance
                         OperatorExecutionTimeProfiler.INSTANCE.executionTimeProfiler.add(nodeJobSignature, taskId,
                                 ExecutionTimeProfiler.INIT, false);
-                        System.out.println("SPLIT open() " + nodeJobSignature + " " + taskId);
                     }
 
                     if (requiresMaterialization) {
@@ -233,7 +232,6 @@ public class SplitOperatorDescriptor extends AbstractOperatorDescriptor {
                         OperatorExecutionTimeProfiler.INSTANCE.executionTimeProfiler.add(nodeJobSignature, taskId,
                                 profilerSW.getMessage("SPLIT\t" + ctx.getTaskAttemptId() + "\t" + this.toString(),
                                         profilerSW.getStartTimeStamp()), false);
-                        System.out.println("SPLIT close() " + nodeJobSignature + " " + taskId);
                     }
 
                 }

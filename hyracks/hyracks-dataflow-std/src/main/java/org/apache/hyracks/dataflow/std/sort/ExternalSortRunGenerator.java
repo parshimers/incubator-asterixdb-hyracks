@@ -27,10 +27,10 @@ import org.apache.hyracks.api.dataflow.value.INormalizedKeyComputerFactory;
 import org.apache.hyracks.api.dataflow.value.RecordDescriptor;
 import org.apache.hyracks.api.exceptions.HyracksDataException;
 import org.apache.hyracks.api.io.FileReference;
-import org.apache.hyracks.dataflow.common.comm.io.FrameTupleAccessor;
 import org.apache.hyracks.api.util.ExecutionTimeProfiler;
 import org.apache.hyracks.api.util.ExecutionTimeStopWatch;
 import org.apache.hyracks.api.util.OperatorExecutionTimeProfiler;
+import org.apache.hyracks.dataflow.common.comm.io.FrameTupleAccessor;
 import org.apache.hyracks.dataflow.common.io.RunFileWriter;
 import org.apache.hyracks.dataflow.std.sort.buffermanager.EnumFreeSlotPolicy;
 import org.apache.hyracks.dataflow.std.sort.buffermanager.FrameFreeSlotBiggestFirst;
@@ -95,7 +95,7 @@ public class ExternalSortRunGenerator extends AbstractSortRunGenerator {
             frameSorter = new FrameSorterQuickSort(ctx, bufferManager, sortFields, firstKeyNormalizerFactory,
                     comparatorFactories, recordDesc, outputLimit);
         }
-        
+
         if (ExecutionTimeProfiler.PROFILE_MODE) {
             profilerFta = new FrameTupleAccessor(recordDesc);
             profilerTupleCount = 0;
@@ -119,7 +119,6 @@ public class ExternalSortRunGenerator extends AbstractSortRunGenerator {
             // Initialize the counter for this runtime instance
             OperatorExecutionTimeProfiler.INSTANCE.executionTimeProfiler.add(nodeJobSignature, taskId,
                     ExecutionTimeProfiler.INIT, false);
-            System.out.println("EXTERNAL_SORT_RUN_GENERATOR open() " + nodeJobSignature + " " + taskId);
         }
         runAndMaxSizes.clear();
     }
@@ -133,12 +132,12 @@ public class ExternalSortRunGenerator extends AbstractSortRunGenerator {
 
         if (!frameSorter.insertFrame(buffer)) {
             flushFramesToRun();
-            
+
             if (ExecutionTimeProfiler.PROFILE_MODE) {
                 profilerFta.reset(buffer);
                 profilerTupleCount += profilerFta.getTupleCount();
             }
-            
+
             if (!frameSorter.insertFrame(buffer)) {
                 throw new HyracksDataException("The given frame is too big to insert into the sorting memory.");
             }
@@ -170,7 +169,6 @@ public class ExternalSortRunGenerator extends AbstractSortRunGenerator {
             OperatorExecutionTimeProfiler.INSTANCE.executionTimeProfiler.add(nodeJobSignature, taskId, profilerSW
                     .getMessage("EXTERNAL_SORT_RUN_GENERATOR\t" + ctx.getTaskAttemptId() + "\t" + this.toString(),
                             profilerSW.getStartTimeStamp()), false);
-            System.out.println("EXTERNAL_SORT_RUN_GENERATOR close() " + nodeJobSignature + " " + taskId);
         }
     }
 

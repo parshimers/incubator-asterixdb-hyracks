@@ -24,7 +24,7 @@ import java.io.IOException;
 
 public class ExperimentProfiler {
 
-    public static final boolean PROFILE_MODE = false; 
+    public static final boolean PROFILE_MODE = false;
     private FileOutputStream fos;
     private String filePath;
     private StringBuilder sb;
@@ -34,7 +34,7 @@ public class ExperimentProfiler {
     public ExperimentProfiler(String filePath, int printInterval) {
         this.filePath = new String(filePath);
         this.sb = new StringBuilder();
-        this.printInterval = printInterval; 
+        this.printInterval = printInterval;
     }
 
     public void begin() {
@@ -46,7 +46,7 @@ public class ExperimentProfiler {
             throw new IllegalStateException(e);
         }
     }
-    
+
     public synchronized void add(String s) {
         sb.append(s);
         if (printInterval > 0 && ++addCount % printInterval == 0) {

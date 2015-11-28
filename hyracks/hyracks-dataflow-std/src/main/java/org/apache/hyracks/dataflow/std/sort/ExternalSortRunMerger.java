@@ -109,7 +109,6 @@ public class ExternalSortRunMerger {
             // Initialize the counter for this runtime instance
             OperatorExecutionTimeProfiler.INSTANCE.executionTimeProfiler.add(nodeJobSignature, taskId,
                     ExecutionTimeProfiler.INIT, false);
-            System.out.println("EXTERNAL_SORT_RUN_MERGER open() " + nodeJobSignature + " " + taskId);
 
             profilerSW.resume();
         }
@@ -221,7 +220,6 @@ public class ExternalSortRunMerger {
                 OperatorExecutionTimeProfiler.INSTANCE.executionTimeProfiler.add(nodeJobSignature, taskId, profilerSW
                         .getMessage("EXTERNAL_SORT_RUN_MERGER\t" + ctx.getTaskAttemptId() + "\t" + this.toString(),
                                 profilerSW.getStartTimeStamp()), false);
-                System.out.println("EXTERNAL_SORT_RUN_MERGER close() " + nodeJobSignature + " " + taskId);
             }
         }
     }

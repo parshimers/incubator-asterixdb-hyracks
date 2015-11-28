@@ -390,14 +390,14 @@ public class LSMBTree extends AbstractLSMIndex implements ITreeIndex {
     }
 
     private boolean insert(ITupleReference tuple, LSMBTreeOpContext ctx) throws HyracksDataException, IndexException {
-        ILSMComponent c = ctx.getComponentHolder().get(0);
-        LSMBTreeMemoryComponent mutableComponent = (LSMBTreeMemoryComponent) c;
-        MultiComparator comparator = MultiComparator.create(mutableComponent.getBTree().getComparatorFactories());
-        LSMBTreePointSearchCursor searchCursor = new LSMBTreePointSearchCursor(ctx);
-        IIndexCursor memCursor = new BTreeRangeSearchCursor(ctx.currentMutableBTreeOpCtx.leafFrame, false);
-        RangePredicate predicate = new RangePredicate(tuple, tuple, true, true, comparator, comparator);
-
         if (needKeyDupCheck) {
+            ILSMComponent c = ctx.getComponentHolder().get(0);
+            LSMBTreeMemoryComponent mutableComponent = (LSMBTreeMemoryComponent) c;
+            MultiComparator comparator = MultiComparator.create(mutableComponent.getBTree().getComparatorFactories());
+            LSMBTreePointSearchCursor searchCursor = new LSMBTreePointSearchCursor(ctx);
+            IIndexCursor memCursor = new BTreeRangeSearchCursor(ctx.currentMutableBTreeOpCtx.leafFrame, false);
+            RangePredicate predicate = new RangePredicate(tuple, tuple, true, true, comparator, comparator);
+
             // first check the inmemory component
             ctx.currentMutableBTreeAccessor.search(memCursor, predicate);
             try {
@@ -925,7 +925,7 @@ public class LSMBTree extends AbstractLSMIndex implements ITreeIndex {
 
         files.add(component.getBTree().getFileReference().toString());
         files.add(component.getBloomFilter().getFileReference().toString());
-        
+
         return files;
     }
 }

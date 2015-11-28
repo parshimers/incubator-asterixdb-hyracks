@@ -109,7 +109,6 @@ public class MToNReplicatingConnectorDescriptor extends AbstractMToNConnectorDes
                     OperatorExecutionTimeProfiler.INSTANCE.executionTimeProfiler.add(nodeJobSignature,
                             taskIdWithTimeStamp,
                             profilerSW.getMessage("MToNReplicatingConnector", profilerSW.getStartTimeStamp()), false);
-                    System.out.println("MToNReplicatingConnector end " + taskIdWithTimeStamp);
 
                 }
             }
@@ -123,7 +122,6 @@ public class MToNReplicatingConnectorDescriptor extends AbstractMToNConnectorDes
                     taskIdWithTimeStamp = taskId + profilerSW.getStartTimeStamp();
                     OperatorExecutionTimeProfiler.INSTANCE.executionTimeProfiler.add(nodeJobSignature,
                             taskIdWithTimeStamp, "init", false);
-                    System.out.println("MToNReplicatingConnector start " + taskIdWithTimeStamp);
                 }
                 for (int i = 0; i < epWriters.length; ++i) {
                     epWriters[i].open();

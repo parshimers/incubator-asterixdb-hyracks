@@ -24,6 +24,7 @@ import java.util.Collections;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
+import java.util.logging.Logger;
 
 import org.apache.hyracks.api.exceptions.HyracksDataException;
 import org.apache.hyracks.api.io.FileReference;
@@ -36,6 +37,8 @@ import org.apache.hyracks.storage.common.file.IFileMapManager;
 import org.apache.hyracks.storage.common.file.TransientFileMapManager;
 
 public class VirtualBufferCache implements IVirtualBufferCache {
+    private static final boolean DEBUG_MODE = false;
+    private static final Logger LOGGER = Logger.getLogger(VirtualBufferCache.class.getName());
     private static final int OVERFLOW_PADDING = 8;
 
     private final ICacheMemoryAllocator allocator;
@@ -329,21 +332,52 @@ public class VirtualBufferCache implements IVirtualBufferCache {
         @Override
         public void acquireReadLatch() {
             latch.readLock().lock();
+            if (DEBUG_MODE)
+                LOGGER.severe("AR " + dpid + " " + Thread.currentThread().getName() + "\n" + printStackTrace());
         }
 
         @Override
         public void releaseReadLatch() {
             latch.readLock().unlock();
+            if (DEBUG_MODE)
+                LOGGER.severe("RR " + dpid + " " + Thread.currentThread().getName() + "\n" + printStackTrace());
+        }
+
+        private String printStackTrace() {
+            boolean isFlush = false;
+            boolean isMerge = false;
+            //StringBuilder sb = new StringBuilder();
+            for (StackTraceElement e : Thread.currentThread().getStackTrace()) {
+                String st = e.toString();
+                if (st.contains("LSMHarness.flush(")) {
+                    isFlush = true;
+                } else if (st.contains("LSMHarness.merge(")) {
+                    isMerge = true;
+                }
+                //sb.append(e.toString()).append("\n");
+            }
+
+            if (isFlush) {
+                return "flush\n";
+            } else if (isMerge) {
+                return "merge\n";
+            } else {
+                return "";
+            }
         }
 
         @Override
         public void acquireWriteLatch() {
             latch.writeLock().lock();
+            if (DEBUG_MODE)
+                LOGGER.severe("AW " + dpid + " " + Thread.currentThread().getName() + "\n" + printStackTrace());
         }
 
         @Override
         public void releaseWriteLatch(boolean markDirty) {
             latch.writeLock().unlock();
+            if (DEBUG_MODE)
+                LOGGER.severe("RW " + dpid + " " + Thread.currentThread().getName() + "\n" + printStackTrace());
         }
 
     }

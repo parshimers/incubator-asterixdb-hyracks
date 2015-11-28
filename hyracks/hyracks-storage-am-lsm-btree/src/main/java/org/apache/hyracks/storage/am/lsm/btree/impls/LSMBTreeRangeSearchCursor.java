@@ -160,7 +160,7 @@ public class LSMBTreeRangeSearchCursor extends LSMIndexSearchCursor {
                 if (canCallProceedMethod) {
                     // call proceed if we can return the element at the head of the queue.
                     resultOfsearchCallBackProceed = searchCallback.proceed(checkElement.getTuple());
-                    if (!resultOfsearchCallBackProceed) {
+                    if (!resultOfsearchCallBackProceed && !useProceedResult) {
                         // In case proceed() fails and there is an in-memory component,
                         // we can't simply use this element since there might be a change.
                         if (includeMutableComponent) {
