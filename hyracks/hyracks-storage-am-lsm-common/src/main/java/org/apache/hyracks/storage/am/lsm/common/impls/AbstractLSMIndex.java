@@ -31,6 +31,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.hyracks.api.exceptions.HyracksDataException;
 import org.apache.hyracks.api.replication.IReplicationJob.ReplicationExecutionType;
 import org.apache.hyracks.api.replication.IReplicationJob.ReplicationOperation;
+import org.apache.hyracks.storage.am.bloomfilter.impls.BloomFilter;
 import org.apache.hyracks.storage.am.common.api.ITreeIndex;
 import org.apache.hyracks.storage.am.common.api.ITreeIndexMetaDataFrame;
 import org.apache.hyracks.storage.am.lsm.common.api.ILSMComponent;
@@ -134,39 +135,6 @@ public abstract class AbstractLSMIndex implements ILSMIndexInternal {
         filterFields = null;
     }
 
-    protected void forceFlushDirtyPages(ITreeIndex treeIndex) throws HyracksDataException {
-        int fileId = treeIndex.getFileId();
-        IBufferCache bufferCache = treeIndex.getBufferCache();
-        // Flush all dirty pages of the tree. 
-        // By default, metadata and data are flushed asynchronously in the buffercache.
-        // This means that the flush issues writes to the OS, but the data may still lie in filesystem buffers.
-        ITreeIndexMetaDataFrame metadataFrame = treeIndex.getMetaManager().getMetaDataFrameFactory().createFrame();
-        int startPage = 0;
-        int maxPage = treeIndex.getMetaManager().getMaxPage(metadataFrame);
-        forceFlushDirtyPages(bufferCache, fileId, startPage, maxPage);
-    }
-
-    protected void forceFlushDirtyPages(IBufferCache bufferCache, int fileId, int startPageId, int endPageId)
-            throws HyracksDataException {
-        for (int i = startPageId; i <= endPageId; i++) {
-            ICachedPage page = bufferCache.tryPin(BufferedFileHandle.getDiskPageId(fileId, i));
-            // If tryPin returns null, it means the page is not cached, and therefore cannot be dirty.
-            if (page == null) {
-                continue;
-            }
-            try {
-                bufferCache.flushDirtyPage(page);
-            } finally {
-                bufferCache.unpin(page);
-            }
-        }
-        // Forces all pages of given file to disk. This guarantees the data makes it to disk.
-        // If the index is not durable, then the flush is not necessary.
-        if (durable) {
-//            bufferCache.force(fileId, true);
-        }
-    }
-
     protected void markAsValidInternal(ITreeIndex treeIndex) throws HyracksDataException {
         int fileId = treeIndex.getFileId();
         IBufferCache bufferCache = treeIndex.getBufferCache();
@@ -177,6 +145,12 @@ public abstract class AbstractLSMIndex implements ILSMIndexInternal {
         // If the index is not durable, then the flush is not necessary.
         if (durable) {
             bufferCache.force(fileId, true);
+        }
+    }
+
+    protected void markAsValidInternal(IBufferCache bufferCache, BloomFilter filter) throws HyracksDataException {
+        if(durable){
+            bufferCache.force(filter.getFileId(),true);
         }
     }
 

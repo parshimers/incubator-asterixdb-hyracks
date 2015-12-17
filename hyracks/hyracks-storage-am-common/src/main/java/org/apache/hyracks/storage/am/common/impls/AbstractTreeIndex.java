@@ -32,7 +32,7 @@ import org.apache.hyracks.storage.common.file.IFileMapProvider;
 
 public abstract class AbstractTreeIndex implements ITreeIndex {
 
-    public static int TREE_METADATA_NUM_PAGES = 2;
+    public static final int MINIMAL_TREE_PAGE_COUNT = 2;
     protected int rootPage = 1;
 
     protected final IBufferCache bufferCache;
@@ -49,6 +49,9 @@ public abstract class AbstractTreeIndex implements ITreeIndex {
     protected int fileId = -1;
 
     protected boolean isActive = false;
+    //hasEverBeenActivated is to stop the throwing of an exception of deactivating an index that
+    //was never activated or failed to activate in try/finally blocks, as there's no way to know if
+    //an index is activated or not from the outside.
     protected boolean hasEverBeenActivated = false;
     protected boolean appendOnly = false;
 
@@ -132,7 +135,7 @@ public abstract class AbstractTreeIndex implements ITreeIndex {
             // bulkload-only tree (used e.g. for HDFS). -1 is meta page, -2 is root page
             int numPages = bufferCache.getNumPagesOfFile(fileId);
             //the root page is the last page before the metadata page
-            rootPage = numPages > TREE_METADATA_NUM_PAGES ? numPages - TREE_METADATA_NUM_PAGES : 0;
+            rootPage = numPages > MINIMAL_TREE_PAGE_COUNT ? numPages - MINIMAL_TREE_PAGE_COUNT : 0;
             //leaves start from the very beginning of the file.
             bulkloadLeafStart = 0;
         }
@@ -170,7 +173,7 @@ public abstract class AbstractTreeIndex implements ITreeIndex {
         int mdPageLoc = freePageManager.getFirstMetadataPage();
         ITreeIndexMetaDataFrame metaFrame = freePageManager.getMetaDataFrameFactory().createFrame();
         int numPages = freePageManager.getMaxPage(metaFrame);
-        if(mdPageLoc > 0 || (mdPageLoc == 1 && numPages <= TREE_METADATA_NUM_PAGES -1  )){ //md page doesn't count itself
+        if(mdPageLoc > 1 || (mdPageLoc == 1 && numPages <= MINIMAL_TREE_PAGE_COUNT -1  )){ //md page doesn't count itself
             appendOnly = true;
         }
         else{
@@ -227,7 +230,7 @@ public abstract class AbstractTreeIndex implements ITreeIndex {
         if (rootPage == -1) {
             return true;
         }
-        if(freePageManager.appendOnlyMode() && bufferCache.getNumPagesOfFile(fileId) <= TREE_METADATA_NUM_PAGES){
+        if(freePageManager.appendOnlyMode() && bufferCache.getNumPagesOfFile(fileId) <= MINIMAL_TREE_PAGE_COUNT){
             return true;
         }
         ICachedPage rootNode = bufferCache.pin(BufferedFileHandle.getDiskPageId(fileId, rootPage), false);
@@ -363,7 +366,6 @@ public abstract class AbstractTreeIndex implements ITreeIndex {
                 ICachedPage frontierPage = nodeFrontier.page;
                 if (frontierPage.confiscated()) {
                     bufferCache.returnPage(frontierPage,false);
-                    continue;
                 }
             }
             releasedLatches = true;
@@ -395,16 +397,6 @@ public abstract class AbstractTreeIndex implements ITreeIndex {
                     // register old root as a free page
                     freePageManager.addFreePage(metaFrame, lastNodeFrontier.pageId);
 
-                }
-            }
-            else {
-                if (!releasedLatches) {
-                    for (int i = 0; i < nodeFrontiers.size(); i++) {
-                        try {
-                        } catch (IllegalMonitorStateException e) {
-                            //ignore illegal monitor state exception
-                        }
-                    }
                 }
             }
         }

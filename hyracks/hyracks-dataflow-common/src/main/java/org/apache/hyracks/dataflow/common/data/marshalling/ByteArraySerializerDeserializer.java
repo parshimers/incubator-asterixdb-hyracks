@@ -27,16 +27,16 @@ import org.apache.hyracks.util.encoding.VarLenIntEncoderDecoder;
 public class ByteArraySerializerDeserializer implements ISerializerDeserializer<byte[]> {
 
     private static final long serialVersionUID = 1L;
+    public static ByteArraySerializerDeserializer INSTANCE = new ByteArraySerializerDeserializer();
 
-    public ByteArraySerializerDeserializer() {
+    private ByteArraySerializerDeserializer() {
     }
-
-    private byte[] metaBuffer = new byte[5];
 
     /**
      * Return a pure byte array which doesn't have the length encoding prefix
      *
-     * @param in - Stream to read instance from.
+     * @param in
+     *            - Stream to read instance from.
      * @return
      * @throws HyracksDataException
      */
@@ -59,6 +59,7 @@ public class ByteArraySerializerDeserializer implements ISerializerDeserializer<
     @Override
     public void serialize(byte[] instance, DataOutput out) throws HyracksDataException {
         try {
+            byte[] metaBuffer = new byte[5];
             int metaLength = VarLenIntEncoderDecoder.encode(instance.length, metaBuffer, 0);
             out.write(metaBuffer, 0, metaLength);
             out.write(instance);
@@ -77,6 +78,7 @@ public class ByteArraySerializerDeserializer implements ISerializerDeserializer<
 
     // A pure byte array, which doesn't have the length information encoded at the beginning
     public void serialize(byte[] instance, int start, int length, DataOutput out) throws HyracksDataException {
+        byte[] metaBuffer = new byte[5];
         int metaLength = VarLenIntEncoderDecoder.encode(length, metaBuffer, 0);
         try {
             out.write(metaBuffer, 0, metaLength);

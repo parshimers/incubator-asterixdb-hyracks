@@ -39,7 +39,6 @@ public class CachedPage implements ICachedPageInternal {
     volatile boolean valid;
     final AtomicBoolean confiscated;
     private IQueueInfo queueInfo;
-    public boolean readOnly;
 
     //Constructor for making dummy entry for FIFO queue
     public CachedPage(){
@@ -52,7 +51,6 @@ public class CachedPage implements ICachedPageInternal {
         queueInfo = null;
         replacementStrategyObject = null;
         latch =null;
-        readOnly = false;
     }
 
     public CachedPage(int cpid, ByteBuffer buffer, IPageReplacementStrategy pageReplacementStrategy) {
@@ -67,7 +65,6 @@ public class CachedPage implements ICachedPageInternal {
         valid = false;
         confiscated = new AtomicBoolean(false);
         queueInfo = null;
-        readOnly = false;
     }
 
     public void reset(long dpid) {

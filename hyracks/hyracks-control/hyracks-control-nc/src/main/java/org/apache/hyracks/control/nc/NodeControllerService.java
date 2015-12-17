@@ -35,7 +35,6 @@ import java.util.Map;
 import java.util.StringTokenizer;
 import java.util.Timer;
 import java.util.TimerTask;
-import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -179,8 +178,8 @@ public class NodeControllerService extends AbstractRemoteService {
         queue = new WorkQueue(Thread.NORM_PRIORITY); // Reserves MAX_PRIORITY of the heartbeat thread.
         jobletMap = new Hashtable<JobId, Joblet>();
         timer = new Timer(true);
-        serverCtx = new ServerContext(ServerContext.ServerType.NODE_CONTROLLER, new File(new File(
-                NodeControllerService.class.getName()), id));
+        serverCtx = new ServerContext(ServerContext.ServerType.NODE_CONTROLLER,
+                new File(new File(NodeControllerService.class.getName()), id));
         memoryMXBean = ManagementFactory.getMemoryMXBean();
         gcMXBeans = ManagementFactory.getGarbageCollectorMXBeans();
         threadMXBean = ManagementFactory.getThreadMXBean();
@@ -277,8 +276,8 @@ public class NodeControllerService extends AbstractRemoteService {
         }
         ccs.registerNode(new NodeRegistration(ipc.getSocketAddress(), id, ncConfig, netAddress, datasetAddress,
                 osMXBean.getName(), osMXBean.getArch(), osMXBean.getVersion(), osMXBean.getAvailableProcessors(),
-                runtimeMXBean.getVmName(), runtimeMXBean.getVmVersion(), runtimeMXBean.getVmVendor(), runtimeMXBean
-                        .getClassPath(), runtimeMXBean.getLibraryPath(), runtimeMXBean.getBootClassPath(),
+                runtimeMXBean.getVmName(), runtimeMXBean.getVmVersion(), runtimeMXBean.getVmVendor(),
+                runtimeMXBean.getClassPath(), runtimeMXBean.getLibraryPath(), runtimeMXBean.getBootClassPath(),
                 runtimeMXBean.getInputArguments(), runtimeMXBean.getSystemProperties(), hbSchema));
 
         synchronized (this) {
@@ -323,8 +322,8 @@ public class NodeControllerService extends AbstractRemoteService {
         if (className != null) {
             Class<?> c = Class.forName(className);
             ncAppEntryPoint = (INCApplicationEntryPoint) c.newInstance();
-            String[] args = ncConfig.appArgs == null ? new String[0] : ncConfig.appArgs
-                    .toArray(new String[ncConfig.appArgs.size()]);
+            String[] args = ncConfig.appArgs == null ? new String[0]
+                    : ncConfig.appArgs.toArray(new String[ncConfig.appArgs.size()]);
             ncAppEntryPoint.start(appCtx, args);
         }
         executor = Executors.newCachedThreadPool(appCtx.getThreadFactory());
@@ -383,7 +382,7 @@ public class NodeControllerService extends AbstractRemoteService {
         return nodeParameters;
     }
 
-    public Executor getExecutor() {
+    public ExecutorService getExecutorService() {
         return executor;
     }
 
@@ -490,15 +489,14 @@ public class NodeControllerService extends AbstractRemoteService {
             switch (fn.getFunctionId()) {
                 case SEND_APPLICATION_MESSAGE: {
                     CCNCFunctions.SendApplicationMessageFunction amf = (CCNCFunctions.SendApplicationMessageFunction) fn;
-                    queue.schedule(new ApplicationMessageWork(NodeControllerService.this, amf.getMessage(), amf
-                            .getDeploymentId(), amf.getNodeId()));
+                    queue.schedule(new ApplicationMessageWork(NodeControllerService.this, amf.getMessage(),
+                            amf.getDeploymentId(), amf.getNodeId()));
                     return;
                 }
                 case START_TASKS: {
                     CCNCFunctions.StartTasksFunction stf = (CCNCFunctions.StartTasksFunction) fn;
-                    queue.schedule(new StartTasksWork(NodeControllerService.this, stf.getDeploymentId(),
-                            stf.getJobId(), stf.getPlanBytes(), stf.getTaskDescriptors(), stf.getConnectorPolicies(),
-                            stf.getFlags()));
+                    queue.schedule(new StartTasksWork(NodeControllerService.this, stf.getDeploymentId(), stf.getJobId(),
+                            stf.getPlanBytes(), stf.getTaskDescriptors(), stf.getConnectorPolicies(), stf.getFlags()));
                     return;
                 }
 
@@ -516,8 +514,8 @@ public class NodeControllerService extends AbstractRemoteService {
 
                 case REPORT_PARTITION_AVAILABILITY: {
                     CCNCFunctions.ReportPartitionAvailabilityFunction rpaf = (CCNCFunctions.ReportPartitionAvailabilityFunction) fn;
-                    queue.schedule(new ReportPartitionAvailabilityWork(NodeControllerService.this, rpaf
-                            .getPartitionId(), rpaf.getNetworkAddress()));
+                    queue.schedule(new ReportPartitionAvailabilityWork(NodeControllerService.this,
+                            rpaf.getPartitionId(), rpaf.getNetworkAddress()));
                     return;
                 }
 
@@ -535,8 +533,8 @@ public class NodeControllerService extends AbstractRemoteService {
 
                 case DEPLOY_BINARY: {
                     CCNCFunctions.DeployBinaryFunction ndbf = (CCNCFunctions.DeployBinaryFunction) fn;
-                    queue.schedule(new DeployBinaryWork(NodeControllerService.this, ndbf.getDeploymentId(), ndbf
-                            .getBinaryURLs()));
+                    queue.schedule(new DeployBinaryWork(NodeControllerService.this, ndbf.getDeploymentId(),
+                            ndbf.getBinaryURLs()));
                     return;
                 }
 

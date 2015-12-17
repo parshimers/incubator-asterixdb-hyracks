@@ -15,6 +15,8 @@
 package org.apache.hyracks.storage.common.buffercache;
 
 public interface IBufferCacheInternal extends IBufferCache {
+    boolean isClean();
+
     public ICachedPageInternal getPage(int cpid);
 
     public void addPage(ICachedPageInternal page);

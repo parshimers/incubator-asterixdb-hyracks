@@ -95,6 +95,9 @@ public class IOManager implements IIOManager {
 //            System.out.println("Write: "+offset);
         }
         try {
+            if (fHandle == null) {
+                throw new IllegalStateException("Trying to write to a deleted file.");
+            }
             int n = 0;
             int remaining = data.remaining();
             while (remaining > 0) {
@@ -384,6 +387,11 @@ public class IOManager implements IIOManager {
         } catch (IllegalArgumentException | IOException e) {
             throw new IllegalStateException(e);
         }
+    }
+
+    @Override
+    public long getSize(IFileHandle fileHandle) {
+        return ((FileHandle) fileHandle).getFileReference().getFile().length();
     }
 
     @Override

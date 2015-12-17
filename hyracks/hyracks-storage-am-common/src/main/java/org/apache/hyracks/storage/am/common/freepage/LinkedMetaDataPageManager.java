@@ -1,16 +1,20 @@
 /*
- * Copyright 2009-2013 by The Regents of the University of California
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * you may obtain a copy of the License from
- * 
- *     http://www.apache.org/licenses/LICENSE-2.0
- * 
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied.  See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
  */
 package org.apache.hyracks.storage.am.common.freepage;
 
@@ -25,7 +29,10 @@ import org.apache.hyracks.storage.common.buffercache.IBufferCache;
 import org.apache.hyracks.storage.common.buffercache.ICachedPage;
 import org.apache.hyracks.storage.common.buffercache.IFIFOPageQueue;
 import org.apache.hyracks.storage.common.file.BufferedFileHandle;
+<<<<<<< HEAD
 import org.apache.commons.io.filefilter.IOFileFilter;
+=======
+>>>>>>> master
 
 public class LinkedMetaDataPageManager implements IMetaDataPageManager {
 
@@ -41,7 +48,11 @@ public class LinkedMetaDataPageManager implements IMetaDataPageManager {
     ICachedPage confiscatedMetaNode;
     ICachedPage filterPage;
     private static Logger LOGGER = Logger
+<<<<<<< HEAD
             .getLogger("org.apache.hyracks.storage.am.common.freepage.LinkedMetaDataManager");
+=======
+            .getLogger(LinkedMetaDataPageManager.class.getName());
+>>>>>>> master
 
     public LinkedMetaDataPageManager(IBufferCache bufferCache, ITreeIndexMetaDataFrameFactory metaDataFrameFactory) {
         this.bufferCache = bufferCache;
@@ -104,7 +115,11 @@ public class LinkedMetaDataPageManager implements IMetaDataPageManager {
 
         metaNode.acquireWriteLatch();
 
+<<<<<<< HEAD
         int freePage = -1;
+=======
+        int freePage = IBufferCache.INVALID_PAGEID;
+>>>>>>> master
         try {
             metaFrame.setPage(metaNode);
             freePage = metaFrame.getFreePage();
@@ -167,7 +182,11 @@ public class LinkedMetaDataPageManager implements IMetaDataPageManager {
         if (!appendOnly || (appendOnly && confiscatedMetaNode == null)) {
             int mdPage = getFirstMetadataPage();
             if( mdPage <0 ){
+<<<<<<< HEAD
                 return -1;
+=======
+                return IBufferCache.INVALID_PAGEID;
+>>>>>>> master
             }
             metaNode = bufferCache.pin(BufferedFileHandle.getDiskPageId(fileId, mdPage), false);
         } else {
@@ -245,7 +264,11 @@ public class LinkedMetaDataPageManager implements IMetaDataPageManager {
     public void init(ITreeIndexMetaDataFrame metaFrame, int currentMaxPage) throws HyracksDataException {
         // initialize meta data page
         int metaPage = getFirstMetadataPage();
+<<<<<<< HEAD
         if(metaPage == -1){
+=======
+        if(metaPage == IBufferCache.INVALID_PAGEID){
+>>>>>>> master
             throw new HyracksDataException("No valid metadata found in this file.");
         }
         ICachedPage metaNode = bufferCache.pin(BufferedFileHandle.getDiskPageId(fileId, getFirstMetadataPage()), true);
@@ -270,7 +293,11 @@ public class LinkedMetaDataPageManager implements IMetaDataPageManager {
         try {
             metaFrame.setPage(metaNode);
             metaFrame.initBuffer(META_PAGE_LEVEL_INDICATOR);
+<<<<<<< HEAD
             metaFrame.setMaxPage(0);
+=======
+            metaFrame.setMaxPage(-1);
+>>>>>>> master
         } finally {
             confiscatedMetaNode = metaNode;
             appendOnly = true;
@@ -344,7 +371,11 @@ public class LinkedMetaDataPageManager implements IMetaDataPageManager {
      */
     @Override
     public int getFirstMetadataPage() throws HyracksDataException {
+<<<<<<< HEAD
         if (headPage != -1)
+=======
+        if (headPage != IBufferCache.INVALID_PAGEID)
+>>>>>>> master
             return headPage;
 
         ITreeIndexMetaDataFrame metaFrame = metaDataFrameFactory.createFrame();
@@ -386,7 +417,11 @@ public class LinkedMetaDataPageManager implements IMetaDataPageManager {
         }
         //if we find nothing, this isn't a tree (or isn't one yet).
         if(pages>0){
+<<<<<<< HEAD
             return -1;
+=======
+            return IBufferCache.INVALID_PAGEID;
+>>>>>>> master
         }
         else{
             return 0;

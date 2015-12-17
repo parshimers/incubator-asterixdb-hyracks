@@ -453,7 +453,6 @@ public class LSMRTreeWithAntiMatterTuples extends AbstractLSMRTree {
     @Override
     public void markAsValid(ILSMComponent lsmComponent) throws HyracksDataException {
         RTree rtree = ((LSMRTreeDiskComponent) lsmComponent).getRTree();
-        forceFlushDirtyPages(rtree);
         markAsValidInternal(rtree);
     }
 

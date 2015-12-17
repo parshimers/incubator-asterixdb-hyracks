@@ -15,6 +15,7 @@
 package org.apache.hyracks.test.support;
 
 import java.nio.ByteBuffer;
+import java.util.concurrent.ExecutorService;
 
 import org.apache.hyracks.api.context.IHyracksJobletContext;
 import org.apache.hyracks.api.context.IHyracksTaskContext;
@@ -55,7 +56,7 @@ public class TestTaskContext implements IHyracksTaskContext {
     @Override
     public ByteBuffer reallocateFrame(ByteBuffer tobeDeallocate, int newSizeInBytes, boolean copyOldData)
             throws HyracksDataException {
-        return jobletContext.reallocateFrame(tobeDeallocate,newSizeInBytes, copyOldData);
+        return jobletContext.reallocateFrame(tobeDeallocate, newSizeInBytes, copyOldData);
 
     }
 
@@ -128,5 +129,10 @@ public class TestTaskContext implements IHyracksTaskContext {
     public void sendApplicationMessageToCC(byte[] message, DeploymentId deploymentId, String nodeId) throws Exception {
         // TODO Auto-generated method stub
 
+    }
+
+    @Override
+    public ExecutorService getExecutorService() {
+        return null;
     }
 }

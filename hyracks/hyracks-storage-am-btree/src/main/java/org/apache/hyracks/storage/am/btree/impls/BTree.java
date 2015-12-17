@@ -1064,7 +1064,7 @@ public class BTree extends AbstractTreeIndex {
 
                 ((IBTreeInteriorFrame) interiorFrame).deleteGreatest();
                 int finalPageId = freePageManager.getFreePage(metaFrame);
-                BufferCache.setDpid(frontier.page, BufferedFileHandle.getDiskPageId(fileId, finalPageId));
+                bufferCache.setPageDiskId(frontier.page, BufferedFileHandle.getDiskPageId(fileId, finalPageId));
                 pagesToWrite.add(frontier.page);
                 splitKey.setLeftPage(finalPageId);
 
@@ -1126,7 +1126,7 @@ public class BTree extends AbstractTreeIndex {
         }
 
         private void setPageDpid(ICachedPage page, int pageId){
-            BufferCache.setDpid(page, BufferedFileHandle.getDiskPageId(fileId,pageId));
+            bufferCache.setPageDiskId(page, BufferedFileHandle.getDiskPageId(fileId,pageId));
         }
     }
 

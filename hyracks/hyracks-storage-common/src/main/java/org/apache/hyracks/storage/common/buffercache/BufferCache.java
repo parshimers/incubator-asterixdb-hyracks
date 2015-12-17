@@ -20,12 +20,7 @@ package org.apache.hyracks.storage.common.buffercache;
 
 import java.io.IOException;
 import java.io.OutputStream;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
@@ -219,10 +214,6 @@ public class BufferCache implements IBufferCacheInternal, ILifeCycleComponent {
     private boolean isVirtual(long vpid) throws HyracksDataException {
         CachedPage virtPage = findPage(vpid, true);
         return virtPage.confiscated.get();
-    }
-
-    public boolean isVirtual(ICachedPage vp) throws HyracksDataException {
-        return isVirtual(((CachedPage) vp).dpid);
     }
 
     private CachedPage findPage(long dpid, boolean virtual) throws HyracksDataException {
@@ -495,6 +486,49 @@ public class BufferCache implements IBufferCacheInternal, ILifeCycleComponent {
         return buffer.toString();
     }
 
+    @Override
+    public boolean isClean(){
+        List<Long> reachableDpids = new LinkedList<>();
+        synchronized (cachedPages) {
+            for (ICachedPageInternal internalPage : cachedPages) {
+            CachedPage c = (CachedPage) internalPage;
+                if (c.confiscated() ||
+                        c.latch.getReadLockCount() != 0 || c.latch.getWriteHoldCount() != 0) {
+                    return false;
+                }
+                if(c.valid){
+                    reachableDpids.add(c.dpid);
+                }
+            }
+        }
+        for(Long l: reachableDpids){
+            if(!canFindValidCachedPage(l)){
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private boolean canFindValidCachedPage(long dpid){
+        int hash = hash(dpid);
+        CachedPage cPage = null;
+        CacheBucket bucket = pageMap[hash];
+        bucket.bucketLock.lock();
+        try {
+            cPage = bucket.cachedPage;
+            while (cPage != null) {
+                assert bucket.cachedPage != bucket.cachedPage.next;
+                if (cPage.dpid == dpid) {
+                    return true;
+                }
+                cPage = cPage.next;
+            }
+        } finally {
+            bucket.bucketLock.unlock();
+        }
+        return false;
+    }
+
     private void read(CachedPage cPage) throws HyracksDataException {
         BufferedFileHandle fInfo = getFileInfo(cPage);
         cPage.buffer.clear();
@@ -520,16 +554,15 @@ public class BufferCache implements IBufferCacheInternal, ILifeCycleComponent {
 
     private void write(CachedPage cPage) throws HyracksDataException {
         BufferedFileHandle fInfo = getFileInfo(cPage);
-        if (fInfo.fileHasBeenDeleted()) {
-            throw new HyracksDataException("Attempted to write back a dirty page to a deleted file");
+        //synchronize on fInfo to prevent the file handle from being deleted until the page is written.
+        synchronized (fInfo) {
+            if (!fInfo.fileHasBeenDeleted()) {
+                cPage.buffer.position(0);
+                cPage.buffer.limit(pageSize);
+                ioManager.syncWrite(fInfo.getFileHandle(), (long) BufferedFileHandle.getPageId(cPage.dpid) * pageSize,
+                        cPage.buffer);
+            }
         }
-        if(cPage.readOnly){
-            throw new HyracksDataException("Attempted to write to a read-only page");
-        }
-        cPage.buffer.position(0);
-        cPage.buffer.limit(pageSize);
-        ioManager.syncWrite(fInfo.getFileHandle(), (long) BufferedFileHandle.getPageId(cPage.dpid) * pageSize,
-                cPage.buffer);
     }
 
     @Override
@@ -617,8 +650,8 @@ public class BufferCache implements IBufferCacheInternal, ILifeCycleComponent {
                         }
                     }
                 } else if (shutdownStart) {
-                    throw new IllegalStateException("Cache closed, but unable to acquire read lock on dirty page: "
-                            + cPage.dpid);
+                    throw new IllegalStateException(
+                            "Cache closed, but unable to acquire read lock on dirty page: " + cPage.dpid);
                 }
             }
         }
@@ -857,11 +890,6 @@ public class BufferCache implements IBufferCacheInternal, ILifeCycleComponent {
         if (LOGGER.isLoggable(Level.INFO)) {
             LOGGER.info("Deleting file: " + fileId + " in cache: " + this);
         }
-        if (flushDirtyPages) {
-            synchronized (fileInfoMap) {
-                sweepAndFlush(fileId, flushDirtyPages);
-            }
-        }
         synchronized (fileInfoMap) {
             sweepAndFlush(fileId, flushDirtyPages);
             BufferedFileHandle fInfo = null;
@@ -876,9 +904,11 @@ public class BufferCache implements IBufferCacheInternal, ILifeCycleComponent {
                     // Mark the fInfo as deleted,
                     // such that when its pages are reclaimed in openFile(),
                     // the pages are not flushed to disk but only invalidated.
-                    if (!fInfo.fileHasBeenDeleted()) {
-                        ioManager.close(fInfo.getFileHandle());
-                        fInfo.markAsDeleted();
+                    synchronized (fInfo) {
+                        if (!fInfo.fileHasBeenDeleted()) {
+                            ioManager.close(fInfo.getFileHandle());
+                            fInfo.markAsDeleted();
+                        }
                     }
                 }
             }
@@ -1163,6 +1193,11 @@ public class BufferCache implements IBufferCacheInternal, ILifeCycleComponent {
     }
 
     @Override
+    public IIOReplicationManager getIOReplicationManager() {
+        return ioReplicationManager;
+    }
+
+    @Override
     /**
      * _ONLY_ call this if you absolutely, positively know this file has no dirty pages in the cache!
      * Bypasses the normal lifecycle of a file handle and evicts all references to it immediately.
@@ -1171,11 +1206,6 @@ public class BufferCache implements IBufferCacheInternal, ILifeCycleComponent {
         synchronized(fileInfoMap){
                 BufferedFileHandle fh = fileInfoMap.get(fileId);
                 if(fh != null){
-                    ioManager.close(fh.getFileHandle());
-                    fileInfoMap.remove(fileId);
-                    fileMapManager.unregisterFile(fileId);
-                }
-        }
     }
 
 }

@@ -26,7 +26,8 @@ import org.apache.hyracks.api.replication.IIOReplicationManager;
 
 public interface IBufferCache {
 
-    public static final int INVALID_DPID = -1;
+    public static final long INVALID_DPID = -1l;
+    public static final int INVALID_PAGEID = -1;
 
     public void createFile(FileReference fileRef) throws HyracksDataException;
     
@@ -43,8 +44,6 @@ public interface IBufferCache {
     public ICachedPage tryPin(long dpid) throws HyracksDataException;
 
     public ICachedPage pin(long dpid, boolean newPage) throws HyracksDataException;
-
-    public boolean isVirtual(ICachedPage vp) throws HyracksDataException;
 
     public void unpin(ICachedPage page) throws HyracksDataException;
 
@@ -83,6 +82,8 @@ public interface IBufferCache {
     IIOManager getIOManager();
 
     IIOReplicationManager getIIOReplicationManager();
+
+    void purgeHandle(int fileId) throws HyracksDataException;
 
     void purgeHandle(int fileId) throws HyracksDataException;
 

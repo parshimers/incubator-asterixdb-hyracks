@@ -1,16 +1,20 @@
 /*
- * Copyright 2009-2013 by The Regents of the University of California
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * you may obtain a copy of the License from
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *   http://www.apache.org/licenses/LICENSE-2.0
  *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied.  See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
  */
 
 package org.apache.hyracks.storage.am.lsm.btree.impls;
@@ -434,7 +438,6 @@ public class LSMBTree extends AbstractLSMIndex implements ITreeIndex {
 
         LSMBTreeDiskComponent component = createDiskComponent(componentFactory, flushOp.getBTreeFlushTarget(),
                 flushOp.getBloomFilterFlushTarget(), true);
-        //System.out.println("Flushing component:"+ component.getBTree().hashCode());
         IIndexBulkLoader bulkLoader = component.getBTree().createBulkLoader(1.0f, false, numElements, false, true);
         IIndexBulkLoader builder = component.getBloomFilter().createBuilder(numElements,
                 bloomFilterSpec.getNumHashes(), bloomFilterSpec.getNumBucketsPerElements());
@@ -580,13 +583,7 @@ public class LSMBTree extends AbstractLSMIndex implements ITreeIndex {
         // The order of forcing the dirty page to be flushed is critical. The
         // bloom filter must be always done first.
         LSMBTreeDiskComponent component = (LSMBTreeDiskComponent) lsmComponent;
-//        // Flush the bloom filter first.
-        int fileId = component.getBloomFilter().getFileId();
-        IBufferCache bufferCache = component.getBTree().getBufferCache();
-        int startPage = 0;
-        int maxPage = component.getBloomFilter().getNumPages();
-        forceFlushDirtyPages(bufferCache, fileId, startPage, maxPage);
-        forceFlushDirtyPages(component.getBTree());
+        markAsValidInternal(component.getBTree().getBufferCache(),component.getBloomFilter());
         markAsValidInternal(component.getBTree());
     }
 

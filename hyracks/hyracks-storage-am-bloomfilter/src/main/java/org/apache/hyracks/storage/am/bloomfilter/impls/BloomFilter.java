@@ -227,8 +227,6 @@ public class BloomFilter {
             }
             numPages = (int) tmp;
             pages = new ICachedPage[numPages];
-            persistBloomFilterMetaData();
-            //readBloomFilterMetaData();
             int currentPageId = 1;
             while (currentPageId <= numPages) {
                 ICachedPage page = bufferCache.confiscatePage(BufferedFileHandle.getDiskPageId(fileId, currentPageId));
@@ -251,7 +249,7 @@ public class BloomFilter {
             }
         }
 
-        private void persistBloomFilterMetaData() throws HyracksDataException {
+        private void allocateAndInitMetaDataPage() throws HyracksDataException {
             if (metaDataPage == null) {
                 metaDataPage = bufferCache.confiscatePage(BufferedFileHandle.getDiskPageId(fileId, METADATA_PAGE_ID));
             }
@@ -283,7 +281,7 @@ public class BloomFilter {
 
         @Override
         public void end() throws HyracksDataException, IndexException {
-            persistBloomFilterMetaData();
+            allocateAndInitMetaDataPage();
             queue.put(metaDataPage);
             for (ICachedPage p : pages) {
                 queue.put(p);
@@ -297,15 +295,13 @@ public class BloomFilter {
 
         @Override
         public void abort() throws HyracksDataException {
-            if (bufferCache != null) {
-                for (ICachedPage p : pages) {
-                    if (p != null) {
-                        bufferCache.returnPage(p, false);
-                    }
+            for (ICachedPage p : pages) {
+                if (p != null) {
+                    bufferCache.returnPage(p, false);
                 }
-                if (metaDataPage != null ){
-                    bufferCache.returnPage(metaDataPage,false);
-                }
+            }
+            if (metaDataPage != null ){
+                bufferCache.returnPage(metaDataPage,false);
             }
         }
 

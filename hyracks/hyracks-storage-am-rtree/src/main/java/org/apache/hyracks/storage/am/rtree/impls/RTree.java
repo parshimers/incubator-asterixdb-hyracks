@@ -973,7 +973,7 @@ public class RTree extends AbstractTreeIndex {
 
                     int finalPageId = freePageManager.getFreePage(metaFrame);
                     n.pageId = finalPageId;
-                    BufferCache.setDpid(n.page, BufferedFileHandle.getDiskPageId(fileId, finalPageId));
+                    bufferCache.setPageDiskId(n.page, BufferedFileHandle.getDiskPageId(fileId, finalPageId));
                     //else we are looking at a leaf
                 }
                 //set next guide MBR
@@ -1035,7 +1035,7 @@ public class RTree extends AbstractTreeIndex {
                 } else {
                     prevNodeFrontierPages.set(level, finalPageId);
                 }
-                BufferCache.setDpid(frontier.page, BufferedFileHandle.getDiskPageId(fileId, finalPageId));
+                bufferCache.setPageDiskId(frontier.page, BufferedFileHandle.getDiskPageId(fileId, finalPageId));
                 pagesToWrite.add(frontier.page);
 
                 lowerFrame = prevInteriorFrame;

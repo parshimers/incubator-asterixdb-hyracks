@@ -22,14 +22,14 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.Executor;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Semaphore;
 
-import org.apache.hyracks.api.comm.VSizeFrame;
 import org.apache.hyracks.api.comm.IFrameReader;
 import org.apache.hyracks.api.comm.IFrameWriter;
 import org.apache.hyracks.api.comm.IPartitionCollector;
 import org.apache.hyracks.api.comm.PartitionChannel;
+import org.apache.hyracks.api.comm.VSizeFrame;
 import org.apache.hyracks.api.context.IHyracksJobletContext;
 import org.apache.hyracks.api.context.IHyracksTaskContext;
 import org.apache.hyracks.api.dataflow.IOperatorNodePushable;
@@ -65,7 +65,7 @@ public class Task implements IHyracksTaskContext, ICounterContext, Runnable {
 
     private final String displayName;
 
-    private final Executor executor;
+    private final ExecutorService executorService;
 
     private final IWorkspaceFileFactory fileFactory;
 
@@ -85,20 +85,18 @@ public class Task implements IHyracksTaskContext, ICounterContext, Runnable {
 
     private final List<Exception> exceptions;
 
-    private List<Throwable> caughtExceptions;
-
     private volatile boolean aborted;
 
     private NodeControllerService ncs;
 
     private List<List<PartitionChannel>> inputChannelsFromConnectors;
 
-    public Task(Joblet joblet, TaskAttemptId taskId, String displayName, Executor executor, NodeControllerService ncs,
-            List<List<PartitionChannel>> inputChannelsFromConnectors) {
+    public Task(Joblet joblet, TaskAttemptId taskId, String displayName, ExecutorService executor,
+            NodeControllerService ncs, List<List<PartitionChannel>> inputChannelsFromConnectors) {
         this.joblet = joblet;
         this.taskAttemptId = taskId;
         this.displayName = displayName;
-        this.executor = executor;
+        this.executorService = executor;
         fileFactory = new WorkspaceFileFactory(this, (IOManager) joblet.getIOManager());
         deallocatableRegistry = new DefaultDeallocatableRegistry();
         counterMap = new HashMap<String, Counter>();
@@ -144,6 +142,11 @@ public class Task implements IHyracksTaskContext, ICounterContext, Runnable {
     @Override
     public IIOManager getIOManager() {
         return joblet.getIOManager();
+    }
+
+    @Override
+    public ExecutorService getExecutorService() {
+        return executorService;
     }
 
     @Override
@@ -211,7 +214,7 @@ public class Task implements IHyracksTaskContext, ICounterContext, Runnable {
 
     public void start() throws HyracksException {
         aborted = false;
-        executor.execute(this);
+        executorService.execute(this);
     }
 
     public synchronized void abort() {
@@ -257,7 +260,7 @@ public class Task implements IHyracksTaskContext, ICounterContext, Runnable {
                         final IFrameWriter writer = operator.getInputFrameWriter(i);
                         sem.acquire();
                         final int cIdx = i;
-                        executor.execute(new Runnable() {
+                        executorService.execute(new Runnable() {
                             @Override
                             public void run() {
                                 if (aborted) {
@@ -330,7 +333,7 @@ public class Task implements IHyracksTaskContext, ICounterContext, Runnable {
                     writer.open();
                     try {
                         VSizeFrame frame = new VSizeFrame(this);
-                        while( reader.nextFrame(frame)){
+                        while (reader.nextFrame(frame)) {
                             if (aborted) {
                                 return;
                             }
