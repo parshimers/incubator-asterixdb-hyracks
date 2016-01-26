@@ -12,7 +12,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.hyracks.control.common.service;
+package org.apache.hyracks.storage.common.file;
 
-public abstract class AbstractService implements IService {
+import org.apache.hyracks.api.exceptions.HyracksDataException;
+
+public interface IResourceIdFactory {
+
+    /**
+     * @return A unique monotonically increasing id.
+     * @throws Exception
+     */
+    long createId() throws HyracksDataException;
 }

@@ -56,6 +56,16 @@ public class RangePredicate extends AbstractSearchPredicate {
         this.highKeyCmp = highKeyCmp;
     }
 
+    public void reset(ITupleReference lowKey, ITupleReference highKey, boolean lowKeyInclusive,
+            boolean highKeyInclusive, MultiComparator lowKeyCmp, MultiComparator highKeyCmp) {
+        this.lowKey = lowKey;
+        this.highKey = highKey;
+        this.lowKeyInclusive = lowKeyInclusive;
+        this.highKeyInclusive = highKeyInclusive;
+        this.lowKeyCmp = lowKeyCmp;
+        this.highKeyCmp = highKeyCmp;
+    }
+
     public MultiComparator getLowKeyComparator() {
         return lowKeyCmp;
     }
@@ -96,5 +106,21 @@ public class RangePredicate extends AbstractSearchPredicate {
 
     public boolean isHighKeyInclusive() {
         return highKeyInclusive;
+    }
+
+    public void setLowKey(ITupleReference lowKey) {
+        this.lowKey = lowKey;
+    }
+
+    public void setHighKey(ITupleReference highKey) {
+        this.highKey = highKey;
+    }
+
+    public void setLowKeyCmp(MultiComparator lowKeyCmp) {
+        this.lowKeyCmp = lowKeyCmp;
+    }
+
+    public void setHighKeyCmp(MultiComparator highKeyCmp) {
+        this.highKeyCmp = highKeyCmp;
     }
 }

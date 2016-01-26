@@ -25,6 +25,7 @@ import org.apache.hyracks.api.lifecycle.ILifeCycleComponentManager;
 import org.apache.hyracks.api.lifecycle.LifeCycleComponentManager;
 import org.apache.hyracks.api.messages.IMessageBroker;
 import org.apache.hyracks.api.resources.memory.IMemoryManager;
+import org.apache.hyracks.api.service.IControllerService;
 
 public class TestNCApplicationContext implements INCApplicationContext {
     private final ILifeCycleComponentManager lccm;
@@ -123,5 +124,10 @@ public class TestNCApplicationContext implements INCApplicationContext {
 
     @Override
     public void setStateDumpHandler(IStateDumpHandler handler) {
+    }
+
+    @Override
+    public IControllerService getControllerService() {
+        return null;
     }
 }

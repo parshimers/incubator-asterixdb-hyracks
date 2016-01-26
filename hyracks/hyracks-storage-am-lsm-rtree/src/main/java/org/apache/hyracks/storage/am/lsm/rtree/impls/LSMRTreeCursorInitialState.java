@@ -35,9 +35,8 @@ public class LSMRTreeCursorInitialState implements ICursorInitialState {
     private final MultiComparator hilbertCmp;
     private final ILSMHarness lsmHarness;
     private final int[] comparatorFields;
-
     private ISearchOperationCallback searchCallback;
-    private final List<ILSMComponent> operationalComponents;
+    private List<ILSMComponent> operationalComponents;
 
     public LSMRTreeCursorInitialState(ITreeIndexFrameFactory rtreeLeafFrameFactory,
             ITreeIndexFrameFactory rtreeInteriorFrameFactory, ITreeIndexFrameFactory btreeLeafFrameFactory,
@@ -114,5 +113,8 @@ public class LSMRTreeCursorInitialState implements ICursorInitialState {
     @Override
     public void setOriginialKeyComparator(MultiComparator originalCmp) {
     }
-
+    
+    public void setOperationalComponents(List<ILSMComponent> operationalComponents) {
+        this.operationalComponents = operationalComponents;
+    }
 }

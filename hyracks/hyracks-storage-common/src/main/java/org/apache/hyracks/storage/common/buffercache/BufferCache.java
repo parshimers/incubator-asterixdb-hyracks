@@ -552,7 +552,7 @@ public class BufferCache implements IBufferCacheInternal, ILifeCycleComponent {
         }
     }
 
-    private void write(CachedPage cPage) throws HyracksDataException {
+    void write(CachedPage cPage) throws HyracksDataException {
         BufferedFileHandle fInfo = getFileInfo(cPage);
         //synchronize on fInfo to prevent the file handle from being deleted until the page is written.
         synchronized (fInfo) {
@@ -1207,5 +1207,4 @@ public class BufferCache implements IBufferCacheInternal, ILifeCycleComponent {
                 BufferedFileHandle fh = fileInfoMap.get(fileId);
                 if(fh != null){
     }
-
 }

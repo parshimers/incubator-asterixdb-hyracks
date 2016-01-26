@@ -54,8 +54,7 @@ public class NetworkOutputChannel implements IFrameWriter {
     @Override
     public void nextFrame(ByteBuffer buffer) throws HyracksDataException {
         ByteBuffer destBuffer = null;
-        int startPos = 0;
-        do {
+        while (buffer.hasRemaining()) {
             synchronized (this) {
                 while (true) {
                     if (aborted) {
@@ -76,14 +75,16 @@ public class NetworkOutputChannel implements IFrameWriter {
                     }
                 }
             }
-            buffer.position(startPos);
-            startPos = Math.min(startPos + destBuffer.capacity(), buffer.capacity());
-            buffer.limit(startPos);
             destBuffer.clear();
-            destBuffer.put(buffer);
+            if (destBuffer.capacity() < buffer.remaining()) {
+                destBuffer.put(buffer.array(), buffer.position(), destBuffer.capacity());
+                buffer.position(buffer.position() + destBuffer.capacity());
+            } else {
+                destBuffer.put(buffer);
+            }
             destBuffer.flip();
             ccb.getWriteInterface().getFullBufferAcceptor().accept(destBuffer);
-        } while (startPos < buffer.capacity());
+        }
     }
 
     @Override

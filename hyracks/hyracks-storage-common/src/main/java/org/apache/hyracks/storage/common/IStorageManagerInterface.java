@@ -20,7 +20,7 @@ import org.apache.hyracks.api.context.IHyracksTaskContext;
 import org.apache.hyracks.storage.common.buffercache.IBufferCache;
 import org.apache.hyracks.storage.common.file.IFileMapProvider;
 import org.apache.hyracks.storage.common.file.ILocalResourceRepository;
-import org.apache.hyracks.storage.common.file.ResourceIdFactory;
+import org.apache.hyracks.storage.common.file.IResourceIdFactory;
 
 public interface IStorageManagerInterface extends Serializable {
     public IBufferCache getBufferCache(IHyracksTaskContext ctx);
@@ -29,5 +29,5 @@ public interface IStorageManagerInterface extends Serializable {
 
     public ILocalResourceRepository getLocalResourceRepository(IHyracksTaskContext ctx);
 
-    public ResourceIdFactory getResourceIdFactory(IHyracksTaskContext ctx);
+    public IResourceIdFactory getResourceIdFactory(IHyracksTaskContext ctx);
 }

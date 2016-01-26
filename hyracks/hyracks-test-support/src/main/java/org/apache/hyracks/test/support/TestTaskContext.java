@@ -24,7 +24,6 @@ import org.apache.hyracks.api.dataflow.state.IStateObject;
 import org.apache.hyracks.api.dataset.IDatasetPartitionManager;
 import org.apache.hyracks.api.deployment.DeploymentId;
 import org.apache.hyracks.api.exceptions.HyracksDataException;
-import org.apache.hyracks.api.exceptions.HyracksException;
 import org.apache.hyracks.api.io.FileReference;
 import org.apache.hyracks.api.io.IIOManager;
 import org.apache.hyracks.api.job.profiling.counters.ICounterContext;
@@ -37,7 +36,7 @@ public class TestTaskContext implements IHyracksTaskContext {
     private final TaskAttemptId taskId;
     private WorkspaceFileFactory fileFactory;
 
-    public TestTaskContext(TestJobletContext jobletContext, TaskAttemptId taskId) throws HyracksException {
+    public TestTaskContext(TestJobletContext jobletContext, TaskAttemptId taskId) {
         this.jobletContext = jobletContext;
         this.taskId = taskId;
         fileFactory = new WorkspaceFileFactory(this, (IOManager) getIOManager());
@@ -126,8 +125,7 @@ public class TestTaskContext implements IHyracksTaskContext {
     }
 
     @Override
-    public void sendApplicationMessageToCC(byte[] message, DeploymentId deploymentId, String nodeId) throws Exception {
-        // TODO Auto-generated method stub
+    public void sendApplicationMessageToCC(byte[] message, DeploymentId deploymentId) throws Exception {
 
     }
 

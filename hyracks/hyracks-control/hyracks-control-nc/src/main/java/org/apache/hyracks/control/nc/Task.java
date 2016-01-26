@@ -251,8 +251,8 @@ public class Task implements IHyracksTaskContext, ICounterContext, Runnable {
         addPendingThread(ct);
         try {
             ct.setName(displayName + ":" + taskAttemptId + ":" + 0);
-            operator.initialize();
             try {
+                operator.initialize();
                 if (collectors.length > 0) {
                     final Semaphore sem = new Semaphore(collectors.length - 1);
                     for (int i = 1; i < collectors.length; ++i) {
@@ -376,7 +376,7 @@ public class Task implements IHyracksTaskContext, ICounterContext, Runnable {
     }
 
     @Override
-    public void sendApplicationMessageToCC(byte[] message, DeploymentId deploymentId, String nodeId) throws Exception {
-        this.ncs.sendApplicationMessageToCC(message, deploymentId, nodeId);
+    public void sendApplicationMessageToCC(byte[] message, DeploymentId deploymentId) throws Exception {
+        this.ncs.sendApplicationMessageToCC(message, deploymentId);
     }
 }

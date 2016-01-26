@@ -54,7 +54,7 @@ import org.apache.hyracks.api.io.IODeviceHandle;
 import org.apache.hyracks.api.job.JobId;
 import org.apache.hyracks.api.lifecycle.ILifeCycleComponentManager;
 import org.apache.hyracks.api.lifecycle.LifeCycleComponentManager;
-import org.apache.hyracks.control.common.AbstractRemoteService;
+import org.apache.hyracks.api.service.IControllerService;
 import org.apache.hyracks.control.common.base.IClusterController;
 import org.apache.hyracks.control.common.context.ServerContext;
 import org.apache.hyracks.control.common.controllers.NCConfig;
@@ -94,7 +94,7 @@ import org.apache.hyracks.ipc.api.IPCPerformanceCounters;
 import org.apache.hyracks.ipc.impl.IPCSystem;
 import org.apache.hyracks.net.protocols.muxdemux.MuxDemuxPerformanceCounters;
 
-public class NodeControllerService extends AbstractRemoteService {
+public class NodeControllerService implements IControllerService {
     private static Logger LOGGER = Logger.getLogger(NodeControllerService.class.getName());
 
     private static final double MEMORY_FUDGE_FACTOR = 0.8;
@@ -317,7 +317,7 @@ public class NodeControllerService extends AbstractRemoteService {
     }
 
     private void startApplication() throws Exception {
-        appCtx = new NCApplicationContext(serverCtx, ctx, id, memoryManager, lccm);
+        appCtx = new NCApplicationContext(this, serverCtx, ctx, id, memoryManager, lccm);
         String className = ncConfig.appNCMainClass;
         if (className != null) {
             Class<?> c = Class.forName(className);
@@ -559,8 +559,8 @@ public class NodeControllerService extends AbstractRemoteService {
         }
     }
 
-    public void sendApplicationMessageToCC(byte[] data, DeploymentId deploymentId, String nodeId) throws Exception {
-        ccs.sendApplicationMessageToCC(data, deploymentId, nodeId);
+    public void sendApplicationMessageToCC(byte[] data, DeploymentId deploymentId) throws Exception {
+        ccs.sendApplicationMessageToCC(data, deploymentId, id);
     }
 
     public IDatasetPartitionManager getDatasetPartitionManager() {

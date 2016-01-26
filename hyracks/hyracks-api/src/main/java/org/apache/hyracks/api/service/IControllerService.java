@@ -12,11 +12,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.hyracks.control.common;
+package org.apache.hyracks.api.service;
 
-import org.apache.hyracks.control.common.service.IService;
+public interface IControllerService {
+    public void start() throws Exception;
 
-public abstract class AbstractRemoteService implements IService {
-    public AbstractRemoteService() {
-    }
+    public void stop() throws Exception;
 }
