@@ -156,6 +156,10 @@ public class VirtualBufferCache implements IVirtualBufferCache {
             return true;
         }
 
+        @Override public FileReference getParent(FileReference child) {
+            return null;
+        }
+
         @Override
         public boolean exists(FileReference fileReference) {
             return false;
@@ -174,6 +178,10 @@ public class VirtualBufferCache implements IVirtualBufferCache {
         @Override
         public void deleteWorkspaceFiles() {
 
+        }
+
+        @Override public FileReference getAbsoluteFileRef(int ioDeviceId, String relativePath) {
+            return null;
         }
     }
 
@@ -502,10 +510,6 @@ public class VirtualBufferCache implements IVirtualBufferCache {
             LOGGER.log(Level.INFO, "Calling adviseWontNeed on " + this.getClass().getName()
                     + " makes no sense as this BufferCache cannot evict pages");
         }
-
-    @Override
-    public void returnPage(ICachedPage page) {
-
     }
 
     @Override
@@ -523,43 +527,7 @@ public class VirtualBufferCache implements IVirtualBufferCache {
         throw new UnsupportedOperationException("Virtual buffer caches don't have FIFO writers");
     }
 
-    @Override
-    public void copyPage(ICachedPage src, ICachedPage dst) {
-        throw new UnsupportedOperationException("Virtual buffer caches don't have FIFO writers");
-    }
-
-    @Override
-    public void setPageDiskId(ICachedPage page, long dpid) {
-        
-    }
-
-    @Override
-    public void returnPage(ICachedPage page, boolean reinsert) {
-        throw new UnsupportedOperationException("Virtual buffer caches don't have FIFO writers");
-    }
-
-    @Override
-    public boolean isVirtual(ICachedPage vp) throws HyracksDataException {
-        return false;
-    }
-
-    @Override
-    public void returnPage(ICachedPage page) {
-
-    }
-
-    @Override
-    public IFIFOPageQueue createFIFOQueue() {
-        throw new UnsupportedOperationException("Virtual buffer caches don't have FIFO writers");
-    }
-
-    @Override
-    public void finishQueue() {
-        throw new UnsupportedOperationException("Virtual buffer caches don't have FIFO writers");
-    }
-
-    @Override
-    public ICachedPage confiscatePage(long dpid) {
+    @Override public void returnPage(ICachedPage page) {
         throw new UnsupportedOperationException("Virtual buffer caches don't have FIFO writers");
     }
 
@@ -593,10 +561,6 @@ public class VirtualBufferCache implements IVirtualBufferCache {
         return false;
     }
 
-    @Override
-    public void purgeHandle(int fileId) throws HyracksDataException {
-
-    }
 
     @Override
     public void purgeHandle(int fileId) throws HyracksDataException {

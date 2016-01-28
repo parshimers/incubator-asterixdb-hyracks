@@ -43,7 +43,7 @@ public class FileSplit implements Serializable {
 
     public FileSplit(String nodeName, String path, int ioDeviceId) {
         this.nodeName = nodeName;
-        this.file = new FileReference(new File(path));
+        this.file = new FileReference(path);
         this.ioDeviceId = ioDeviceId;
         this.partition = -1;
     }

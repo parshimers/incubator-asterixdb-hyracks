@@ -45,7 +45,6 @@ public abstract class IndexDataflowHelper implements IIndexDataflowHelper {
     protected final int partition;
     protected final boolean durable;
     private static final Logger LOGGER = Logger.getLogger(IndexDataflowHelper.class.getName());
-    protected final String resourceName;
     protected IIndex index;
     protected final String resourcePath;
 

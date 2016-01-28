@@ -63,8 +63,7 @@ public abstract class AbstractLSMIndexDataflowHelper extends IndexDataflowHelper
             ITypeTraits[] filterTypeTraits, IBinaryComparatorFactory[] filterCmpFactories, int[] filterFields,
             boolean durable) {
         super(opDesc, ctx, partition, durable);
-        this.file = new FileReference(IndexFileNameUtil.prepareFileName(opDesc.getFileSplitProvider()
-                .getFileSplits()[partition].getLocalFile().getPath(), ioDeviceId), FileReference.FileReferenceType.DISTRIBUTED_IF_AVAIL);
+        this.file = IndexFileNameUtil.getIndexAbsoluteFileRef(opDesc,partition,ctx.getIOManager());
         this.virtualBufferCaches = virtualBufferCaches;
         this.bloomFilterFalsePositiveRate = bloomFilterFalsePositiveRate;
         this.mergePolicy = mergePolicy;

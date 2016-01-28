@@ -27,20 +27,20 @@
     <packaging>pom</packaging>
     <name>hyracks-ecosystem-full-stack</name>
 
-  <properties>
-    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <jvm.extraargs />
-    <jdk.version>1.8</jdk.version>
+    <parent>
+        <groupId>org.apache</groupId>
+        <artifactId>apache</artifactId>
+        <version>LATEST</version>
+    </parent>
 
-    <!-- Definition of tests in various categories which may be excluded -->
-    <hanging.pregelix.tests>**/pregelix/**/FailureRecovery*.java</hanging.pregelix.tests>
-    <hivesterix.perf.tests>**/hivesterix/perf/PerfTestSuite.java</hivesterix.perf.tests>
-    <global.test.includes>**/*TestSuite.java,**/*Test.java</global.test.includes>
-    <global.test.excludes>**/Abstract*.java,${hanging.pregelix.tests},${hivesterix.perf.tests}</global.test.excludes>
-    <!-- Versions under dependencymanagement or used in many projects via properties -->
-    <hadoop.version>2.4.0</hadoop.version>
-    <junit.version>4.8.1</junit.version>
-    <commons.io.version>2.4</commons.io.version>
+    <licenses>
+        <license>
+            <name>Apache License, Version 2.0</name>
+            <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+            <distribution>repo</distribution>
+            <comments>A business-friendly OSS license</comments>
+        </license>
+    </licenses>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -109,13 +109,13 @@
         <artifactId>versions-maven-plugin</artifactId>
         <version>1.2</version>
       </plugin>
-      <plugin>
+      <!--plugin>
         <groupId>org.apache.rat</groupId>
         <artifactId>apache-rat-plugin</artifactId>
         <version>0.11</version>
         <executions>
             <execution>
-                <phase>deploy</phase>
+                <phase>verify</phase>
                 <goals>
                     <goal>check</goal>
                 </goals>
@@ -177,7 +177,7 @@
            <exclude>**/.project</exclude>
       </excludes>
         </configuration>
-      </plugin>
+      </plugin!-->
       <plugin>
 	<groupId>org.apache.maven.plugins</groupId>
 	<artifactId>maven-surefire-plugin</artifactId>

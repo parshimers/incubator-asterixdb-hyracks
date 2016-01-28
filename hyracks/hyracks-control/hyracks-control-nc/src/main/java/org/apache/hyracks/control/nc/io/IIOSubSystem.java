@@ -32,4 +32,5 @@ public interface IIOSubSystem {
     public boolean deleteOnExit(FileReference fileRef) throws IllegalArgumentException, IOException;
     public boolean isDirectory(FileReference fileRef) throws IllegalArgumentException, IOException;
     public String[] listFiles(FileReference fileRef, FilenameFilter filter) throws FileNotFoundException, IllegalArgumentException, IOException;
+    public FileReference getParent(FileReference child) throws IllegalArgumentException, IOException;
 }

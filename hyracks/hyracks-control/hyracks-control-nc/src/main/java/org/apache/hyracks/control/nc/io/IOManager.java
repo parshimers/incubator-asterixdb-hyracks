@@ -352,6 +352,17 @@ public class IOManager implements IIOManager {
             throw new IllegalStateException(e);
         }
     }
+
+    @Override
+    public FileReference getParent(FileReference child){
+        try{
+            return getIOSubSystem(child).getParent(child);
+        }
+        catch(IllegalArgumentException | IOException e){
+            throw new IllegalStateException(e);
+        }
+    }
+
     
     private IIOSubSystem getIOSubSystem(FileReference fileReference) {
         IIOSubSystem ioSubSystem = ioSubSystems[fileReference.getType().ordinal()];
@@ -390,11 +401,6 @@ public class IOManager implements IIOManager {
     }
 
     @Override
-    public long getSize(IFileHandle fileHandle) {
-        return ((FileHandle) fileHandle).getFileReference().getFile().length();
-    }
-
-    @Override
     public void deleteWorkspaceFiles() {
         for (IODeviceHandle ioDevice : workAreaIODevices) {
             File workspaceFolder = new File(ioDevice.getPath(), ioDevice.getWorkAreaPath());
@@ -416,6 +422,6 @@ public class IOManager implements IIOManager {
     @Override
     public FileReference getAbsoluteFileRef(int ioDeviceId, String relativePath) {
         IODeviceHandle devHandle = ioDevices.get(ioDeviceId);
-        return new FileReference(devHandle, relativePath);
+        return new FileReference(devHandle.toString()+relativePath);
     }
 }

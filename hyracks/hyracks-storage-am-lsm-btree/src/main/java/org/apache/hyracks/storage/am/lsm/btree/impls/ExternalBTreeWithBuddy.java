@@ -606,13 +606,6 @@ public class ExternalBTreeWithBuddy extends AbstractLSMIndex implements ITreeInd
             component.getBloomFilter().create();
         }
 
-//        component.getBTree().activate();
-//        component.getBuddyBTree().activate();
-=======
-            component.getBloomFilter().create();
-        }
-
->>>>>>> master
         component.getBloomFilter().activate();
         return component;
     }

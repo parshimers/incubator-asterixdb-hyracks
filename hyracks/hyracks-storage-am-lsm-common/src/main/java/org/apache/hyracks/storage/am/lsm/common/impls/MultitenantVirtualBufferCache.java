@@ -153,11 +153,6 @@ public class MultitenantVirtualBufferCache implements IVirtualBufferCache {
     }
 
     @Override
-    public boolean isVirtual(ICachedPage vp) throws HyracksDataException {
-        throw new UnsupportedOperationException("Virtual Pages are not a valid concept in this context");
-    }
-
-    @Override
     public ICachedPage confiscatePage(long dpid) throws HyracksDataException {
         return vbc.confiscatePage(dpid);
     }
@@ -198,10 +193,6 @@ public class MultitenantVirtualBufferCache implements IVirtualBufferCache {
     }
 
     @Override
-    public void purgeHandle(int fileId) throws HyracksDataException {
-    }
-
-    @Override
     public void returnPage(ICachedPage page, boolean reinsert) {
         
     }
@@ -214,11 +205,6 @@ public class MultitenantVirtualBufferCache implements IVirtualBufferCache {
     @Override
     public boolean isReplicationEnabled() {
         return false;
-    }
-
-    @Override
-    public IIOReplicationManager getIOReplicationManager() {
-        return null;
     }
 
     @Override

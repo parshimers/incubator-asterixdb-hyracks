@@ -85,6 +85,4 @@ public interface IBufferCache {
 
     void purgeHandle(int fileId) throws HyracksDataException;
 
-    void purgeHandle(int fileId) throws HyracksDataException;
-
 }

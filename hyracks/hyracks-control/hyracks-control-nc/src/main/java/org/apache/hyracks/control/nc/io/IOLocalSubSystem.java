@@ -74,4 +74,8 @@ public class IOLocalSubSystem implements IIOSubSystem {
         return dir.list(filter);
     }
 
+    @Override public FileReference getParent(FileReference child) throws IllegalArgumentException, IOException {
+        return new FileReference(child.getFile().getParent());
+    }
+
 }
