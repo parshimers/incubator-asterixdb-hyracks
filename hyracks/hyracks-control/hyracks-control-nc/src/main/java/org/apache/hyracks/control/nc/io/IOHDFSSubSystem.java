@@ -42,7 +42,7 @@ public class IOHDFSSubSystem implements IIOSubSystem {
         conf.addResource(new Path("config/hdfs-site.xml"));
         conf.addResource(new Path("config/mapred-site.xml"));
         try {
-            uri = new URI("hdfs://localhost:9000");
+            uri = new URI("hdfs://localhost:9000/");
             fs = FileSystem.get(uri, conf);
         } catch (IOException | URISyntaxException e) {
             // TODO Auto-generated catch block
@@ -53,36 +53,37 @@ public class IOHDFSSubSystem implements IIOSubSystem {
 
     @Override
     public boolean exists(FileReference fileRef) throws IllegalArgumentException, IOException {
-        return fs.exists(new Path(uri.toString() + "/"  + fileRef.getPath()));
+        return fs.exists(new Path(uri.toString()   + fileRef.getPath()));
     }
 
     @Override
     public boolean mkdirs(FileReference fileRef) throws IllegalArgumentException, IOException {
-        return fs.mkdirs(new Path(uri.toString() + "/"  + fileRef.getPath()));
+        return fs.mkdirs(new Path(uri.toString()   + fileRef.getPath()));
     }
 
     @Override
     public boolean delete(FileReference fileRef, boolean recursive) throws IllegalArgumentException, IOException {
-        return fs.delete(new Path(uri.toString() + "/"  + fileRef.getPath()), recursive);
+        return fs.delete(new Path(uri.toString()   + fileRef.getPath()), recursive);
     }
 
     @Override
     public boolean deleteOnExit(FileReference fileRef) throws IllegalArgumentException, IOException {
-        return fs.deleteOnExit(new Path(uri.toString() + "/"  + fileRef.getPath()));
+        return fs.deleteOnExit(new Path(uri.toString()   + fileRef.getPath()));
     }
 
     @Override
     public boolean isDirectory(FileReference fileRef) throws IllegalArgumentException, IOException {
-        return fs.isDirectory(new Path(uri.toString() + "/"  + fileRef.getPath()));
+        return fs.isDirectory(new Path(uri.toString()   + fileRef.getPath()));
     }
 
     @Override
     public String[] listFiles(FileReference fileRef, FilenameFilter filter) throws FileNotFoundException, IllegalArgumentException, IOException {
         ArrayList<String> files = new ArrayList<>();
-        RemoteIterator<LocatedFileStatus> it = fs.listFiles(new Path(uri.toString() + "/"  + fileRef.getPath()), false);
-        while(it.hasNext()) {
-            LocatedFileStatus fileStatus = it.next();
-            if(filter.accept(new File(Path.getPathWithoutSchemeAndAuthority(fileStatus.getPath().getParent()).toString()), fileStatus.getPath().getName())) files.add(fileStatus.getPath().getName());
+        FileStatus[] fileStatuses = fs.listStatus(new Path(uri.toString() + fileRef.getPath()));
+        for(FileStatus fileStatus: fileStatuses){
+            if(filter.accept(new File(Path.getPathWithoutSchemeAndAuthority(fileStatus.getPath().getParent()).toString()),fileStatus.getPath().getName()) && fileStatus.isFile()) {
+                files.add((Path.getPathWithoutSchemeAndAuthority(fileStatus.getPath()).toString()));
+            }
         }
         String tmp[] = new String[files.size()];
         tmp = files.toArray(tmp);

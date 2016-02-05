@@ -31,7 +31,7 @@ public class IndexFileNameUtil {
     }
 
     public static FileReference getIndexAbsoluteFileRef(IIndexOperatorDescriptor opDesc, int partition, IIOManager ioManager){
-        String indexName = opDesc.getFileSplitProvider().getFileSplits()[partition].getLocalFile().getFile().getPath();
+        String indexName = opDesc.getFileSplitProvider().getFileSplits()[partition].getLocalFile().getPath();
         int ioDeviceId = opDesc.getFileSplitProvider().getFileSplits()[partition].getIODeviceId();
         return ioManager.getAbsoluteFileRef(ioDeviceId, indexName);
     }

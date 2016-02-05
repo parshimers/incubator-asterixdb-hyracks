@@ -91,7 +91,7 @@ public abstract class IndexDataflowHelper implements IIndexDataflowHelper {
                 ILocalResourceFactory localResourceFactory = opDesc.getLocalResourceFactoryProvider()
                         .getLocalResourceFactory();
                 int resourcePartition = opDesc.getFileSplitProvider().getFileSplits()[partition].getPartition();
-                String resourceName = opDesc.getFileSplitProvider().getFileSplits()[partition].getLocalFile().getFile()
+                String resourceName = opDesc.getFileSplitProvider().getFileSplits()[partition].getLocalFile()
                         .getPath();
                 localResourceRepository.insert(localResourceFactory.createLocalResource(resourceID, resourceName,
                         resourcePartition, resourcePath));

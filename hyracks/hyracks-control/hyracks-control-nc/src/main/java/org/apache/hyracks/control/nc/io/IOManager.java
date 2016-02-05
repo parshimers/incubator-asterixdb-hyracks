@@ -422,6 +422,6 @@ public class IOManager implements IIOManager {
     @Override
     public FileReference getAbsoluteFileRef(int ioDeviceId, String relativePath) {
         IODeviceHandle devHandle = ioDevices.get(ioDeviceId);
-        return new FileReference(devHandle.toString()+relativePath);
+        return new FileReference(relativePath,FileReferenceType.DISTRIBUTED_IF_AVAIL);
     }
 }

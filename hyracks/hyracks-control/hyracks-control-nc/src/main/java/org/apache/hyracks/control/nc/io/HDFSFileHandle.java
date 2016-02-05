@@ -59,7 +59,7 @@ public class HDFSFileHandle implements IFileHandle, IFileHandleInternal {
 
     public HDFSFileHandle(FileReference fileRef) {
         try {
-            this.uri = new URI("hdfs://127.0.1.1:9000" + fileRef.getPath());
+            this.uri = new URI("hdfs://127.0.1.1:9000/" + fileRef.getPath());
             this.fileRef = fileRef;
             path = new Path(uri.getPath());
         } catch (URISyntaxException e) {
@@ -124,16 +124,20 @@ public class HDFSFileHandle implements IFileHandle, IFileHandleInternal {
 
     @Override
     public int write(ByteBuffer data, long offset) throws IOException {
-        System.out.println("WRITE " + path + " @ " + offset);
-        if(in !=null){in.close();}
-        assert(out.getPos() == offset);
-        out.write(data.array(), 0, data.limit());
+//        System.out.println("WRITE " + path + " @ " + offset);
+//       long pos = out.getPos();
+//        System.out.println("POS: " + pos);
+        out.write(data.array(), 0, data.limit()-data.position());
+        data.position(data.limit());
         return data.limit();
     }
 
     @Override
     public int append(ByteBuffer data) throws IOException {
-        out.write(data.array(), 0, data.limit());
+//       long pos = out.getPos();
+//        System.out.println("POS: " + pos);
+        out.write(data.array(), data.position(), data.limit()-data.position());
+        data.position(data.limit());
         return data.limit();
     }
 
@@ -143,7 +147,7 @@ public class HDFSFileHandle implements IFileHandle, IFileHandleInternal {
             if(out!=null) out.hsync();
             in = fs.open(path);
         }
-        System.out.println("READ " + path + " @ " + offset);
+//        System.out.println("READ " + path + " @ " + offset);
         in.seek(offset);
         return in.read(data);
     }

@@ -26,6 +26,7 @@ import org.apache.hyracks.api.dataflow.IOperatorNodePushable;
 import org.apache.hyracks.api.dataflow.value.IRecordDescriptorProvider;
 import org.apache.hyracks.api.dataflow.value.RecordDescriptor;
 import org.apache.hyracks.api.exceptions.HyracksDataException;
+import org.apache.hyracks.api.io.FileReference;
 import org.apache.hyracks.api.job.IOperatorDescriptorRegistry;
 import org.apache.hyracks.dataflow.std.base.AbstractOperatorNodePushable;
 import org.apache.hyracks.dataflow.std.base.AbstractSingleActivityOperatorDescriptor;
@@ -54,12 +55,8 @@ public class FileRemoveOperatorDescriptor extends AbstractSingleActivityOperator
 
             @Override
             public void initialize() throws HyracksDataException {
-                File f = split.getLocalFile().getFile();
-                try {
-                    FileUtils.deleteDirectory(f);
-                } catch (IOException e) {
-                    throw new HyracksDataException(e);
-                }
+                FileReference f = split.getLocalFile();
+                    ctx.getIOManager().delete(f,true);
             }
 
             @Override
