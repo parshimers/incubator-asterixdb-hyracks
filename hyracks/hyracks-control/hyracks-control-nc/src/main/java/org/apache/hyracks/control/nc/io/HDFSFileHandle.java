@@ -14,6 +14,7 @@
  */
 package org.apache.hyracks.control.nc.io;
 
+import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.RandomAccessFile;
@@ -56,6 +57,7 @@ public class HDFSFileHandle implements IFileHandle, IFileHandleInternal {
     private Path path;
     private FileReference fileRef;
     private FileReadWriteMode rwMode;
+    private static long len;
 
     public HDFSFileHandle(FileReference fileRef) {
         try {
@@ -70,23 +72,17 @@ public class HDFSFileHandle implements IFileHandle, IFileHandleInternal {
     @Override
     public void open(FileReadWriteMode rwMode, FileSyncMode syncMode) throws IOException {
         if(syncMode != FileSyncMode.METADATA_ASYNC_DATA_ASYNC) throw new IOException("Sync I/O not (yet) supported for HDFS");
-//       try {
            if (rwMode == FileReadWriteMode.READ_WRITE) {
                if (fs.exists(path)) {
                    out = fs.append(path);
+                   len = getSize();
                } else {
                    out = fs.create(path, false);
+                   len = 0l;
                }
            }
-//       }
-//       catch(IOException e){
-//           if(e.getCause().getClass().equals(org.apache.hadoop.hdfs.protocol.AlreadyBeingCreatedException.class)){
-//              System.out.println("recover lease on: "+path.toString());
-//               throw e;
-//           }
-//           else throw e;
-//       }
         else if(rwMode == FileReadWriteMode.READ_ONLY){
+               len = getSize();
                in = fs.open(path);
            }
         this.rwMode = rwMode;
@@ -117,6 +113,7 @@ public class HDFSFileHandle implements IFileHandle, IFileHandleInternal {
         out.hsync();
     }
 
+
     @Override
     public long getSize() throws IOException {
         return fs.getFileStatus(path).getLen();
@@ -124,9 +121,6 @@ public class HDFSFileHandle implements IFileHandle, IFileHandleInternal {
 
     @Override
     public int write(ByteBuffer data, long offset) throws IOException {
-//        System.out.println("WRITE " + path + " @ " + offset);
-//       long pos = out.getPos();
-//        System.out.println("POS: " + pos);
         out.write(data.array(), 0, data.limit()-data.position());
         data.position(data.limit());
         return data.limit();
@@ -134,8 +128,6 @@ public class HDFSFileHandle implements IFileHandle, IFileHandleInternal {
 
     @Override
     public int append(ByteBuffer data) throws IOException {
-//       long pos = out.getPos();
-//        System.out.println("POS: " + pos);
         out.write(data.array(), data.position(), data.limit()-data.position());
         data.position(data.limit());
         return data.limit();
@@ -147,8 +139,11 @@ public class HDFSFileHandle implements IFileHandle, IFileHandleInternal {
             if(out!=null) out.hsync();
             in = fs.open(path);
         }
-//        System.out.println("READ " + path + " @ " + offset);
-        in.seek(offset);
+        try {
+            in.seek(offset);
+        } catch (EOFException e){
+            return -1;
+        }
         return in.read(data);
     }
 
