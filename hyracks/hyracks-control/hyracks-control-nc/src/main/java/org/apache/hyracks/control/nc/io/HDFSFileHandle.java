@@ -40,6 +40,8 @@ public class HDFSFileHandle implements IFileHandle, IFileHandleInternal {
     static {
         Configuration conf = new Configuration();
         conf.set("dfs.datanode.socket.write.timeout","0");
+        conf.set("dfs.client.read.shortcircuit","true");
+        conf.set("dfs.domain.socket.path","file:///mnt/heap/hdfs-data/dn_socket");
         conf.set("dfs.namenode.replication.considerLoad","false");
         conf.addResource(new Path("config/core-site.xml"));
         conf.addResource(new Path("config/hdfs-site.xml"));
