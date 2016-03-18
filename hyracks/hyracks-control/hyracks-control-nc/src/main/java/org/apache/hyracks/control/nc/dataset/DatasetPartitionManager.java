@@ -192,8 +192,8 @@ public class DatasetPartitionManager implements IDatasetPartitionManager {
             return;
         }
 
-        for (ResultSetId rsId : rsIdMap.keySet()) {
-            ResultState[] resultStates = rsIdMap.get(rsId);
+        for (Entry<ResultSetId, ResultState[]> mapEntry : rsIdMap.entrySet()) {
+            ResultState[] resultStates = mapEntry.getValue();
             if (resultStates != null) {
                 for (ResultState state : resultStates) {
                     if (state != null) {
@@ -236,8 +236,8 @@ public class DatasetPartitionManager implements IDatasetPartitionManager {
     private void deinit(JobId jobId) {
         ResultSetMap rsIdMap = (ResultSetMap) partitionResultStateMap.get(jobId);
         if (rsIdMap != null) {
-            for (ResultSetId rsId : rsIdMap.keySet()) {
-                ResultState[] resultStates = rsIdMap.get(rsId);
+            for (Entry<ResultSetId, ResultState[]> mapEntry : rsIdMap.entrySet()) {
+                ResultState[] resultStates = mapEntry.getValue();
                 if (resultStates != null) {
                     for (int i = 0; i < resultStates.length; i++) {
                         ResultState state = resultStates[i];

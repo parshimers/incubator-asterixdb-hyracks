@@ -26,7 +26,7 @@ import org.apache.commons.lang3.mutable.Mutable;
 import org.apache.commons.lang3.mutable.MutableObject;
 import org.apache.hyracks.algebricks.common.exceptions.AlgebricksException;
 import org.apache.hyracks.algebricks.core.algebra.base.ILogicalExpression;
-import org.apache.hyracks.algebricks.core.algebra.base.IOptimizationContext;
+import org.apache.hyracks.algebricks.core.algebra.base.IVariableContext;
 import org.apache.hyracks.algebricks.core.algebra.base.LogicalVariable;
 import org.apache.hyracks.algebricks.core.algebra.expressions.AbstractFunctionCallExpression;
 import org.apache.hyracks.algebricks.core.algebra.expressions.AggregateFunctionCallExpression;
@@ -40,27 +40,30 @@ import org.apache.hyracks.algebricks.core.algebra.visitors.ILogicalExpressionVis
 
 public class LogicalExpressionDeepCopyWithNewVariablesVisitor
         implements ILogicalExpressionVisitor<ILogicalExpression, Void> {
-    private final IOptimizationContext context;
+    private final IVariableContext varContext;
     private final Map<LogicalVariable, LogicalVariable> inVarMapping;
     private final Map<LogicalVariable, LogicalVariable> outVarMapping;
 
-    public LogicalExpressionDeepCopyWithNewVariablesVisitor(IOptimizationContext context,
+    public LogicalExpressionDeepCopyWithNewVariablesVisitor(IVariableContext varContext,
             Map<LogicalVariable, LogicalVariable> inVarMapping, Map<LogicalVariable, LogicalVariable> variableMapping) {
-        this.context = context;
+        this.varContext = varContext;
         this.inVarMapping = inVarMapping;
         this.outVarMapping = variableMapping;
     }
 
     public ILogicalExpression deepCopy(ILogicalExpression expr) throws AlgebricksException {
+        if (expr == null) {
+            return null;
+        }
         return expr.accept(this, null);
     }
 
     private void deepCopyAnnotations(AbstractFunctionCallExpression src, AbstractFunctionCallExpression dest) {
         Map<Object, IExpressionAnnotation> srcAnnotations = src.getAnnotations();
         Map<Object, IExpressionAnnotation> destAnnotations = dest.getAnnotations();
-        for (Object k : srcAnnotations.keySet()) {
-            IExpressionAnnotation annotation = srcAnnotations.get(k).copy();
-            destAnnotations.put(k, annotation);
+        for (Map.Entry<Object, IExpressionAnnotation> annotationEntry : srcAnnotations.entrySet()) {
+            IExpressionAnnotation annotation = annotationEntry.getValue().copy();
+            destAnnotations.put(annotationEntry.getKey(), annotation);
         }
     }
 
@@ -120,7 +123,11 @@ public class LogicalExpressionDeepCopyWithNewVariablesVisitor
     @Override
     public ILogicalExpression visitStatefulFunctionCallExpression(StatefulFunctionCallExpression expr, Void arg)
             throws AlgebricksException {
-        throw new UnsupportedOperationException();
+        StatefulFunctionCallExpression exprCopy = new StatefulFunctionCallExpression(expr.getFunctionInfo(),
+                expr.getPropertiesComputer(), deepCopyExpressionReferenceList(expr.getArguments()));
+        deepCopyAnnotations(expr, exprCopy);
+        deepCopyOpaqueParameters(expr, exprCopy);
+        return exprCopy;
     }
 
     @Override
@@ -144,7 +151,7 @@ public class LogicalExpressionDeepCopyWithNewVariablesVisitor
         }
         LogicalVariable varCopy = outVarMapping.get(var);
         if (varCopy == null) {
-            varCopy = context.newVar();
+            varCopy = varContext.newVar();
             outVarMapping.put(var, varCopy);
         }
         return new VariableReferenceExpression(varCopy);

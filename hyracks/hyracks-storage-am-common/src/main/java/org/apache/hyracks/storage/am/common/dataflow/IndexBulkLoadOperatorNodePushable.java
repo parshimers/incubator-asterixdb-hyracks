@@ -37,11 +37,11 @@ public class IndexBulkLoadOperatorNodePushable extends AbstractUnaryInputUnaryOu
     protected final long numElementsHint;
     protected final boolean checkIfEmptyIndex;
     protected final IIndexDataflowHelper indexHelper;
+    protected final IRecordDescriptorProvider recDescProvider;
+    protected final PermutingFrameTupleReference tuple = new PermutingFrameTupleReference();
     protected FrameTupleAccessor accessor;
     protected IIndex index;
     protected IIndexBulkLoader bulkLoader;
-    protected IRecordDescriptorProvider recDescProvider;
-    protected PermutingFrameTupleReference tuple = new PermutingFrameTupleReference();
 
     public IndexBulkLoadOperatorNodePushable(IIndexOperatorDescriptor opDesc, IHyracksTaskContext ctx, int partition,
             int[] fieldPermutation, float fillFactor, boolean verifyInput, long numElementsHint,
@@ -86,8 +86,8 @@ public class IndexBulkLoadOperatorNodePushable extends AbstractUnaryInputUnaryOu
                 throw new HyracksDataException(e);
             }
         }
-        FrameUtils.flushFrame(buffer, writer);
 
+        FrameUtils.flushFrame(buffer, writer);
     }
 
     @Override
@@ -106,6 +106,11 @@ public class IndexBulkLoadOperatorNodePushable extends AbstractUnaryInputUnaryOu
                 }
             }
         }
+    }
+
+    @Override
+    public void flush() throws HyracksDataException {
+        writer.flush();
     }
 
     @Override

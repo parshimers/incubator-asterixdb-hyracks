@@ -24,6 +24,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.hyracks.algebricks.common.constraints.AlgebricksPartitionConstraint;
 import org.apache.hyracks.algebricks.common.exceptions.AlgebricksException;
 import org.apache.hyracks.algebricks.core.algebra.base.EquivalenceClass;
 import org.apache.hyracks.algebricks.core.algebra.base.ILogicalOperator;
@@ -37,9 +38,12 @@ import org.apache.hyracks.algebricks.core.algebra.expressions.IVariableEvalSizeE
 import org.apache.hyracks.algebricks.core.algebra.expressions.IVariableTypeEnvironment;
 import org.apache.hyracks.algebricks.core.algebra.metadata.IMetadataProvider;
 import org.apache.hyracks.algebricks.core.algebra.prettyprint.LogicalOperatorPrettyPrintVisitor;
+import org.apache.hyracks.algebricks.core.algebra.properties.DefaultNodeGroupDomain;
 import org.apache.hyracks.algebricks.core.algebra.properties.FunctionalDependency;
 import org.apache.hyracks.algebricks.core.algebra.properties.ILogicalPropertiesVector;
+import org.apache.hyracks.algebricks.core.algebra.properties.INodeDomain;
 
+@SuppressWarnings({ "unchecked", "rawtypes" })
 public class AlgebricksOptimizationContext implements IOptimizationContext {
 
     private int varCounter;
@@ -65,9 +69,8 @@ public class AlgebricksOptimizationContext implements IOptimizationContext {
 
     private Map<ILogicalOperator, HashSet<ILogicalOperator>> alreadyCompared = new HashMap<ILogicalOperator, HashSet<ILogicalOperator>>();
     private Map<IAlgebraicRewriteRule, HashSet<ILogicalOperator>> dontApply = new HashMap<IAlgebraicRewriteRule, HashSet<ILogicalOperator>>();
-    private Map<LogicalVariable, FunctionalDependency> recordToPrimaryKey = new HashMap<LogicalVariable, FunctionalDependency>();
+    private Map<LogicalVariable, FunctionalDependency> varToPrimaryKey = new HashMap<LogicalVariable, FunctionalDependency>();
 
-    @SuppressWarnings("unchecked")
     private IMetadataProvider metadataProvider;
     private HashSet<LogicalVariable> notToBeInlinedVars = new HashSet<LogicalVariable>();
 
@@ -77,52 +80,61 @@ public class AlgebricksOptimizationContext implements IOptimizationContext {
     protected final Map<ILogicalOperator, ILogicalPropertiesVector> logicalProps = new HashMap<ILogicalOperator, ILogicalPropertiesVector>();
     private final IExpressionTypeComputer expressionTypeComputer;
     private final INullableTypeComputer nullableTypeComputer;
+    private final INodeDomain defaultNodeDomain;
     private final LogicalOperatorPrettyPrintVisitor prettyPrintVisitor;
 
     public AlgebricksOptimizationContext(int varCounter, IExpressionEvalSizeComputer expressionEvalSizeComputer,
             IMergeAggregationExpressionFactory mergeAggregationExpressionFactory,
             IExpressionTypeComputer expressionTypeComputer, INullableTypeComputer nullableTypeComputer,
-            PhysicalOptimizationConfig physicalOptimizationConfig) {
+            PhysicalOptimizationConfig physicalOptimizationConfig, AlgebricksPartitionConstraint clusterLocations) {
         this(varCounter, expressionEvalSizeComputer, mergeAggregationExpressionFactory, expressionTypeComputer,
-                nullableTypeComputer, physicalOptimizationConfig, new LogicalOperatorPrettyPrintVisitor());
+                nullableTypeComputer, physicalOptimizationConfig, clusterLocations,
+                new LogicalOperatorPrettyPrintVisitor());
     }
 
     public AlgebricksOptimizationContext(int varCounter, IExpressionEvalSizeComputer expressionEvalSizeComputer,
             IMergeAggregationExpressionFactory mergeAggregationExpressionFactory,
             IExpressionTypeComputer expressionTypeComputer, INullableTypeComputer nullableTypeComputer,
-            PhysicalOptimizationConfig physicalOptimizationConfig, LogicalOperatorPrettyPrintVisitor prettyPrintVisitor) {
+            PhysicalOptimizationConfig physicalOptimizationConfig, AlgebricksPartitionConstraint clusterLocations,
+            LogicalOperatorPrettyPrintVisitor prettyPrintVisitor) {
         this.varCounter = varCounter;
         this.expressionEvalSizeComputer = expressionEvalSizeComputer;
         this.mergeAggregationExpressionFactory = mergeAggregationExpressionFactory;
         this.expressionTypeComputer = expressionTypeComputer;
         this.nullableTypeComputer = nullableTypeComputer;
         this.physicalOptimizationConfig = physicalOptimizationConfig;
+        this.defaultNodeDomain = new DefaultNodeGroupDomain(clusterLocations);
         this.prettyPrintVisitor = prettyPrintVisitor;
     }
 
+    @Override
     public int getVarCounter() {
         return varCounter;
     }
 
+    @Override
     public void setVarCounter(int varCounter) {
         this.varCounter = varCounter;
     }
 
+    @Override
     public LogicalVariable newVar() {
         varCounter++;
         LogicalVariable var = new LogicalVariable(varCounter);
         return var;
     }
 
-    @SuppressWarnings("unchecked")
+    @Override
     public IMetadataProvider getMetadataProvider() {
         return metadataProvider;
     }
 
+    @Override
     public void setMetadataDeclarations(IMetadataProvider<?, ?> metadataProvider) {
         this.metadataProvider = metadataProvider;
     }
 
+    @Override
     public boolean checkIfInDontApplySet(IAlgebraicRewriteRule rule, ILogicalOperator op) {
         HashSet<ILogicalOperator> operators = dontApply.get(rule);
         if (operators == null) {
@@ -132,6 +144,7 @@ public class AlgebricksOptimizationContext implements IOptimizationContext {
         }
     }
 
+    @Override
     public void addToDontApplySet(IAlgebraicRewriteRule rule, ILogicalOperator op) {
         HashSet<ILogicalOperator> operators = dontApply.get(rule);
         if (operators == null) {
@@ -164,32 +177,36 @@ public class AlgebricksOptimizationContext implements IOptimizationContext {
             }
         }
     }
-    
+
     @Override
     public void removeFromAlreadyCompared(ILogicalOperator op1) {
         alreadyCompared.remove(op1);
     }
 
+    @Override
     public void addNotToBeInlinedVar(LogicalVariable var) {
         notToBeInlinedVars.add(var);
     }
 
+    @Override
     public boolean shouldNotBeInlined(LogicalVariable var) {
         return notToBeInlinedVars.contains(var);
     }
 
+    @Override
     public void addPrimaryKey(FunctionalDependency pk) {
-        assert (pk.getTail().size() == 1);
-        LogicalVariable recordVar = pk.getTail().get(0);
-        recordToPrimaryKey.put(recordVar, pk);
+        for (LogicalVariable var : pk.getTail()) {
+            varToPrimaryKey.put(var, pk);
+        }
     }
 
+    @Override
     public List<LogicalVariable> findPrimaryKey(LogicalVariable recordVar) {
-        FunctionalDependency fd = recordToPrimaryKey.get(recordVar);
+        FunctionalDependency fd = varToPrimaryKey.get(recordVar);
         if (fd == null) {
             return null;
         }
-        return fd.getHead();
+        return new ArrayList<LogicalVariable>(fd.getHead());
     }
 
     @Override
@@ -213,6 +230,12 @@ public class AlgebricksOptimizationContext implements IOptimizationContext {
     }
 
     @Override
+    public void clearAllFDAndEquivalenceClasses() {
+        eqClassGlobalMap.clear();
+        fdGlobalMap.clear();
+    }
+
+    @Override
     public ILogicalPropertiesVector getLogicalPropertiesVector(ILogicalOperator op) {
         return logicalProps.get(op);
     }
@@ -232,10 +255,12 @@ public class AlgebricksOptimizationContext implements IOptimizationContext {
         return varEvalSizeEnv;
     }
 
+    @Override
     public IMergeAggregationExpressionFactory getMergeAggregationExpressionFactory() {
         return mergeAggregationExpressionFactory;
     }
 
+    @Override
     public PhysicalOptimizationConfig getPhysicalOptimizationConfig() {
         return physicalOptimizationConfig;
     }
@@ -272,7 +297,7 @@ public class AlgebricksOptimizationContext implements IOptimizationContext {
 
     @Override
     public void updatePrimaryKeys(Map<LogicalVariable, LogicalVariable> mappedVars) {
-        for (Map.Entry<LogicalVariable, FunctionalDependency> me : recordToPrimaryKey.entrySet()) {
+        for (Map.Entry<LogicalVariable, FunctionalDependency> me : varToPrimaryKey.entrySet()) {
             FunctionalDependency fd = me.getValue();
             List<LogicalVariable> hd = new ArrayList<LogicalVariable>();
             for (LogicalVariable v : fd.getHead()) {
@@ -295,7 +320,12 @@ public class AlgebricksOptimizationContext implements IOptimizationContext {
             me.setValue(new FunctionalDependency(hd, tl));
         }
     }
-    
+
+    @Override
+    public INodeDomain getComputationNodeDomain() {
+        return defaultNodeDomain;
+    }
+
     @Override
     public LogicalOperatorPrettyPrintVisitor getPrettyPrintVisitor() {
         return prettyPrintVisitor;

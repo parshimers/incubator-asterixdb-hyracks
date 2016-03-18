@@ -39,7 +39,7 @@ public class SchedulerTest extends TestCase {
 
     /**
      * Test the scheduler for the case when the Hyracks cluster is the HDFS cluster
-     * 
+     *
      * @throws Exception
      */
     public void testSchedulerSimple() throws Exception {
@@ -71,7 +71,7 @@ public class SchedulerTest extends TestCase {
 
     /**
      * Test the case where the HDFS cluster is a larger than the Hyracks cluster
-     * 
+     *
      * @throws Exception
      */
     public void testSchedulerLargerHDFS() throws Exception {
@@ -110,7 +110,7 @@ public class SchedulerTest extends TestCase {
 
     /**
      * Test the case where the HDFS cluster is a larger than the Hyracks cluster
-     * 
+     *
      * @throws Exception
      */
     public void testSchedulerSmallerHDFS() throws Exception {
@@ -149,7 +149,7 @@ public class SchedulerTest extends TestCase {
 
     /**
      * Test the case where the HDFS cluster is a larger than the Hyracks cluster
-     * 
+     *
      * @throws Exception
      */
     public void testSchedulerSmallerHDFSOdd() throws Exception {

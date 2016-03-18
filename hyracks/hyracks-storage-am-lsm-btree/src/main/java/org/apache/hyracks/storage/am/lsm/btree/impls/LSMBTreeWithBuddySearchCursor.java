@@ -25,13 +25,13 @@ import org.apache.hyracks.storage.am.lsm.common.api.ILSMIndexOperationContext;
 public class LSMBTreeWithBuddySearchCursor extends LSMBTreeWithBuddyAbstractCursor{
 	private int currentCursor;
     private PermutingTupleReference buddyBTreeTuple;
-    
+
     public LSMBTreeWithBuddySearchCursor(ILSMIndexOperationContext opCtx, int[] buddyBTreeFields) {
         super(opCtx);
         currentCursor = 0;
         this.buddyBTreeTuple = new PermutingTupleReference(buddyBTreeFields);
     }
-    
+
     @Override
     public void close() throws HyracksDataException {
         super.close();
@@ -57,7 +57,7 @@ public class LSMBTreeWithBuddySearchCursor extends LSMBTreeWithBuddyAbstractCurs
             lsmHarness.endSearch(opCtx);
         }
     }
-    
+
     private void searchNextCursor() throws HyracksDataException {
         if (currentCursor < numberOfTrees) {
             try {
@@ -68,7 +68,7 @@ public class LSMBTreeWithBuddySearchCursor extends LSMBTreeWithBuddyAbstractCurs
             }
         }
     }
-    
+
     @Override
     public boolean hasNext() throws HyracksDataException, IndexException {
         if (foundNext) {
@@ -106,7 +106,7 @@ public class LSMBTreeWithBuddySearchCursor extends LSMBTreeWithBuddyAbstractCurs
         }
         return false;
     }
-    
+
     @Override
     public void next() throws HyracksDataException {
         foundNext = false;

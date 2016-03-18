@@ -76,4 +76,9 @@ public class InvertedIndexSearchPredicate extends AbstractSearchPredicate {
         // TODO: This doesn't make sense for an inverted index. Change ISearchPredicate interface.
         return null;
     }
+
+    @Override
+    public ITupleReference getLowKey() {
+        return null;
+    }
 }

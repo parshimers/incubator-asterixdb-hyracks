@@ -26,8 +26,6 @@ import org.apache.hyracks.api.dataflow.value.IRecordDescriptorProvider;
 import org.apache.hyracks.api.dataflow.value.RecordDescriptor;
 import org.apache.hyracks.api.exceptions.HyracksDataException;
 import org.apache.hyracks.api.job.IOperatorDescriptorRegistry;
-import org.apache.hyracks.dataflow.common.comm.io.FrameTupleAppender;
-import org.apache.hyracks.dataflow.common.util.IntSerDeUtils;
 import org.apache.hyracks.dataflow.std.base.AbstractActivityNode;
 import org.apache.hyracks.dataflow.std.base.AbstractOperatorDescriptor;
 import org.apache.hyracks.dataflow.std.base.AbstractUnaryInputSinkOperatorNodePushable;
@@ -57,8 +55,8 @@ public class MaterializingOperatorDescriptor extends AbstractOperatorDescriptor 
     @Override
     public void contributeActivities(IActivityGraphBuilder builder) {
         if (isSingleActivity) {
-            MaterializerReaderActivityNode mra = new MaterializerReaderActivityNode(new ActivityId(odId,
-                    MATERIALIZER_READER_ACTIVITY_ID));
+            MaterializerReaderActivityNode mra = new MaterializerReaderActivityNode(
+                    new ActivityId(odId, MATERIALIZER_READER_ACTIVITY_ID));
 
             builder.addActivity(this, mra);
             builder.addSourceEdge(0, mra, 0);
@@ -93,8 +91,8 @@ public class MaterializingOperatorDescriptor extends AbstractOperatorDescriptor 
 
                 @Override
                 public void open() throws HyracksDataException {
-                    state = new MaterializerTaskState(ctx.getJobletContext().getJobId(), new TaskId(getActivityId(),
-                            partition));
+                    state = new MaterializerTaskState(ctx.getJobletContext().getJobId(),
+                            new TaskId(getActivityId(), partition));
                     state.open(ctx);
                 }
 
@@ -112,7 +110,6 @@ public class MaterializingOperatorDescriptor extends AbstractOperatorDescriptor 
                     state.close();
                     state.writeOut(writer, new VSizeFrame(ctx));
                 }
-
             };
         }
     }
@@ -132,8 +129,8 @@ public class MaterializingOperatorDescriptor extends AbstractOperatorDescriptor 
 
                 @Override
                 public void open() throws HyracksDataException {
-                    state = new MaterializerTaskState(ctx.getJobletContext().getJobId(), new TaskId(getActivityId(),
-                            partition));
+                    state = new MaterializerTaskState(ctx.getJobletContext().getJobId(),
+                            new TaskId(getActivityId(), partition));
                     state.open(ctx);
                 }
 
@@ -168,8 +165,8 @@ public class MaterializingOperatorDescriptor extends AbstractOperatorDescriptor 
             return new AbstractUnaryOutputSourceOperatorNodePushable() {
                 @Override
                 public void initialize() throws HyracksDataException {
-                    MaterializerTaskState state = (MaterializerTaskState) ctx.getStateObject(new TaskId(new ActivityId(
-                            getOperatorId(), MATERIALIZER_ACTIVITY_ID), partition));
+                    MaterializerTaskState state = (MaterializerTaskState) ctx.getStateObject(
+                            new TaskId(new ActivityId(getOperatorId(), MATERIALIZER_ACTIVITY_ID), partition));
                     state.writeOut(writer, new VSizeFrame(ctx));
                 }
 

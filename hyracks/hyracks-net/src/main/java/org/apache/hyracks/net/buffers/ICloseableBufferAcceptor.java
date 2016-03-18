@@ -17,7 +17,7 @@ package org.apache.hyracks.net.buffers;
 /**
  * A buffer acceptor that can be closed to indicate end of transmission or an error code
  * specified to indicate an error in transmission.
- * 
+ *
  * @author vinayakb
  */
 public interface ICloseableBufferAcceptor extends IBufferAcceptor {
@@ -28,7 +28,7 @@ public interface ICloseableBufferAcceptor extends IBufferAcceptor {
 
     /**
      * Indicate that an error occurred.
-     * 
+     *
      * @param ecode
      *            - the error code.
      */

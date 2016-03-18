@@ -77,8 +77,9 @@ public class TreeIndexDiskOrderScanOperatorNodePushable extends AbstractUnaryOut
 
                     FrameUtils.appendToWriter(writer, appender, tb.getFieldEndOffsets(), tb.getByteArray(), 0,
                             tb.getSize());
+
                 }
-                appender.flush(writer, true);
+                appender.write(writer, true);
             } catch (Throwable th) {
                 writer.fail();
                 throw new HyracksDataException(th);

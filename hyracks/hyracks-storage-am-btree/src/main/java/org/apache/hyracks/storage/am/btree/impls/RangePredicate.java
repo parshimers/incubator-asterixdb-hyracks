@@ -66,10 +66,12 @@ public class RangePredicate extends AbstractSearchPredicate {
         this.highKeyCmp = highKeyCmp;
     }
 
+    @Override
     public MultiComparator getLowKeyComparator() {
         return lowKeyCmp;
     }
 
+    @Override
     public MultiComparator getHighKeyComparator() {
         return highKeyCmp;
     }
@@ -82,6 +84,7 @@ public class RangePredicate extends AbstractSearchPredicate {
         this.highKeyCmp = highKeyCmp;
     }
 
+    @Override
     public ITupleReference getLowKey() {
         return lowKey;
     }

@@ -59,7 +59,7 @@ public class LocalityAwarePartitionDataWriter implements IFrameWriter {
 
     /*
      * (non-Javadoc)
-     * 
+     *
      * @see org.apache.hyracks.api.comm.IFrameWriter#open()
      */
     @Override
@@ -72,7 +72,7 @@ public class LocalityAwarePartitionDataWriter implements IFrameWriter {
 
     /*
      * (non-Javadoc)
-     * 
+     *
      * @see
      * org.apache.hyracks.api.comm.IFrameWriter#nextFrame(java.nio.ByteBuffer)
      */
@@ -88,7 +88,7 @@ public class LocalityAwarePartitionDataWriter implements IFrameWriter {
 
     /*
      * (non-Javadoc)
-     * 
+     *
      * @see org.apache.hyracks.api.comm.IFrameWriter#fail()
      */
     @Override
@@ -114,7 +114,7 @@ public class LocalityAwarePartitionDataWriter implements IFrameWriter {
 
     /*
      * (non-Javadoc)
-     * 
+     *
      * @see org.apache.hyracks.api.comm.IFrameWriter#close()
      */
     @Override
@@ -123,7 +123,7 @@ public class LocalityAwarePartitionDataWriter implements IFrameWriter {
         for (int i = 0; i < pWriters.length; ++i) {
             if (isWriterOpen[i]) {
                 try {
-                    appenders[i].flush(pWriters[i], true);
+                    appenders[i].write(pWriters[i], true);
                 } catch (Throwable th) {
                     if (closeException == null) {
                         closeException = new HyracksDataException(th);
@@ -145,6 +145,13 @@ public class LocalityAwarePartitionDataWriter implements IFrameWriter {
         }
         if (closeException != null) {
             throw closeException;
+        }
+    }
+
+    @Override
+    public void flush() throws HyracksDataException {
+        for (int i = 0; i < pWriters.length; ++i) {
+            appenders[i].flush(pWriters[i]);
         }
     }
 }

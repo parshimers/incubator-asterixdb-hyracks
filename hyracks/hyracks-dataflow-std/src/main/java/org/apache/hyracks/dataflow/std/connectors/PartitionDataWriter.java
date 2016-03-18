@@ -47,7 +47,7 @@ public class PartitionDataWriter implements IFrameWriter {
         for (int i = 0; i < consumerPartitionCount; ++i) {
             try {
                 pWriters[i] = pwFactory.createFrameWriter(i);
-                appenders[i] = new FrameTupleAppender();
+                appenders[i] = createTupleAppender(ctx);
             } catch (IOException e) {
                 throw new HyracksDataException(e);
             }
@@ -57,6 +57,10 @@ public class PartitionDataWriter implements IFrameWriter {
         this.ctx = ctx;
     }
 
+    protected FrameTupleAppender createTupleAppender(IHyracksTaskContext ctx) {
+        return new FrameTupleAppender();
+    }
+
     @Override
     public void close() throws HyracksDataException {
         HyracksDataException closeException = null;
@@ -64,7 +68,7 @@ public class PartitionDataWriter implements IFrameWriter {
             if (isOpen[i]) {
                 if (allocatedFrame) {
                     try {
-                        appenders[i].flush(pWriters[i], true);
+                        appenders[i].write(pWriters[i], true);
                     } catch (Throwable th) {
                         if (closeException == null) {
                             closeException = new HyracksDataException(th);
@@ -108,7 +112,6 @@ public class PartitionDataWriter implements IFrameWriter {
         for (int i = 0; i < tupleCount; ++i) {
             int h = tpc.partition(tupleAccessor, i, consumerPartitionCount);
             FrameUtils.appendToWriter(pWriters[h], appenders[h], tupleAccessor, i);
-
         }
     }
 
@@ -136,6 +139,13 @@ public class PartitionDataWriter implements IFrameWriter {
         }
         if (failException != null) {
             throw failException;
+        }
+    }
+
+    @Override
+    public void flush() throws HyracksDataException {
+        for (int i = 0; i < consumerPartitionCount; i++) {
+            appenders[i].flush(pWriters[i]);
         }
     }
 }

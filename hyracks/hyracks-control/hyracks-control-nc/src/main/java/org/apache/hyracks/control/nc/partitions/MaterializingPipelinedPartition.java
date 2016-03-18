@@ -56,6 +56,8 @@ public class MaterializingPipelinedPartition implements IFrameWriter, IPartition
 
     private boolean failed;
 
+    protected boolean flushRequest;
+
     public MaterializingPipelinedPartition(IHyracksTaskContext ctx, PartitionManager manager, PartitionId pid,
             TaskAttemptId taId, Executor executor) {
         this.ctx = ctx;
@@ -89,8 +91,9 @@ public class MaterializingPipelinedPartition implements IFrameWriter, IPartition
                             MaterializingPipelinedPartition.this.wait();
                         }
                     }
-                    IFileHandle fh = fRef == null ? null : ioManager.open(fRef,
-                            IIOManager.FileReadWriteMode.READ_ONLY, IIOManager.FileSyncMode.METADATA_ASYNC_DATA_ASYNC);
+                    IFileHandle fh = fRef == null ? null
+                            : ioManager.open(fRef, IIOManager.FileReadWriteMode.READ_ONLY,
+                                    IIOManager.FileSyncMode.METADATA_ASYNC_DATA_ASYNC);
                     try {
                         writer.open();
                         try {
@@ -99,9 +102,14 @@ public class MaterializingPipelinedPartition implements IFrameWriter, IPartition
                                 ByteBuffer buffer = ctx.allocateFrame();
                                 boolean fail = false;
                                 boolean done = false;
+                                boolean flush = false;
                                 while (!fail && !done) {
                                     synchronized (MaterializingPipelinedPartition.this) {
-                                        while (offset >= size && !eos && !failed) {
+                                        if (flushRequest) {
+                                            flushRequest = false;
+                                            flush = true;
+                                        }
+                                        while (offset >= size && !eos && !failed && !flush) {
                                             try {
                                                 MaterializingPipelinedPartition.this.wait();
                                             } catch (InterruptedException e) {
@@ -122,6 +130,10 @@ public class MaterializingPipelinedPartition implements IFrameWriter, IPartition
                                         offset += readLen;
                                         buffer.flip();
                                         writer.nextFrame(buffer);
+                                        if (flush) {
+                                            writer.flush();
+                                            flush = false;
+                                        }
                                     }
                                 }
                             }
@@ -190,5 +202,11 @@ public class MaterializingPipelinedPartition implements IFrameWriter, IPartition
             handle = null;
             notifyAll();
         }
+    }
+
+    @Override
+    public synchronized void flush() throws HyracksDataException {
+        flushRequest = true;
+        notifyAll();
     }
 }

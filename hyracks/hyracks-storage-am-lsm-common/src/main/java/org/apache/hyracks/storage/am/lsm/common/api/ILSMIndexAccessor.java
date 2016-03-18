@@ -38,7 +38,7 @@ public interface ILSMIndexAccessor extends IIndexAccessor {
 
     /**
      * Deletes the tuple from the memory component only.
-     * 
+     *
      * @throws HyracksDataException
      * @throws IndexException
      */
@@ -49,7 +49,7 @@ public interface ILSMIndexAccessor extends IIndexAccessor {
      * If the insert would have to wait for a flush to complete, then this method returns false to
      * allow the caller to avoid potential deadlock situations.
      * Otherwise, returns true (insert was successful).
-     * 
+     *
      * @param tuple
      *            Tuple to be inserted.
      * @throws HyracksDataException
@@ -65,7 +65,7 @@ public interface ILSMIndexAccessor extends IIndexAccessor {
      * If the delete would have to wait for a flush to complete, then this method returns false to
      * allow the caller to avoid potential deadlock situations.
      * Otherwise, returns true (delete was successful).
-     * 
+     *
      * @param tuple
      *            Tuple to be deleted.
      * @throws HyracksDataException
@@ -80,7 +80,7 @@ public interface ILSMIndexAccessor extends IIndexAccessor {
      * If the update would have to wait for a flush to complete, then this method returns false to
      * allow the caller to avoid potential deadlock situations.
      * Otherwise, returns true (update was successful).
-     * 
+     *
      * @param tuple
      *            Tuple whose match in the index is to be update with the given
      *            tuples contents.
@@ -98,7 +98,7 @@ public interface ILSMIndexAccessor extends IIndexAccessor {
      * If the operation would have to wait for a flush to complete, then this method returns false to
      * allow the caller to avoid potential deadlock situations.
      * Otherwise, returns true (insert/update was successful).
-     * 
+     *
      * @param tuple
      *            Tuple to be deleted.
      * @throws HyracksDataException

@@ -23,7 +23,7 @@ import org.apache.hyracks.storage.am.common.api.ISearchOperationCallback;
 /**
  * Dummy operation callback that simply does nothing.
  */
-public enum NoOpOperationCallback implements IModificationOperationCallback, ISearchOperationCallback {
+public enum NoOpOperationCallback implements IModificationOperationCallback,ISearchOperationCallback {
     INSTANCE;
 
     @Override
@@ -38,12 +38,12 @@ public enum NoOpOperationCallback implements IModificationOperationCallback, ISe
 
     @Override
     public void before(ITupleReference tuple) {
-        // Do nothing.        
+        // Do nothing.
     }
 
     @Override
     public void found(ITupleReference before, ITupleReference after) {
-        // Do nothing.        
+        // Do nothing.
     }
 
     @Override
@@ -53,6 +53,11 @@ public enum NoOpOperationCallback implements IModificationOperationCallback, ISe
 
     @Override
     public void complete(ITupleReference tuple) throws HyracksDataException {
+        // Do nothing.
+    }
+
+    @Override
+    public void setOp(Operation op) throws HyracksDataException {
         // Do nothing.
     }
 }

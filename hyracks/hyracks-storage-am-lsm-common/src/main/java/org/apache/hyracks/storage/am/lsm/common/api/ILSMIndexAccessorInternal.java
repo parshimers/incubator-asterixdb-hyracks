@@ -22,7 +22,7 @@ public interface ILSMIndexAccessorInternal extends ILSMIndexAccessor {
 
     /**
      * Force a flush of the in-memory component.
-     * 
+     *
      * @throws HyracksDataException
      * @throws TreeIndexException
      */
@@ -30,7 +30,7 @@ public interface ILSMIndexAccessorInternal extends ILSMIndexAccessor {
 
     /**
      * Merge all on-disk components.
-     * 
+     *
      * @throws HyracksDataException
      * @throws TreeIndexException
      */

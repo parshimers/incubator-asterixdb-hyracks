@@ -35,7 +35,6 @@ public class ExecutionTimeProfiler {
     private int addCount;
     private Object lock1 = new Object();
 
-    //    private HashMap<String, profiledTimeValue> spentTimePerOperatorMap;
 
     // [Key: Job, Value: [Key: Operator, Value: Duration of each operators]]
     private HashMap<String, LinkedHashMap<String, String>> spentTimePerJobMap;
@@ -59,22 +58,14 @@ public class ExecutionTimeProfiler {
 
     public synchronized void add(String jobSignature, String operatorSignature, String message, boolean flushNeeded) {
 
-        // First, check whether the job is in the hash-map or not.
-        // If so, insert the duration of an operator to the hash map
         if (!spentTimePerJobMap.containsKey(jobSignature)) {
             spentTimePerJobMap.put(jobSignature, new LinkedHashMap<String, String>());
         }
         spentTimePerJobMap.get(jobSignature).put(operatorSignature, message);
 
-        //		spentTimePerJobMap.put(operatorSignature, message);
-        //        sb.append(s);
         if (flushNeeded) {
             flush(jobSignature);
         }
-        //        if (printInterval > 0 && ++addCount % printInterval == 0) {
-        //            flush();
-        //            addCount = 0;
-        //        }
     }
 
     public synchronized void flush(String jobSignature) {
@@ -89,7 +80,6 @@ public class ExecutionTimeProfiler {
                 spentTimePerJobMap.get(jobSignature).clear();
                 sb.setLength(0);
             }
-            //            spentTimePerOperator.clear();
         } catch (IOException e) {
             e.printStackTrace();
             throw new IllegalStateException(e);

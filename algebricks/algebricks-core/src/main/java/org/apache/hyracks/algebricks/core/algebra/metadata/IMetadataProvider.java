@@ -48,13 +48,13 @@ public interface IMetadataProvider<S, I> {
             List<LogicalVariable> scanVariables, List<LogicalVariable> projectVariables, boolean projectPushed,
             List<LogicalVariable> minFilterVars, List<LogicalVariable> maxFilterVars, IOperatorSchema opSchema,
             IVariableTypeEnvironment typeEnv, JobGenContext context, JobSpecification jobSpec, Object implConfig)
-            throws AlgebricksException;
+                    throws AlgebricksException;
 
     public boolean scannerOperatorIsLeaf(IDataSource<S> dataSource);
 
     public Pair<IPushRuntimeFactory, AlgebricksPartitionConstraint> getWriteFileRuntime(IDataSink sink,
             int[] printColumns, IPrinterFactory[] printerFactories, RecordDescriptor inputDesc)
-            throws AlgebricksException;
+                    throws AlgebricksException;
 
     public Pair<IOperatorDescriptor, AlgebricksPartitionConstraint> getResultHandleRuntime(IDataSink sink,
             int[] printColumns, IPrinterFactory[] printerFactories, RecordDescriptor inputDesc, boolean ordered,
@@ -63,12 +63,13 @@ public interface IMetadataProvider<S, I> {
     public Pair<IOperatorDescriptor, AlgebricksPartitionConstraint> getWriteResultRuntime(IDataSource<S> dataSource,
             IOperatorSchema propagatedSchema, List<LogicalVariable> keys, LogicalVariable payLoadVar,
             List<LogicalVariable> additionalNonKeyFields, JobGenContext context, JobSpecification jobSpec)
-            throws AlgebricksException;
+                    throws AlgebricksException;
 
     public Pair<IOperatorDescriptor, AlgebricksPartitionConstraint> getInsertRuntime(IDataSource<S> dataSource,
             IOperatorSchema propagatedSchema, IVariableTypeEnvironment typeEnv, List<LogicalVariable> keys,
-            LogicalVariable payLoadVar, List<LogicalVariable> additionalNonKeyFields, RecordDescriptor recordDesc,
-            JobGenContext context, JobSpecification jobSpec, boolean bulkload) throws AlgebricksException;
+            LogicalVariable payLoadVar, List<LogicalVariable> additionalFilterKeyFields,
+            List<LogicalVariable> additionalNonFilteringFields, RecordDescriptor recordDesc, JobGenContext context,
+            JobSpecification jobSpec, boolean bulkload) throws AlgebricksException;
 
     public Pair<IOperatorDescriptor, AlgebricksPartitionConstraint> getDeleteRuntime(IDataSource<S> dataSource,
             IOperatorSchema propagatedSchema, IVariableTypeEnvironment typeEnv, List<LogicalVariable> keys,
@@ -78,7 +79,7 @@ public interface IMetadataProvider<S, I> {
     /**
      * Creates the insert runtime of IndexInsertDeletePOperator, which models
      * insert/delete operations into a secondary index.
-     * 
+     *
      * @param dataSource
      *            Target secondary index.
      * @param propagatedSchema
@@ -117,7 +118,7 @@ public interface IMetadataProvider<S, I> {
     /**
      * Creates the delete runtime of IndexInsertDeletePOperator, which models
      * insert/delete operations into a secondary index.
-     * 
+     *
      * @param dataSource
      *            Target secondary index.
      * @param propagatedSchema
@@ -157,7 +158,7 @@ public interface IMetadataProvider<S, I> {
      * Creates the TokenizeOperator for IndexInsertDeletePOperator, which tokenizes
      * secondary key into [token, number of token] pair in a length-partitioned index.
      * In case of non length-partitioned index, it tokenizes secondary key into [token].
-     * 
+     *
      * @param dataSource
      *            Target secondary index.
      * @param propagatedSchema
@@ -192,5 +193,18 @@ public interface IMetadataProvider<S, I> {
     public IDataSourceIndex<I, S> findDataSourceIndex(I indexId, S dataSourceId) throws AlgebricksException;
 
     public IFunctionInfo lookupFunction(FunctionIdentifier fid);
+
+    public Pair<IOperatorDescriptor, AlgebricksPartitionConstraint> getUpsertRuntime(IDataSource<S> dataSource,
+            IOperatorSchema propagatedSchema, IVariableTypeEnvironment typeEnv, List<LogicalVariable> keys,
+            LogicalVariable payLoadVar, List<LogicalVariable> additionalFilterFields,
+            List<LogicalVariable> additionalNonFilteringFields, RecordDescriptor recordDesc, JobGenContext context,
+            JobSpecification jobSpec) throws AlgebricksException;
+
+    public Pair<IOperatorDescriptor, AlgebricksPartitionConstraint> getIndexUpsertRuntime(
+            IDataSourceIndex<I, S> dataSourceIndex, IOperatorSchema propagatedSchema, IOperatorSchema[] inputSchemas,
+            IVariableTypeEnvironment typeEnv, List<LogicalVariable> primaryKeys, List<LogicalVariable> secondaryKeys,
+            List<LogicalVariable> additionalFilteringKeys, ILogicalExpression filterExpr,
+            List<LogicalVariable> prevSecondaryKeys, LogicalVariable prevAdditionalFilteringKeys,
+            RecordDescriptor inputDesc, JobGenContext context, JobSpecification spec) throws AlgebricksException;
 
 }

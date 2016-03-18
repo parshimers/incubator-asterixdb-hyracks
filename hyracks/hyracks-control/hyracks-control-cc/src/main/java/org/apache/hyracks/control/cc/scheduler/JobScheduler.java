@@ -217,7 +217,7 @@ public class JobScheduler {
      * Runnability rank has the following semantics
      * Runnability(Runnable TaskCluster depending on completed TaskClusters) = {RUNNABLE, 0}
      * Runnability(Runnable TaskCluster) = max(Rank(Dependent TaskClusters)) + 1
-     * Runnability(Non-schedulable TaskCluster) = {NOT_RUNNABLE, _} 
+     * Runnability(Non-schedulable TaskCluster) = {NOT_RUNNABLE, _}
      */
     private Runnability assignRunnabilityRank(TaskCluster goal, Map<TaskCluster, Runnability> runnabilityMap) {
         if (LOGGER.isLoggable(Level.FINE)) {
@@ -622,7 +622,7 @@ public class JobScheduler {
 
     /**
      * Indicates that a single task attempt has encountered a failure.
-     * 
+     *
      * @param ta
      *            - Failed Task Attempt
      * @param ac
@@ -657,7 +657,7 @@ public class JobScheduler {
 
     /**
      * Indicates that the provided set of nodes have left the cluster.
-     * 
+     *
      * @param deadNodes
      *            - Set of failed nodes
      */

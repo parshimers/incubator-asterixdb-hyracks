@@ -18,13 +18,13 @@ import org.apache.hyracks.api.exceptions.HyracksDataException;
 
 /**
  * Provides data to a consumer.
- * 
+ *
  * @author vinayakb
  */
 public interface IDataReader<T> {
     /**
      * Reads one data item.
-     * 
+     *
      * @return data. <code>null</code> indicates end of stream.
      * @throws Exception
      */
@@ -32,7 +32,7 @@ public interface IDataReader<T> {
 
     /**
      * Closes this reader.
-     * 
+     *
      * @throws Exception
      */
     public void close() throws HyracksDataException;

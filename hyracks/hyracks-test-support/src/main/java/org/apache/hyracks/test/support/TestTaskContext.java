@@ -15,6 +15,8 @@
 package org.apache.hyracks.test.support;
 
 import java.nio.ByteBuffer;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.ExecutorService;
 
 import org.apache.hyracks.api.context.IHyracksJobletContext;
@@ -35,6 +37,8 @@ public class TestTaskContext implements IHyracksTaskContext {
     private final TestJobletContext jobletContext;
     private final TaskAttemptId taskId;
     private WorkspaceFileFactory fileFactory;
+
+    private Map<Object, IStateObject> stateObjectMap = new HashMap<>();
 
     public TestTaskContext(TestJobletContext jobletContext, TaskAttemptId taskId) {
         this.jobletContext = jobletContext;
@@ -110,13 +114,13 @@ public class TestTaskContext implements IHyracksTaskContext {
     }
 
     @Override
-    public void setStateObject(IStateObject taskState) {
-
+    public synchronized void setStateObject(IStateObject taskState) {
+        stateObjectMap.put(taskState.getId(), taskState);
     }
 
     @Override
-    public IStateObject getStateObject(Object id) {
-        return null;
+    public synchronized IStateObject getStateObject(Object id) {
+        return stateObjectMap.get(id);
     }
 
     @Override
@@ -132,5 +136,14 @@ public class TestTaskContext implements IHyracksTaskContext {
     @Override
     public ExecutorService getExecutorService() {
         return null;
+    }
+
+    @Override
+    public Object getSharedObject() {
+        return null;
+    }
+
+    @Override
+    public void setSharedObject(Object sharedObject) {
     }
 }

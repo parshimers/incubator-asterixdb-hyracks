@@ -60,7 +60,7 @@ public class IndexInsertUpdateDeleteOperatorNodePushable extends AbstractUnaryIn
         this.indexHelper = opDesc.getIndexDataflowHelperFactory().createIndexDataflowHelper(opDesc, ctx, partition);
         this.recordDescProvider = recordDescProvider;
         this.op = op;
-        tuple.setFieldPermutation(fieldPermutation);
+        this.tuple.setFieldPermutation(fieldPermutation);
     }
 
     @Override
@@ -73,7 +73,8 @@ public class IndexInsertUpdateDeleteOperatorNodePushable extends AbstractUnaryIn
         try {
             writer.open();
             modCallback = opDesc.getModificationOpCallbackFactory().createModificationOperationCallback(
-                    indexHelper.getResourcePath(), indexHelper.getResourceID(), index, ctx);
+                    indexHelper.getResourcePath(), indexHelper.getResourceID(), indexHelper.getResourcePartition(),
+                    index, ctx);
             indexAccessor = index.createAccessor(modCallback, NoOpOperationCallback.INSTANCE);
             ITupleFilterFactory tupleFilterFactory = opDesc.getTupleFilterFactory();
             if (tupleFilterFactory != null) {
@@ -157,5 +158,10 @@ public class IndexInsertUpdateDeleteOperatorNodePushable extends AbstractUnaryIn
         if (index != null) {
             writer.fail();
         }
+    }
+
+    @Override
+    public void flush() throws HyracksDataException {
+        writer.flush();
     }
 }

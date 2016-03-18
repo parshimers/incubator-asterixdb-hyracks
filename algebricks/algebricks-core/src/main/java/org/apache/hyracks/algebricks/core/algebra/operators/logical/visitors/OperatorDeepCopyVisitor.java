@@ -40,12 +40,13 @@ import org.apache.hyracks.algebricks.core.algebra.operators.logical.DistributeRe
 import org.apache.hyracks.algebricks.core.algebra.operators.logical.EmptyTupleSourceOperator;
 import org.apache.hyracks.algebricks.core.algebra.operators.logical.ExchangeOperator;
 import org.apache.hyracks.algebricks.core.algebra.operators.logical.ExtensionOperator;
-import org.apache.hyracks.algebricks.core.algebra.operators.logical.ExternalDataLookupOperator;
 import org.apache.hyracks.algebricks.core.algebra.operators.logical.GroupByOperator;
-import org.apache.hyracks.algebricks.core.algebra.operators.logical.IndexInsertDeleteOperator;
+import org.apache.hyracks.algebricks.core.algebra.operators.logical.IndexInsertDeleteUpsertOperator;
 import org.apache.hyracks.algebricks.core.algebra.operators.logical.InnerJoinOperator;
-import org.apache.hyracks.algebricks.core.algebra.operators.logical.InsertDeleteOperator;
+import org.apache.hyracks.algebricks.core.algebra.operators.logical.InsertDeleteUpsertOperator;
+import org.apache.hyracks.algebricks.core.algebra.operators.logical.IntersectOperator;
 import org.apache.hyracks.algebricks.core.algebra.operators.logical.LeftOuterJoinOperator;
+import org.apache.hyracks.algebricks.core.algebra.operators.logical.LeftOuterUnnestMapOperator;
 import org.apache.hyracks.algebricks.core.algebra.operators.logical.LimitOperator;
 import org.apache.hyracks.algebricks.core.algebra.operators.logical.MaterializeOperator;
 import org.apache.hyracks.algebricks.core.algebra.operators.logical.NestedTupleSourceOperator;
@@ -134,7 +135,7 @@ public class OperatorDeepCopyVisitor implements ILogicalOperatorVisitor<ILogical
     @Override
     public ILogicalOperator visitNestedTupleSourceOperator(NestedTupleSourceOperator op, Void arg)
             throws AlgebricksException {
-        return new NestedTupleSourceOperator(null);
+        return new NestedTupleSourceOperator(op.getDataSourceReference());
     }
 
     @Override
@@ -206,6 +207,16 @@ public class OperatorDeepCopyVisitor implements ILogicalOperatorVisitor<ILogical
     }
 
     @Override
+    public ILogicalOperator visitIntersectOperator(IntersectOperator op, Void arg) throws AlgebricksException {
+        List<LogicalVariable> outputVar = new ArrayList<>(op.getOutputVars());
+        List<List<LogicalVariable>> inputVars = new ArrayList<>(op.getNumInput());
+        for (int i = 0; i < op.getNumInput(); i++) {
+            inputVars.add(new ArrayList<>(op.getInputVariables(i)));
+        }
+        return new IntersectOperator(outputVar, inputVars);
+    }
+
+    @Override
     public ILogicalOperator visitUnnestOperator(UnnestOperator op, Void arg) throws AlgebricksException {
         return new UnnestOperator(op.getVariable(), deepCopyExpressionRef(op.getExpressionRef()),
                 op.getPositionalVariable(), op.getPositionalVariableType(), op.getPositionWriter());
@@ -216,6 +227,15 @@ public class OperatorDeepCopyVisitor implements ILogicalOperatorVisitor<ILogical
         ArrayList<LogicalVariable> newInputList = new ArrayList<LogicalVariable>();
         newInputList.addAll(op.getVariables());
         return new UnnestMapOperator(newInputList, deepCopyExpressionRef(op.getExpressionRef()),
+                new ArrayList<Object>(op.getVariableTypes()), op.propagatesInput());
+    }
+
+    @Override
+    public ILogicalOperator visitLeftOuterUnnestMapOperator(LeftOuterUnnestMapOperator op, Void arg)
+            throws AlgebricksException {
+        ArrayList<LogicalVariable> newInputList = new ArrayList<LogicalVariable>();
+        newInputList.addAll(op.getVariables());
+        return new LeftOuterUnnestMapOperator(newInputList, deepCopyExpressionRef(op.getExpressionRef()),
                 new ArrayList<Object>(op.getVariableTypes()), op.propagatesInput());
     }
 
@@ -266,12 +286,13 @@ public class OperatorDeepCopyVisitor implements ILogicalOperatorVisitor<ILogical
     }
 
     @Override
-    public ILogicalOperator visitInsertDeleteOperator(InsertDeleteOperator op, Void arg) throws AlgebricksException {
+    public ILogicalOperator visitInsertDeleteUpsertOperator(InsertDeleteUpsertOperator op, Void arg)
+            throws AlgebricksException {
         List<Mutable<ILogicalExpression>> newKeyExpressions = new ArrayList<Mutable<ILogicalExpression>>();
         deepCopyExpressionRefs(newKeyExpressions, op.getPrimaryKeyExpressions());
         List<Mutable<ILogicalExpression>> newLSMComponentFilterExpressions = new ArrayList<Mutable<ILogicalExpression>>();
         deepCopyExpressionRefs(newKeyExpressions, op.getAdditionalFilteringExpressions());
-        InsertDeleteOperator insertDeleteOp = new InsertDeleteOperator(op.getDataSource(),
+        InsertDeleteUpsertOperator insertDeleteOp = new InsertDeleteUpsertOperator(op.getDataSource(),
                 deepCopyExpressionRef(op.getPayloadExpression()), newKeyExpressions, op.getOperation(),
                 op.isBulkload());
         insertDeleteOp.setAdditionalFilteringExpressions(newLSMComponentFilterExpressions);
@@ -279,7 +300,7 @@ public class OperatorDeepCopyVisitor implements ILogicalOperatorVisitor<ILogical
     }
 
     @Override
-    public ILogicalOperator visitIndexInsertDeleteOperator(IndexInsertDeleteOperator op, Void arg)
+    public ILogicalOperator visitIndexInsertDeleteUpsertOperator(IndexInsertDeleteUpsertOperator op, Void arg)
             throws AlgebricksException {
         List<Mutable<ILogicalExpression>> newPrimaryKeyExpressions = new ArrayList<Mutable<ILogicalExpression>>();
         deepCopyExpressionRefs(newPrimaryKeyExpressions, op.getPrimaryKeyExpressions());
@@ -289,9 +310,9 @@ public class OperatorDeepCopyVisitor implements ILogicalOperatorVisitor<ILogical
                 ((AbstractLogicalExpression) op.getFilterExpression()).cloneExpression());
         List<Mutable<ILogicalExpression>> newLSMComponentFilterExpressions = new ArrayList<Mutable<ILogicalExpression>>();
         deepCopyExpressionRefs(newLSMComponentFilterExpressions, op.getAdditionalFilteringExpressions());
-        IndexInsertDeleteOperator indexInsertDeleteOp = new IndexInsertDeleteOperator(op.getDataSourceIndex(),
-                newPrimaryKeyExpressions, newSecondaryKeyExpressions, newFilterExpression, op.getOperation(),
-                op.isBulkload());
+        IndexInsertDeleteUpsertOperator indexInsertDeleteOp = new IndexInsertDeleteUpsertOperator(
+                op.getDataSourceIndex(), newPrimaryKeyExpressions, newSecondaryKeyExpressions, newFilterExpression,
+                op.getOperation(), op.isBulkload());
         indexInsertDeleteOp.setAdditionalFilteringExpressions(newLSMComponentFilterExpressions);
         return indexInsertDeleteOp;
     }
@@ -356,15 +377,6 @@ public class OperatorDeepCopyVisitor implements ILogicalOperatorVisitor<ILogical
     @Override
     public ILogicalOperator visitExtensionOperator(ExtensionOperator op, Void arg) throws AlgebricksException {
         return new ExtensionOperator(op.getNewInstanceOfDelegateOperator());
-    }
-
-    @Override
-    public ILogicalOperator visitExternalDataLookupOperator(ExternalDataLookupOperator op, Void arg)
-            throws AlgebricksException {
-        ArrayList<LogicalVariable> newInputList = new ArrayList<LogicalVariable>();
-        newInputList.addAll(op.getVariables());
-        return new ExternalDataLookupOperator(newInputList, deepCopyExpressionRef(op.getExpressionRef()),
-                new ArrayList<Object>(op.getVariableTypes()), op.isPropagateInput(), op.getDataSource());
     }
 
     @Override

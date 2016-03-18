@@ -29,6 +29,7 @@ public class RunFileWriter implements IFrameWriter {
 
     private IFileHandle handle;
     private long size;
+    private int maxOutputFrameSize;
 
     public RunFileWriter(FileReference file, IIOManager ioManager) {
         this.file = file;
@@ -41,6 +42,7 @@ public class RunFileWriter implements IFrameWriter {
                 IIOManager.FileSyncMode.METADATA_ASYNC_DATA_ASYNC);
         size = 0;
         failed = false;
+        maxOutputFrameSize = 0;
     }
 
     @Override
@@ -51,7 +53,9 @@ public class RunFileWriter implements IFrameWriter {
 
     @Override
     public void nextFrame(ByteBuffer buffer) throws HyracksDataException {
-        size += ioManager.syncWrite(handle, size, buffer);
+        int writen = ioManager.syncWrite(handle, size, buffer);
+        maxOutputFrameSize = Math.max(writen, maxOutputFrameSize);
+        size += writen;
     }
 
     @Override
@@ -69,17 +73,22 @@ public class RunFileWriter implements IFrameWriter {
         return size;
     }
 
-    public RunFileReader createReader() throws HyracksDataException {
+    public GeneratedRunFileReader createReader() throws HyracksDataException {
         if (failed) {
             throw new HyracksDataException("createReader() called on a failed RunFileWriter");
         }
-        return new RunFileReader(file, ioManager, size, false);
+        return new GeneratedRunFileReader(file, ioManager, size, false, maxOutputFrameSize);
     }
 
-    public RunFileReader createDeleteOnCloseReader() throws HyracksDataException {
+    public GeneratedRunFileReader createDeleteOnCloseReader() throws HyracksDataException {
         if (failed) {
             throw new HyracksDataException("createReader() called on a failed RunFileWriter");
         }
-        return new RunFileReader(file, ioManager, size, true);
+        return new GeneratedRunFileReader(file, ioManager, size, true, maxOutputFrameSize);
+    }
+
+    @Override
+    public void flush() throws HyracksDataException {
+        // this is a kind of a sink operator and hence, flush() is a no op
     }
 }

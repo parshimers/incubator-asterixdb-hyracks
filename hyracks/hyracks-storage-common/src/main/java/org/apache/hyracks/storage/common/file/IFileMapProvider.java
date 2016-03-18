@@ -22,7 +22,7 @@ import org.apache.hyracks.api.io.FileReference;
 public interface IFileMapProvider extends Serializable {
     /**
      * Indicates if a given fileId is mapped
-     * 
+     *
      * @param fileId
      * @return <code>true</code> if the given fileId is mapped, <code>false</code> otherwise.
      */
@@ -30,7 +30,7 @@ public interface IFileMapProvider extends Serializable {
 
     /**
      * Indicates if a given file name is mapped.
-     * 
+     *
      * @param fileRef
      * @return <code>true</code> if the given file name is mapped, <code>false</code> otherwise.
      */
@@ -38,7 +38,7 @@ public interface IFileMapProvider extends Serializable {
 
     /**
      * Lookup the file id for a file name
-     * 
+     *
      * @param fileRef
      *            - The file name whose id should be looked up.
      * @return The file id
@@ -49,7 +49,7 @@ public interface IFileMapProvider extends Serializable {
 
     /**
      * Lookup the file name for a file id
-     * 
+     *
      * @param fileId
      *            - The file id whose name should be looked up.
      * @return The file reference
@@ -57,5 +57,5 @@ public interface IFileMapProvider extends Serializable {
      *             - If the file id is not mapped currently in this manager.
      */
     public FileReference lookupFileName(int fileId) throws HyracksDataException;
-    
+
 }

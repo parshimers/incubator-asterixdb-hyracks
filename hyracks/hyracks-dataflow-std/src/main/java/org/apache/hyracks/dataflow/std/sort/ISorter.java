@@ -26,7 +26,7 @@ public interface ISorter {
 
     void sort() throws HyracksDataException;
 
-    void close();
+    void close() throws HyracksDataException;
 
     int flush(IFrameWriter writer) throws HyracksDataException;
 

@@ -114,7 +114,7 @@ public class MaterializedPartitionInputChannel implements IInputChannel {
                 ByteBuffer destFrame = emptyQueue.poll();
                 buffer.position(0);
                 buffer.limit(buffer.capacity());
-                if (destFrame.capacity() < buffer.capacity()){
+                if (destFrame.capacity() < buffer.capacity()) {
                     throw new HyracksDataException("should never happen");
                 }
                 destFrame.clear();
@@ -132,6 +132,11 @@ public class MaterializedPartitionInputChannel implements IInputChannel {
         @Override
         public void close() throws HyracksDataException {
             monitor.notifyEndOfStream(MaterializedPartitionInputChannel.this);
+        }
+
+        @Override
+        public void flush() throws HyracksDataException {
+            // materialize operators should only send their output once all of their input has been consumed. hence, this is a no op
         }
     }
 }

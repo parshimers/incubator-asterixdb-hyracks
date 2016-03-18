@@ -21,17 +21,14 @@ package org.apache.hyracks.algebricks.runtime.operators.std;
 import java.io.PrintStream;
 import java.nio.ByteBuffer;
 
-import org.apache.hyracks.algebricks.common.exceptions.AlgebricksException;
 import org.apache.hyracks.algebricks.data.IAWriter;
 import org.apache.hyracks.algebricks.runtime.operators.base.AbstractOneInputSinkPushRuntime;
-import org.apache.hyracks.api.context.IHyracksTaskContext;
 import org.apache.hyracks.api.dataflow.value.RecordDescriptor;
 import org.apache.hyracks.api.exceptions.HyracksDataException;
 import org.apache.hyracks.dataflow.common.comm.io.FrameTupleAccessor;
 
 public class SinkWriterRuntime extends AbstractOneInputSinkPushRuntime {
 
-    private final IHyracksTaskContext ctx;
     private final PrintStream printStream;
     private final IAWriter writer;
     private RecordDescriptor inputRecordDesc;
@@ -39,18 +36,16 @@ public class SinkWriterRuntime extends AbstractOneInputSinkPushRuntime {
     private boolean autoClose = false;
     private boolean first = true;
 
-    public SinkWriterRuntime(IAWriter writer, IHyracksTaskContext ctx, PrintStream printStream,
-            RecordDescriptor inputRecordDesc) {
+    public SinkWriterRuntime(IAWriter writer, PrintStream printStream, RecordDescriptor inputRecordDesc) {
         this.writer = writer;
-        this.ctx = ctx;
         this.printStream = printStream;
         this.inputRecordDesc = inputRecordDesc;
         this.tAccess = new FrameTupleAccessor(inputRecordDesc);
     }
 
-    public SinkWriterRuntime(IAWriter writer, IHyracksTaskContext ctx, PrintStream printStream,
-            RecordDescriptor inputRecordDesc, boolean autoClose) {
-        this(writer, ctx, printStream, inputRecordDesc);
+    public SinkWriterRuntime(IAWriter writer, PrintStream printStream, RecordDescriptor inputRecordDesc,
+            boolean autoClose) {
+        this(writer, printStream, inputRecordDesc);
         this.autoClose = autoClose;
     }
 
@@ -59,11 +54,7 @@ public class SinkWriterRuntime extends AbstractOneInputSinkPushRuntime {
         if (first) {
             first = false;
             tAccess = new FrameTupleAccessor(inputRecordDesc);
-            try {
-                writer.init();
-            } catch (AlgebricksException e) {
-                throw new HyracksDataException(e);
-            }
+            writer.init();
         }
     }
 
@@ -72,11 +63,7 @@ public class SinkWriterRuntime extends AbstractOneInputSinkPushRuntime {
         tAccess.reset(buffer);
         int nTuple = tAccess.getTupleCount();
         for (int t = 0; t < nTuple; t++) {
-            try {
-                writer.printTuple(tAccess, t);
-            } catch (AlgebricksException ae) {
-                throw new HyracksDataException(ae);
-            }
+            writer.printTuple(tAccess, t);
         }
     }
 
@@ -94,5 +81,10 @@ public class SinkWriterRuntime extends AbstractOneInputSinkPushRuntime {
 
     @Override
     public void fail() throws HyracksDataException {
+    }
+
+    @Override
+    public void flush() throws HyracksDataException {
+        // flush() makes no sense to sink operators
     }
 }

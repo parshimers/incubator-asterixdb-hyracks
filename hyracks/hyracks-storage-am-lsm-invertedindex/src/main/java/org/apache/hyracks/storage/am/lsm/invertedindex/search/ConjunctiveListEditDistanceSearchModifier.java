@@ -30,7 +30,7 @@ public class ConjunctiveListEditDistanceSearchModifier extends ListEditDistanceS
     public short getNumTokensUpperBound(short numQueryTokens) {
         return -1;
     }
-    
+
     @Override
     public String toString() {
         return "Conjunctive List Edit Distance Search Modifier, Threshold: " + edThresh;

@@ -62,7 +62,7 @@ public class SearchResult {
 
     /**
      * Initialize from other search-result object to share member instances except for result buffers.
-     * 
+     *
      * @throws HyracksDataException
      */
     public SearchResult(SearchResult other) throws HyracksDataException {
@@ -145,7 +145,7 @@ public class SearchResult {
         cursor.reset();
         return cursor;
     }
-    
+
     public class SearchResultCursor {
         private int bufferIndex;
         private int resultIndex;
@@ -165,7 +165,7 @@ public class SearchResult {
         }
 
         public void next() {
-            resultTuple.reset(currentBuffer.array(), resultFrameTupleAcc.getTupleStartOffset(frameResultIndex));            
+            resultTuple.reset(currentBuffer.array(), resultFrameTupleAcc.getTupleStartOffset(frameResultIndex));
             if (frameResultIndex < resultFrameTupleAcc.getTupleCount()) {
                 frameResultIndex++;
             } else {
@@ -173,7 +173,7 @@ public class SearchResult {
                 currentBuffer = buffers.get(bufferIndex);
                 resultFrameTupleAcc.reset(currentBuffer);
                 frameResultIndex = 0;
-            }            
+            }
             resultIndex++;
         }
 

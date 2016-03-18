@@ -18,13 +18,13 @@ import org.apache.hyracks.api.exceptions.HyracksDataException;
 
 /**
  * Allows customization of the page cleaning strategy by the cleaner thread.
- * 
+ *
  * @author vinayakb
  */
 public interface IPageCleanerPolicy {
     /**
      * Callback from the cleaner just before the beginning of a cleaning cycle.
-     * 
+     *
      * @param monitor
      *            - The monitor on which a mutex is held while in this call
      * @throws HyracksDataException
@@ -33,7 +33,7 @@ public interface IPageCleanerPolicy {
 
     /**
      * Callback from the cleaner just after the finish of a cleaning cycle.
-     * 
+     *
      * @param monitor
      *            - The monitor on which a mutex is held while in this call.
      * @throws HyracksDataException
@@ -42,7 +42,7 @@ public interface IPageCleanerPolicy {
 
     /**
      * Callback to indicate that no victim was found.
-     * 
+     *
      * @param monitor
      *            - The monitor on which a mutex is held while in this call.
      * @throws HyracksDataException

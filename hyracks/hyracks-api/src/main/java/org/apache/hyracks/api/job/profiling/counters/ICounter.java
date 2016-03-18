@@ -17,14 +17,14 @@ package org.apache.hyracks.api.job.profiling.counters;
 public interface ICounter {
     /**
      * Get the fully-qualified name of the counter.
-     * 
+     *
      * @return Name of the counter.
      */
     public String getName();
 
     /**
      * Update the value of the counter to be current + delta.
-     * 
+     *
      * @param delta
      *            - Amount to change the counter value by.
      * @return the new value after update.
@@ -33,7 +33,7 @@ public interface ICounter {
 
     /**
      * Set the value of the counter.
-     * 
+     *
      * @param value
      *            - New value of the counter.
      * @return Old value of the counter.
@@ -42,7 +42,7 @@ public interface ICounter {
 
     /**
      * Get the value of the counter.
-     * 
+     *
      * @return the value of the counter.
      */
     public long get();

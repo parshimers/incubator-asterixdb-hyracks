@@ -22,7 +22,6 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.commons.lang3.mutable.Mutable;
-
 import org.apache.hyracks.algebricks.common.exceptions.AlgebricksException;
 import org.apache.hyracks.algebricks.core.algebra.expressions.IVariableTypeEnvironment;
 import org.apache.hyracks.algebricks.core.algebra.operators.logical.AbstractLogicalOperator.ExecutionMode;
@@ -50,7 +49,7 @@ public interface ILogicalOperator {
     public List<LogicalVariable> getSchema();
 
     /*
-     * 
+     *
      * support for visitors
      */
 
@@ -66,14 +65,14 @@ public interface ILogicalOperator {
 
     public void contributeRuntimeOperator(IHyracksJobBuilder builder, JobGenContext context,
             IOperatorSchema propagatedSchema, IOperatorSchema[] inputSchemas, IOperatorSchema outerPlanSchema)
-            throws AlgebricksException;
+                    throws AlgebricksException;
 
     // variables
 
     /**
      * Get the variable propogation policy from this operator's input to its
      * output.
-     * 
+     *
      * @return The VariablePropogationPolicy.
      */
     public VariablePropagationPolicy getVariablePropagationPolicy();
@@ -88,7 +87,8 @@ public interface ILogicalOperator {
      * @return for each child, one vector of required physical properties
      */
 
-    public PhysicalRequirements getRequiredPhysicalPropertiesForChildren(IPhysicalPropertiesVector requiredProperties);
+    public PhysicalRequirements getRequiredPhysicalPropertiesForChildren(IPhysicalPropertiesVector requiredProperties,
+            IOptimizationContext context);
 
     /**
      * @return the physical properties that this operator delivers, based on

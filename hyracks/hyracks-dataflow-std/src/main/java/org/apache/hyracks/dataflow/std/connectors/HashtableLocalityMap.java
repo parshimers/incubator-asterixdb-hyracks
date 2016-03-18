@@ -28,7 +28,7 @@ public class HashtableLocalityMap implements ILocalityMap {
 
     /*
      * (non-Javadoc)
-     * 
+     *
      * @see
      * org.apache.hyracks.examples.text.client.aggregation.helpers.ILocalityMap
      * #getConsumers(int, int)
@@ -54,7 +54,7 @@ public class HashtableLocalityMap implements ILocalityMap {
 
     /*
      * (non-Javadoc)
-     * 
+     *
      * @see
      * org.apache.hyracks.examples.text.client.aggregation.helpers.ILocalityMap
      * #getConsumerPartitionCount(int)

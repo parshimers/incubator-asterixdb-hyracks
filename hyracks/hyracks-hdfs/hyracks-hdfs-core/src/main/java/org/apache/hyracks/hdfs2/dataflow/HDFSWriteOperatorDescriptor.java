@@ -50,7 +50,7 @@ public class HDFSWriteOperatorDescriptor extends AbstractSingleActivityOperatorD
 
     /**
      * The constructor of HDFSWriteOperatorDescriptor.
-     * 
+     *
      * @param spec
      *            the JobSpecification object
      * @param conf

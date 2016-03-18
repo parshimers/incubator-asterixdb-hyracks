@@ -43,7 +43,7 @@ public class CountFieldAggregatorFactory implements IFieldAggregateDescriptorFac
 
     /*
      * (non-Javadoc)
-     * 
+     *
      * @see org.apache.hyracks.dataflow.std.aggregations.
      * IFieldAggregateDescriptorFactory
      * #createAggregator(org.apache.hyracks.api.context.IHyracksTaskContext,

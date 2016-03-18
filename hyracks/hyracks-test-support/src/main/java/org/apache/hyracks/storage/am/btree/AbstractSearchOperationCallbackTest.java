@@ -22,11 +22,6 @@ import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
-import org.junit.After;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
-
 import org.apache.hyracks.api.exceptions.HyracksDataException;
 import org.apache.hyracks.dataflow.common.comm.io.ArrayTupleBuilder;
 import org.apache.hyracks.dataflow.common.comm.io.ArrayTupleReference;
@@ -37,6 +32,10 @@ import org.apache.hyracks.storage.am.common.api.IIndexAccessor;
 import org.apache.hyracks.storage.am.common.api.IIndexCursor;
 import org.apache.hyracks.storage.am.common.api.ISearchOperationCallback;
 import org.apache.hyracks.storage.am.common.impls.NoOpOperationCallback;
+import org.junit.After;
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.Test;
 
 public abstract class AbstractSearchOperationCallbackTest extends AbstractOperationCallbackTest {
     private static final int NUM_TASKS = 2;
@@ -53,12 +52,14 @@ public abstract class AbstractSearchOperationCallbackTest extends AbstractOperat
         this.insertTaskStarted = false;
     }
 
+    @Override
     @Before
     public void setup() throws Exception {
         executor = Executors.newFixedThreadPool(NUM_TASKS);
         super.setup();
     }
 
+    @Override
     @After
     public void tearDown() throws Exception {
         executor.shutdown();
@@ -188,7 +189,10 @@ public abstract class AbstractSearchOperationCallbackTest extends AbstractOperat
 
             @Override
             public void complete(ITupleReference tuple) throws HyracksDataException {
+            }
 
+            @Override
+            public void before(ITupleReference tuple) throws HyracksDataException {
             }
 
         }

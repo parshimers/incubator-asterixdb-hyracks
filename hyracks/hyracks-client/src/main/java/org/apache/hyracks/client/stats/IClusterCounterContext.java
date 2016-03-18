@@ -21,5 +21,5 @@ import org.apache.hyracks.api.job.profiling.counters.ICounterContext;
 public interface IClusterCounterContext extends ICounterContext {
 
     public ICounter getCounter(String machineName, String counterName, boolean create);
-    
+
 }

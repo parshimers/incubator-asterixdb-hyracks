@@ -38,7 +38,8 @@ public class SearchPredicate extends AbstractSearchPredicate {
         this.cmp = cmp;
     }
 
-    public ITupleReference getSearchKey() {
+    @Override
+    public ITupleReference getLowKey() {
         return searchKey;
     }
 
@@ -46,10 +47,12 @@ public class SearchPredicate extends AbstractSearchPredicate {
         this.searchKey = searchKey;
     }
 
+    @Override
     public MultiComparator getLowKeyComparator() {
         return cmp;
     }
 
+    @Override
     public MultiComparator getHighKeyComparator() {
         return cmp;
     }

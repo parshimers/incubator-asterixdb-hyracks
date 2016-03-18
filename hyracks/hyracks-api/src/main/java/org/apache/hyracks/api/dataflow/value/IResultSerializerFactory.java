@@ -20,7 +20,7 @@ import java.io.Serializable;
 public interface IResultSerializerFactory extends Serializable {
     /**
      * Creates a result serialized appender
-     * 
+     *
      * @param printStream
      *            - A print stream object to which the serialized results will be written.
      * @return A new instance of result serialized appender.

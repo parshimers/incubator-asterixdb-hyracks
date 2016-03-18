@@ -54,4 +54,9 @@ public class FrameDeserializingDataWriter implements IFrameWriter {
     @Override
     public void fail() {
     }
+
+    @Override
+    public void flush() throws HyracksDataException {
+        writer.flush();
+    }
 }

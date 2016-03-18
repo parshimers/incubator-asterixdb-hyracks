@@ -58,6 +58,11 @@ public class PrinterOperatorDescriptor extends AbstractSingleActivityOperatorDes
         public void setDataWriter(int index, IOpenableDataWriter<Object[]> writer) {
             throw new IllegalArgumentException();
         }
+
+        @Override
+        public void flush() throws HyracksDataException {
+            System.err.flush();
+        }
     }
 
     @Override

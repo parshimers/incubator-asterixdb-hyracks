@@ -35,8 +35,8 @@ import org.apache.hyracks.algebricks.core.algebra.metadata.IDataSource;
 import org.apache.hyracks.algebricks.core.algebra.metadata.IMetadataProvider;
 import org.apache.hyracks.algebricks.core.algebra.operators.logical.AbstractLogicalOperator;
 import org.apache.hyracks.algebricks.core.algebra.operators.logical.IOperatorSchema;
-import org.apache.hyracks.algebricks.core.algebra.operators.logical.InsertDeleteOperator;
-import org.apache.hyracks.algebricks.core.algebra.operators.logical.InsertDeleteOperator.Kind;
+import org.apache.hyracks.algebricks.core.algebra.operators.logical.InsertDeleteUpsertOperator;
+import org.apache.hyracks.algebricks.core.algebra.operators.logical.InsertDeleteUpsertOperator.Kind;
 import org.apache.hyracks.algebricks.core.algebra.properties.IPartitioningRequirementsCoordinator;
 import org.apache.hyracks.algebricks.core.algebra.properties.IPhysicalPropertiesVector;
 import org.apache.hyracks.algebricks.core.algebra.properties.PhysicalRequirements;
@@ -52,13 +52,16 @@ public class BulkloadPOperator extends AbstractPhysicalOperator {
     private final LogicalVariable payload;
     private final List<LogicalVariable> primaryKeys;
     private final List<LogicalVariable> additionalFilteringKeys;
+    private final List<LogicalVariable> additionalNonFilterVars;
     private final IDataSource<?> dataSource;
 
     public BulkloadPOperator(LogicalVariable payload, List<LogicalVariable> keys,
-           List<LogicalVariable> additionalFilteringKeys, IDataSource<?> dataSource) {
+            List<LogicalVariable> additionalFilteringKeys, List<LogicalVariable> additionalNonFilterVars,
+            IDataSource<?> dataSource) {
         this.payload = payload;
         this.primaryKeys = keys;
         this.additionalFilteringKeys = additionalFilteringKeys;
+        this.additionalNonFilterVars = additionalNonFilterVars;
         this.dataSource = dataSource;
     }
 
@@ -69,12 +72,12 @@ public class BulkloadPOperator extends AbstractPhysicalOperator {
 
     @Override
     public PhysicalRequirements getRequiredPropertiesForChildren(ILogicalOperator op,
-            IPhysicalPropertiesVector reqdByParent) {
+            IPhysicalPropertiesVector reqdByParent, IOptimizationContext context) {
         List<LogicalVariable> scanVariables = new ArrayList<>();
         scanVariables.addAll(primaryKeys);
         scanVariables.add(new LogicalVariable(-1));
-        IPhysicalPropertiesVector physicalProps = dataSource.getPropertiesProvider().computePropertiesVector(
-                scanVariables);
+        IPhysicalPropertiesVector physicalProps = dataSource.getPropertiesProvider()
+                .computePropertiesVector(scanVariables);
         StructuralPropertiesVector spv = new StructuralPropertiesVector(physicalProps.getPartitioningProperty(),
                 physicalProps.getLocalProperties());
         return new PhysicalRequirements(new IPhysicalPropertiesVector[] { spv },
@@ -85,24 +88,24 @@ public class BulkloadPOperator extends AbstractPhysicalOperator {
     public void computeDeliveredProperties(ILogicalOperator op, IOptimizationContext context)
             throws AlgebricksException {
         AbstractLogicalOperator op2 = (AbstractLogicalOperator) op.getInputs().get(0).getValue();
-        deliveredProperties = (StructuralPropertiesVector) op2.getDeliveredPhysicalProperties().clone();
+        deliveredProperties = op2.getDeliveredPhysicalProperties().clone();
     }
 
+    @SuppressWarnings({ "rawtypes", "unchecked" })
     @Override
     public void contributeRuntimeOperator(IHyracksJobBuilder builder, JobGenContext context, ILogicalOperator op,
             IOperatorSchema propagatedSchema, IOperatorSchema[] inputSchemas, IOperatorSchema outerPlanSchema)
-            throws AlgebricksException {
-        InsertDeleteOperator insertDeleteOp = (InsertDeleteOperator) op;
+                    throws AlgebricksException {
+        InsertDeleteUpsertOperator insertDeleteOp = (InsertDeleteUpsertOperator) op;
         assert insertDeleteOp.getOperation() == Kind.INSERT;
         assert insertDeleteOp.isBulkload();
-
         IMetadataProvider mp = context.getMetadataProvider();
         IVariableTypeEnvironment typeEnv = context.getTypeEnvironment(op);
         JobSpecification spec = builder.getJobSpec();
         RecordDescriptor inputDesc = JobGenHelper.mkRecordDescriptor(
                 context.getTypeEnvironment(op.getInputs().get(0).getValue()), inputSchemas[0], context);
-        Pair<IOperatorDescriptor, AlgebricksPartitionConstraint> runtimeAndConstraints = mp.getInsertRuntime(
-                dataSource, propagatedSchema, typeEnv, primaryKeys, payload, additionalFilteringKeys,
+        Pair<IOperatorDescriptor, AlgebricksPartitionConstraint> runtimeAndConstraints = mp.getInsertRuntime(dataSource,
+                propagatedSchema, typeEnv, primaryKeys, payload, additionalFilteringKeys, additionalNonFilterVars,
                 inputDesc, context, spec, true);
         builder.contributeHyracksOperator(insertDeleteOp, runtimeAndConstraints.first);
         builder.contributeAlgebricksPartitionConstraint(runtimeAndConstraints.first, runtimeAndConstraints.second);
@@ -119,6 +122,5 @@ public class BulkloadPOperator extends AbstractPhysicalOperator {
     public boolean expensiveThanMaterialization() {
         return false;
     }
-
 
 }

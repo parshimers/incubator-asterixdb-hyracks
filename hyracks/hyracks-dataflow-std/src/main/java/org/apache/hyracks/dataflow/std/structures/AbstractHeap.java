@@ -17,7 +17,7 @@ package org.apache.hyracks.dataflow.std.structures;
 
 import java.util.Arrays;
 
-import org.apache.hyracks.dataflow.std.util.MathUtil;
+import org.apache.hyracks.util.MathUtil;
 
 public abstract class AbstractHeap implements IHeap<IResetableComparable> {
     protected static final int NOT_EXIST = -1;
@@ -68,9 +68,7 @@ public abstract class AbstractHeap implements IHeap<IResetableComparable> {
 
     @Override
     public void reset() {
-        for (int i = 0; i < numEntry; i++) {
-            entries[i] = null;
-        }
+        Arrays.fill(entries, null);
         numEntry = 0;
     }
 

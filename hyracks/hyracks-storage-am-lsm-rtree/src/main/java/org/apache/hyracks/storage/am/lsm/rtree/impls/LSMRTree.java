@@ -123,7 +123,6 @@ public class LSMRTree extends AbstractLSMRTree {
     /**
      * Opens LSMRTree, cleaning up invalid files from base dir, and registering
      * all valid files as on-disk RTrees and BTrees.
-     * 
      * @throws HyracksDataException
      */
     @Override
@@ -493,8 +492,8 @@ public class LSMRTree extends AbstractLSMRTree {
             indexTuple = tuple;
         }
 
-        ctx.modificationCallback.before(indexTuple);
-        ctx.modificationCallback.found(null, indexTuple);
+        ctx.getModificationCallback().before(indexTuple);
+        ctx.getModificationCallback().found(null, indexTuple);
         if (ctx.getOperation() == IndexOperation.INSERT) {
             ctx.currentMutableRTreeAccessor.insert(indexTuple);
         } else {
@@ -639,13 +638,10 @@ public class LSMRTree extends AbstractLSMRTree {
     @Override
     public Set<String> getLSMComponentPhysicalFiles(ILSMComponent lsmComponent) {
         Set<String> files = new HashSet<String>();
-
         LSMRTreeDiskComponent component = (LSMRTreeDiskComponent) lsmComponent;
-
-        files.add(component.getBTree().getFileReference().toString());
-        files.add(component.getRTree().getFileReference().toString());
-        files.add(component.getBloomFilter().getFileReference().toString());
-
+        files.add(component.getBTree().getFileReference().getFile().getAbsolutePath());
+        files.add(component.getRTree().getFileReference().getFile().getAbsolutePath());
+        files.add(component.getBloomFilter().getFileReference().getFile().getAbsolutePath());
         return files;
     }
 

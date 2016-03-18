@@ -24,12 +24,12 @@ public class EditDistanceSearchModifierFactory implements IInvertedIndexSearchMo
 
     private final int gramLength;
     private final int edThresh;
-    
+
     public EditDistanceSearchModifierFactory(int gramLength, int edThresh) {
         this.gramLength = gramLength;
         this.edThresh = edThresh;
     }
-    
+
     @Override
     public IInvertedIndexSearchModifier createSearchModifier() {
         return new EditDistanceSearchModifier(gramLength, edThresh);

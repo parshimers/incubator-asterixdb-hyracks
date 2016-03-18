@@ -19,7 +19,7 @@
   <parent>
     <groupId>org.apache.hyracks</groupId>
     <artifactId>hyracks</artifactId>
-    <version>0.2.17-SNAPSHOT</version>
+    <version>0.2.18-SNAPSHOT</version>
   </parent>
 
   <licenses>
@@ -33,6 +33,9 @@
 
 
 
+  <properties>
+      <root.dir>${basedir}/../..</root.dir>
+  </properties>
   <dependencies>
     <dependency>
       <groupId>junit</groupId>

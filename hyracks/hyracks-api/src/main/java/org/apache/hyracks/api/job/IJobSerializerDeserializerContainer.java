@@ -21,7 +21,7 @@ public interface IJobSerializerDeserializerContainer {
 
     /**
      * Get the IJobSerializerDeserializer implementation instance for a specific deployment id
-     * 
+     *
      * @param deploymentId
      * @return
      */
@@ -29,7 +29,7 @@ public interface IJobSerializerDeserializerContainer {
 
     /**
      * Add a deployment with the job serializer deserializer
-     * 
+     *
      * @param deploymentId
      * @param jobSerDe
      */
@@ -37,7 +37,7 @@ public interface IJobSerializerDeserializerContainer {
 
     /**
      * Remove a deployment
-     * 
+     *
      * @param deploymentId
      */
     public void removeJobSerializerDeserializer(DeploymentId deploymentId);

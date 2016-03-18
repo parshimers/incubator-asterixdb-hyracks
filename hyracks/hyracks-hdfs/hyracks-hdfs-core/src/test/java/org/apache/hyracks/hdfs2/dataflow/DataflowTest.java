@@ -100,7 +100,7 @@ public class DataflowTest extends TestCase {
 
     /**
      * Start the HDFS cluster and setup the data files
-     * 
+     *
      * @throws IOException
      */
     private void startHDFS() throws IOException {
@@ -128,7 +128,7 @@ public class DataflowTest extends TestCase {
 
     /**
      * Test a job with only HDFS read and writes.
-     * 
+     *
      * @throws Exception
      */
     @SuppressWarnings({ "rawtypes", "unchecked" })
@@ -177,7 +177,7 @@ public class DataflowTest extends TestCase {
 
     /**
      * Check if the results are correct
-     * 
+     *
      * @return true if correct
      * @throws Exception
      */

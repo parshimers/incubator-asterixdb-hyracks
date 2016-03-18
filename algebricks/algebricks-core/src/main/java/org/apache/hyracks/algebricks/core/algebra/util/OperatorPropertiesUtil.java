@@ -23,7 +23,6 @@ import java.util.HashSet;
 import java.util.Set;
 
 import org.apache.commons.lang3.mutable.Mutable;
-
 import org.apache.hyracks.algebricks.common.exceptions.AlgebricksException;
 import org.apache.hyracks.algebricks.common.utils.ListSet;
 import org.apache.hyracks.algebricks.core.algebra.base.ILogicalExpression;
@@ -39,9 +38,12 @@ import org.apache.hyracks.algebricks.core.algebra.functions.AlgebricksBuiltinFun
 import org.apache.hyracks.algebricks.core.algebra.operators.logical.AbstractLogicalOperator;
 import org.apache.hyracks.algebricks.core.algebra.operators.logical.AbstractOperatorWithNestedPlans;
 import org.apache.hyracks.algebricks.core.algebra.operators.logical.SelectOperator;
+import org.apache.hyracks.algebricks.core.algebra.operators.logical.visitors.CardinalityInferenceVisitor;
 import org.apache.hyracks.algebricks.core.algebra.operators.logical.visitors.VariableUtilities;
 
 public class OperatorPropertiesUtil {
+
+    private static final String MOVABLE = "isMovable";
 
     public static <T> boolean disjoint(Collection<T> c1, Collection<T> c2) {
         for (T m : c1) {
@@ -66,7 +68,7 @@ public class OperatorPropertiesUtil {
     /**
      * Adds the free variables of the plan rooted at that operator to the
      * collection provided.
-     * 
+     *
      * @param op
      * @param vars
      *            - The collection to which the free variables will be added.
@@ -82,22 +84,11 @@ public class OperatorPropertiesUtil {
         HashSet<LogicalVariable> used = new HashSet<LogicalVariable>();
         VariableUtilities.getUsedVariables(op, used);
         for (LogicalVariable v : used) {
-            if (!freeVars.contains(v)) {
-                freeVars.add(v);
-            }
+            freeVars.add(v);
         }
-
         if (op.hasNestedPlans()) {
             AbstractOperatorWithNestedPlans s = (AbstractOperatorWithNestedPlans) op;
-            for (ILogicalPlan p : s.getNestedPlans()) {
-                for (Mutable<ILogicalOperator> r : p.getRoots()) {
-                    getFreeVariablesInSelfOrDesc((AbstractLogicalOperator) r.getValue(), freeVars);
-                }
-            }
-            s.getUsedVariablesExceptNestedPlans(freeVars);
-            HashSet<LogicalVariable> produced2 = new HashSet<LogicalVariable>();
-            s.getProducedVariablesExceptNestedPlans(produced2);
-            freeVars.removeAll(produced);
+            getFreeVariablesInSubplans(s, freeVars);
         }
         for (Mutable<ILogicalOperator> i : op.getInputs()) {
             getFreeVariablesInSelfOrDesc((AbstractLogicalOperator) i.getValue(), freeVars);
@@ -107,7 +98,7 @@ public class OperatorPropertiesUtil {
     /**
      * Adds the free variables of the operator path from
      * op to dest, where dest is a direct/indirect input operator of op in the query plan.
-     * 
+     *
      * @param op
      *            , the start operator.
      * @param dest
@@ -140,53 +131,23 @@ public class OperatorPropertiesUtil {
         if (op == dest) {
             return true;
         }
-        boolean onPath = false;
         if (((AbstractLogicalOperator) op).hasNestedPlans()) {
             AbstractOperatorWithNestedPlans a = (AbstractOperatorWithNestedPlans) op;
             for (ILogicalPlan p : a.getNestedPlans()) {
                 for (Mutable<ILogicalOperator> r : p.getRoots()) {
-                    if (isDestInNestedPath((AbstractLogicalOperator) r.getValue(), dest)) {
-                        onPath = true;
+                    if (collectUsedAndProducedVariablesInPath(r.getValue(), dest, usedVars, producedVars)) {
+                        VariableUtilities.getUsedVariables(r.getValue(), usedVars);
+                        VariableUtilities.getProducedVariables(r.getValue(), producedVars);
+                        return true;
                     }
                 }
             }
         }
         for (Mutable<ILogicalOperator> childRef : op.getInputs()) {
             if (collectUsedAndProducedVariablesInPath(childRef.getValue(), dest, usedVars, producedVars)) {
-                onPath = true;
-            }
-        }
-        if (onPath) {
-            VariableUtilities.getUsedVariables(op, usedVars);
-            VariableUtilities.getProducedVariables(op, producedVars);
-        }
-        return onPath;
-    }
-
-    /***
-     * Recursively checks if the dest operator is in the path of a nested plan
-     * 
-     * @param op
-     * @param dest
-     * @return
-     */
-    private static boolean isDestInNestedPath(AbstractLogicalOperator op, ILogicalOperator dest) {
-        if (op == dest) {
-            return true;
-        }
-        for (Mutable<ILogicalOperator> i : op.getInputs()) {
-            if (isDestInNestedPath((AbstractLogicalOperator) i.getValue(), dest)) {
+                VariableUtilities.getUsedVariables(op, usedVars);
+                VariableUtilities.getProducedVariables(op, producedVars);
                 return true;
-            }
-        }
-        if (op.hasNestedPlans()) {
-            AbstractOperatorWithNestedPlans a = (AbstractOperatorWithNestedPlans) op;
-            for (ILogicalPlan p : a.getNestedPlans()) {
-                for (Mutable<ILogicalOperator> r : p.getRoots()) {
-                    if (isDestInNestedPath((AbstractLogicalOperator) r.getValue(), dest)) {
-                        return true;
-                    }
-                }
             }
         }
         return false;
@@ -300,5 +261,40 @@ public class OperatorPropertiesUtil {
             return ((ConstantExpression) cond).getValue().isTrue();
         }
         return false;
+    }
+
+    public static boolean isCardinalityOne(ILogicalOperator operator) throws AlgebricksException {
+        CardinalityInferenceVisitor visitor = new CardinalityInferenceVisitor();
+        return operator.accept(visitor, null) == 1L;
+    }
+
+    /**
+     * Whether an operator can be moved around in the query plan.
+     *
+     * @param op
+     *            the operator to consider.
+     * @return true if the operator can be moved, false if the operator cannot be moved.
+     * @throws AlgebricksException
+     */
+    public static boolean isMovable(ILogicalOperator op) {
+        Object annotation = op.getAnnotations().get(MOVABLE);
+        if (annotation == null) {
+            // By default, it is movable.
+            return true;
+        }
+        Boolean movable = (Boolean) annotation;
+        return movable;
+    }
+
+    /**
+     * Mark an operator to be either movable or not.
+     *
+     * @param op
+     *            the operator to consider.
+     * @param movable
+     *            true means it is movable, false means it is not movable.
+     */
+    public static void markMovable(ILogicalOperator op, boolean movable) {
+        op.getAnnotations().put(MOVABLE, movable);
     }
 }

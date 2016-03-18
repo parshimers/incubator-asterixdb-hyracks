@@ -20,10 +20,11 @@ package org.apache.hyracks.algebricks.core.algebra.operators.logical.visitors;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import org.apache.commons.lang3.mutable.Mutable;
-
 import org.apache.hyracks.algebricks.common.exceptions.AlgebricksException;
 import org.apache.hyracks.algebricks.common.utils.Pair;
 import org.apache.hyracks.algebricks.common.utils.Triple;
@@ -40,12 +41,13 @@ import org.apache.hyracks.algebricks.core.algebra.operators.logical.DistributeRe
 import org.apache.hyracks.algebricks.core.algebra.operators.logical.EmptyTupleSourceOperator;
 import org.apache.hyracks.algebricks.core.algebra.operators.logical.ExchangeOperator;
 import org.apache.hyracks.algebricks.core.algebra.operators.logical.ExtensionOperator;
-import org.apache.hyracks.algebricks.core.algebra.operators.logical.ExternalDataLookupOperator;
 import org.apache.hyracks.algebricks.core.algebra.operators.logical.GroupByOperator;
-import org.apache.hyracks.algebricks.core.algebra.operators.logical.IndexInsertDeleteOperator;
+import org.apache.hyracks.algebricks.core.algebra.operators.logical.IndexInsertDeleteUpsertOperator;
 import org.apache.hyracks.algebricks.core.algebra.operators.logical.InnerJoinOperator;
-import org.apache.hyracks.algebricks.core.algebra.operators.logical.InsertDeleteOperator;
+import org.apache.hyracks.algebricks.core.algebra.operators.logical.InsertDeleteUpsertOperator;
+import org.apache.hyracks.algebricks.core.algebra.operators.logical.IntersectOperator;
 import org.apache.hyracks.algebricks.core.algebra.operators.logical.LeftOuterJoinOperator;
+import org.apache.hyracks.algebricks.core.algebra.operators.logical.LeftOuterUnnestMapOperator;
 import org.apache.hyracks.algebricks.core.algebra.operators.logical.LimitOperator;
 import org.apache.hyracks.algebricks.core.algebra.operators.logical.MaterializeOperator;
 import org.apache.hyracks.algebricks.core.algebra.operators.logical.NestedTupleSourceOperator;
@@ -188,11 +190,16 @@ public class ProducedVariableVisitor implements ILogicalOperatorVisitor<Void, Vo
 
     @Override
     public Void visitSubplanOperator(SubplanOperator op, Void arg) throws AlgebricksException {
+        Set<LogicalVariable> producedVars = new HashSet<>();
+        Set<LogicalVariable> liveVars = new HashSet<>();
         for (ILogicalPlan p : op.getNestedPlans()) {
             for (Mutable<ILogicalOperator> r : p.getRoots()) {
-                VariableUtilities.getLiveVariables(r.getValue(), producedVariables);
+                VariableUtilities.getProducedVariablesInDescendantsAndSelf(r.getValue(), producedVars);
+                VariableUtilities.getSubplanLocalLiveVariables(r.getValue(), liveVars);
             }
         }
+        producedVars.retainAll(liveVars);
+        producedVariables.addAll(producedVars);
         return null;
     }
 
@@ -205,7 +212,19 @@ public class ProducedVariableVisitor implements ILogicalOperatorVisitor<Void, Vo
     }
 
     @Override
+    public Void visitIntersectOperator(IntersectOperator op, Void arg) throws AlgebricksException {
+        producedVariables.addAll(op.getOutputVars());
+        return null;
+    }
+
+    @Override
     public Void visitUnnestMapOperator(UnnestMapOperator op, Void arg) throws AlgebricksException {
+        producedVariables.addAll(op.getVariables());
+        return null;
+    }
+
+    @Override
+    public Void visitLeftOuterUnnestMapOperator(LeftOuterUnnestMapOperator op, Void arg) throws AlgebricksException {
         producedVariables.addAll(op.getVariables());
         return null;
     }
@@ -241,12 +260,14 @@ public class ProducedVariableVisitor implements ILogicalOperatorVisitor<Void, Vo
     }
 
     @Override
-    public Void visitInsertDeleteOperator(InsertDeleteOperator op, Void arg) throws AlgebricksException {
+    public Void visitInsertDeleteUpsertOperator(InsertDeleteUpsertOperator op, Void arg) throws AlgebricksException {
+        op.getProducedVariables(producedVariables);
         return null;
     }
 
     @Override
-    public Void visitIndexInsertDeleteOperator(IndexInsertDeleteOperator op, Void arg) throws AlgebricksException {
+    public Void visitIndexInsertDeleteUpsertOperator(IndexInsertDeleteUpsertOperator op, Void arg)
+            throws AlgebricksException {
         return null;
     }
 
@@ -268,12 +289,6 @@ public class ProducedVariableVisitor implements ILogicalOperatorVisitor<Void, Vo
     }
 
     @Override
-    public Void visitExternalDataLookupOperator(ExternalDataLookupOperator op, Void arg) throws AlgebricksException {
-        producedVariables.add(op.getVariables().get(0));
-        return null;
-    }
-
-    @Override
     public Void visitOuterUnnestOperator(OuterUnnestOperator op, Void arg) throws AlgebricksException {
         return visitUnnestNonMapOperator(op);
     }
@@ -282,8 +297,9 @@ public class ProducedVariableVisitor implements ILogicalOperatorVisitor<Void, Vo
         producedVariables.addAll(op.getVariables());
         LogicalVariable positionalVariable = op.getPositionalVariable();
         if (positionalVariable != null) {
-            if (!producedVariables.contains(positionalVariable))
+            if (!producedVariables.contains(positionalVariable)) {
                 producedVariables.add(positionalVariable);
+            }
         }
         return null;
     }

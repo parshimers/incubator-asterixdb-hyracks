@@ -27,12 +27,13 @@ import org.apache.hyracks.algebricks.core.algebra.operators.logical.DistributeRe
 import org.apache.hyracks.algebricks.core.algebra.operators.logical.EmptyTupleSourceOperator;
 import org.apache.hyracks.algebricks.core.algebra.operators.logical.ExchangeOperator;
 import org.apache.hyracks.algebricks.core.algebra.operators.logical.ExtensionOperator;
-import org.apache.hyracks.algebricks.core.algebra.operators.logical.ExternalDataLookupOperator;
 import org.apache.hyracks.algebricks.core.algebra.operators.logical.GroupByOperator;
-import org.apache.hyracks.algebricks.core.algebra.operators.logical.IndexInsertDeleteOperator;
+import org.apache.hyracks.algebricks.core.algebra.operators.logical.IndexInsertDeleteUpsertOperator;
 import org.apache.hyracks.algebricks.core.algebra.operators.logical.InnerJoinOperator;
-import org.apache.hyracks.algebricks.core.algebra.operators.logical.InsertDeleteOperator;
+import org.apache.hyracks.algebricks.core.algebra.operators.logical.InsertDeleteUpsertOperator;
+import org.apache.hyracks.algebricks.core.algebra.operators.logical.IntersectOperator;
 import org.apache.hyracks.algebricks.core.algebra.operators.logical.LeftOuterJoinOperator;
+import org.apache.hyracks.algebricks.core.algebra.operators.logical.LeftOuterUnnestMapOperator;
 import org.apache.hyracks.algebricks.core.algebra.operators.logical.LimitOperator;
 import org.apache.hyracks.algebricks.core.algebra.operators.logical.MaterializeOperator;
 import org.apache.hyracks.algebricks.core.algebra.operators.logical.NestedTupleSourceOperator;
@@ -95,11 +96,15 @@ public interface ILogicalOperatorVisitor<R, T> {
 
     public R visitUnionOperator(UnionAllOperator op, T arg) throws AlgebricksException;
 
+    public R visitIntersectOperator(IntersectOperator op, T arg) throws AlgebricksException;
+
     public R visitUnnestOperator(UnnestOperator op, T arg) throws AlgebricksException;
 
     public R visitOuterUnnestOperator(OuterUnnestOperator op, T arg) throws AlgebricksException;
 
     public R visitUnnestMapOperator(UnnestMapOperator op, T arg) throws AlgebricksException;
+
+    public R visitLeftOuterUnnestMapOperator(LeftOuterUnnestMapOperator op, T arg) throws AlgebricksException;
 
     public R visitDataScanOperator(DataSourceScanOperator op, T arg) throws AlgebricksException;
 
@@ -113,11 +118,9 @@ public interface ILogicalOperatorVisitor<R, T> {
 
     public R visitWriteResultOperator(WriteResultOperator op, T arg) throws AlgebricksException;
 
-    public R visitInsertDeleteOperator(InsertDeleteOperator op, T tag) throws AlgebricksException;
+    public R visitInsertDeleteUpsertOperator(InsertDeleteUpsertOperator op, T tag) throws AlgebricksException;
 
-    public R visitIndexInsertDeleteOperator(IndexInsertDeleteOperator op, T tag) throws AlgebricksException;
-
-    public R visitExternalDataLookupOperator(ExternalDataLookupOperator op, T arg) throws AlgebricksException;
+    public R visitIndexInsertDeleteUpsertOperator(IndexInsertDeleteUpsertOperator op, T tag) throws AlgebricksException;
 
     public R visitTokenizeOperator(TokenizeOperator op, T arg) throws AlgebricksException;
 

@@ -43,7 +43,7 @@ public interface ILSMIndexFileManager {
     public String getBaseDir();
 
     // Deletes invalid files, and returns list of valid files from baseDir.
-    // The returned valid files are correctly sorted (based on the recency of data). 
+    // The returned valid files are correctly sorted (based on the recency of data).
     public List<LSMComponentFileReferences> cleanupAndGetValidFiles() throws HyracksDataException, IndexException;
 
     public Comparator<String> getFileNameComparator();
@@ -56,7 +56,7 @@ public interface ILSMIndexFileManager {
 
     /**
      * Rename files of a transaction removing the transaction prefix and return the component file reference in order to be committed
-     * 
+     *
      * @return the renamed component file references
      * @throws HyracksDataException
      */
@@ -64,7 +64,7 @@ public interface ILSMIndexFileManager {
 
     /**
      * Recover transaction files without returning them
-     * 
+     *
      * @throws HyracksDataException
      */
     public void recoverTransaction() throws HyracksDataException;

@@ -22,7 +22,6 @@ import java.util.Collection;
 import java.util.List;
 
 import org.apache.commons.lang3.mutable.Mutable;
-
 import org.apache.hyracks.algebricks.common.exceptions.AlgebricksException;
 import org.apache.hyracks.algebricks.common.utils.Pair;
 import org.apache.hyracks.algebricks.common.utils.Triple;
@@ -31,6 +30,7 @@ import org.apache.hyracks.algebricks.core.algebra.base.ILogicalOperator;
 import org.apache.hyracks.algebricks.core.algebra.base.ILogicalPlan;
 import org.apache.hyracks.algebricks.core.algebra.base.IPhysicalOperator;
 import org.apache.hyracks.algebricks.core.algebra.base.LogicalVariable;
+import org.apache.hyracks.algebricks.core.algebra.operators.logical.AbstractUnnestMapOperator;
 import org.apache.hyracks.algebricks.core.algebra.operators.logical.AggregateOperator;
 import org.apache.hyracks.algebricks.core.algebra.operators.logical.AssignOperator;
 import org.apache.hyracks.algebricks.core.algebra.operators.logical.DataSourceScanOperator;
@@ -39,12 +39,13 @@ import org.apache.hyracks.algebricks.core.algebra.operators.logical.DistributeRe
 import org.apache.hyracks.algebricks.core.algebra.operators.logical.EmptyTupleSourceOperator;
 import org.apache.hyracks.algebricks.core.algebra.operators.logical.ExchangeOperator;
 import org.apache.hyracks.algebricks.core.algebra.operators.logical.ExtensionOperator;
-import org.apache.hyracks.algebricks.core.algebra.operators.logical.ExternalDataLookupOperator;
 import org.apache.hyracks.algebricks.core.algebra.operators.logical.GroupByOperator;
-import org.apache.hyracks.algebricks.core.algebra.operators.logical.IndexInsertDeleteOperator;
+import org.apache.hyracks.algebricks.core.algebra.operators.logical.IndexInsertDeleteUpsertOperator;
 import org.apache.hyracks.algebricks.core.algebra.operators.logical.InnerJoinOperator;
-import org.apache.hyracks.algebricks.core.algebra.operators.logical.InsertDeleteOperator;
+import org.apache.hyracks.algebricks.core.algebra.operators.logical.InsertDeleteUpsertOperator;
+import org.apache.hyracks.algebricks.core.algebra.operators.logical.IntersectOperator;
 import org.apache.hyracks.algebricks.core.algebra.operators.logical.LeftOuterJoinOperator;
+import org.apache.hyracks.algebricks.core.algebra.operators.logical.LeftOuterUnnestMapOperator;
 import org.apache.hyracks.algebricks.core.algebra.operators.logical.LimitOperator;
 import org.apache.hyracks.algebricks.core.algebra.operators.logical.MaterializeOperator;
 import org.apache.hyracks.algebricks.core.algebra.operators.logical.NestedTupleSourceOperator;
@@ -165,6 +166,9 @@ public class UsedVariableVisitor implements ILogicalOperatorVisitor<Void, Void> 
                     for (OrderColumn partCol : concreteOp.getPartitioningFields()) {
                         usedVariables.add(partCol.getColumn());
                     }
+                    break;
+                }
+                case RANDOM_PARTITION_EXCHANGE: {
                     break;
                 }
                 default: {
@@ -295,14 +299,36 @@ public class UsedVariableVisitor implements ILogicalOperatorVisitor<Void, Void> 
     }
 
     @Override
+    public Void visitIntersectOperator(IntersectOperator op, Void arg) throws AlgebricksException {
+        for (int i = 0; i < op.getNumInput(); i++) {
+            for (LogicalVariable var : op.getInputVariables(i)) {
+                if (!usedVariables.contains(var)) {
+                    usedVariables.add(var);
+                }
+            }
+        }
+        return null;
+    }
+
+    @Override
     public Void visitUnnestMapOperator(UnnestMapOperator op, Void arg) {
+        getUsedVarsFromExprAndFilterExpr(op);
+        return null;
+    }
+
+    @Override
+    public Void visitLeftOuterUnnestMapOperator(LeftOuterUnnestMapOperator op, Void arg) throws AlgebricksException {
+        getUsedVarsFromExprAndFilterExpr(op);
+        return null;
+    }
+
+    private void getUsedVarsFromExprAndFilterExpr(AbstractUnnestMapOperator op) {
         op.getExpressionRef().getValue().getUsedVariables(usedVariables);
         if (op.getAdditionalFilteringExpressions() != null) {
             for (Mutable<ILogicalExpression> e : op.getAdditionalFilteringExpressions()) {
                 e.getValue().getUsedVariables(usedVariables);
             }
         }
-        return null;
     }
 
     @Override
@@ -342,13 +368,23 @@ public class UsedVariableVisitor implements ILogicalOperatorVisitor<Void, Void> 
     }
 
     @Override
-    public Void visitInsertDeleteOperator(InsertDeleteOperator op, Void arg) {
+    public Void visitInsertDeleteUpsertOperator(InsertDeleteUpsertOperator op, Void arg) {
+        // 1. The record variable
         op.getPayloadExpression().getValue().getUsedVariables(usedVariables);
+
+        // 2. The primary key variables
         for (Mutable<ILogicalExpression> e : op.getPrimaryKeyExpressions()) {
             e.getValue().getUsedVariables(usedVariables);
         }
+        // 3. The filters variables
         if (op.getAdditionalFilteringExpressions() != null) {
             for (Mutable<ILogicalExpression> e : op.getAdditionalFilteringExpressions()) {
+                e.getValue().getUsedVariables(usedVariables);
+            }
+        }
+        // 4. The Other variables (Not key, Not payload, and Not Filter)
+        if (op.getAdditionalNonFilteringExpressions() != null) {
+            for (Mutable<ILogicalExpression> e : op.getAdditionalNonFilteringExpressions()) {
                 e.getValue().getUsedVariables(usedVariables);
             }
         }
@@ -356,7 +392,7 @@ public class UsedVariableVisitor implements ILogicalOperatorVisitor<Void, Void> 
     }
 
     @Override
-    public Void visitIndexInsertDeleteOperator(IndexInsertDeleteOperator op, Void arg) {
+    public Void visitIndexInsertDeleteUpsertOperator(IndexInsertDeleteUpsertOperator op, Void arg) {
         for (Mutable<ILogicalExpression> e : op.getPrimaryKeyExpressions()) {
             e.getValue().getUsedVariables(usedVariables);
         }
@@ -365,6 +401,14 @@ public class UsedVariableVisitor implements ILogicalOperatorVisitor<Void, Void> 
         }
         if (op.getAdditionalFilteringExpressions() != null) {
             for (Mutable<ILogicalExpression> e : op.getAdditionalFilteringExpressions()) {
+                e.getValue().getUsedVariables(usedVariables);
+            }
+        }
+        if (op.getPrevAdditionalFilteringExpression() != null) {
+            op.getPrevAdditionalFilteringExpression().getValue().getUsedVariables(usedVariables);
+        }
+        if (op.getPrevSecondaryKeyExprs() != null) {
+            for (Mutable<ILogicalExpression> e : op.getPrevSecondaryKeyExprs()) {
                 e.getValue().getUsedVariables(usedVariables);
             }
         }
@@ -400,12 +444,6 @@ public class UsedVariableVisitor implements ILogicalOperatorVisitor<Void, Void> 
     @Override
     public Void visitExtensionOperator(ExtensionOperator op, Void arg) throws AlgebricksException {
         op.getDelegate().getUsedVariables(usedVariables);
-        return null;
-    }
-
-    @Override
-    public Void visitExternalDataLookupOperator(ExternalDataLookupOperator op, Void arg) throws AlgebricksException {
-        op.getExpressionRef().getValue().getUsedVariables(usedVariables);
         return null;
     }
 

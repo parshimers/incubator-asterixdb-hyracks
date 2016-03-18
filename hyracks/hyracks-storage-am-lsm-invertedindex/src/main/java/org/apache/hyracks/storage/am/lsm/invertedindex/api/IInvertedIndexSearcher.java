@@ -37,6 +37,6 @@ public interface IInvertedIndexSearcher {
     public List<ByteBuffer> getResultBuffers();
 
     public int getNumValidResultBuffers();
-    
+
     public void reset();
 }

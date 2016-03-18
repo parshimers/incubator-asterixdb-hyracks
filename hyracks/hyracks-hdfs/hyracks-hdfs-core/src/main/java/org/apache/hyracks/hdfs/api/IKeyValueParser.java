@@ -20,7 +20,7 @@ import org.apache.hyracks.api.exceptions.HyracksDataException;
 
 /**
  * Users need to implement this interface to use the HDFSReadOperatorDescriptor.
- * 
+ *
  * @param <K>
  *            the key type
  * @param <V>
@@ -30,7 +30,7 @@ public interface IKeyValueParser<K, V> {
 
     /**
      * Initialize the key value parser.
-     * 
+     *
      * @param writer
      *            The hyracks writer for outputting data.
      * @throws HyracksDataException
@@ -49,7 +49,7 @@ public interface IKeyValueParser<K, V> {
     /**
      * Flush the residual tuples in the internal buffer to the writer.
      * This method is called in the close() of HDFSReadOperatorDescriptor.
-     * 
+     *
      * @param writer
      *            The hyracks writer for outputting data.
      * @throws HyracksDataException

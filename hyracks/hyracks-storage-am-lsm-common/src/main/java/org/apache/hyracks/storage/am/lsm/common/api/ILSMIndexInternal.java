@@ -59,7 +59,7 @@ public interface ILSMIndexInternal extends ILSMIndex {
 
     /**
      * Populates the context's component holder with a snapshot of the components involved in the operation.
-     * 
+     *
      * @param ctx
      *            - the operation's context
      * @throws HyracksDataException
@@ -72,7 +72,7 @@ public interface ILSMIndexInternal extends ILSMIndex {
 
     /**
      * Persist the LSM component
-     * 
+     *
      * @param lsmComponent
      *            , the component to be persistent
      * @throws HyracksDataException

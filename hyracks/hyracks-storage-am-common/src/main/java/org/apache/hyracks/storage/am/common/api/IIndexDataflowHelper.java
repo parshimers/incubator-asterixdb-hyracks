@@ -42,4 +42,9 @@ public interface IIndexDataflowHelper {
     public IHyracksTaskContext getTaskContext();
 
     public String getResourcePath();
+
+    /**
+     * @return The resource unique storage partition id
+     */
+    public int getResourcePartition();
 }

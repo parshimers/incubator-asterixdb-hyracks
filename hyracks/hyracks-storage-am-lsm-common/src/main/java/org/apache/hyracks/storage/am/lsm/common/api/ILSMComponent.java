@@ -40,6 +40,6 @@ public interface ILSMComponent {
     public LSMComponentType getType();
 
     public ComponentState getState();
-    
+
     public ILSMComponentFilter getLSMComponentFilter();
 }

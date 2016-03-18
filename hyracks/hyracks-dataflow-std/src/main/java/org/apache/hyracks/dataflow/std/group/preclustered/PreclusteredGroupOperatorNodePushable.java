@@ -69,4 +69,9 @@ class PreclusteredGroupOperatorNodePushable extends AbstractUnaryInputUnaryOutpu
     public void close() throws HyracksDataException {
         pgw.close();
     }
+
+    @Override
+    public void flush() throws HyracksDataException {
+        pgw.flush();
+    }
 }

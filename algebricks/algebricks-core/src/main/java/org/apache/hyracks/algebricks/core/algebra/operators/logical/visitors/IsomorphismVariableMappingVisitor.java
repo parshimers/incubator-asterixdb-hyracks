@@ -25,7 +25,6 @@ import java.util.Map.Entry;
 
 import org.apache.commons.lang3.mutable.Mutable;
 import org.apache.commons.lang3.mutable.MutableObject;
-
 import org.apache.hyracks.algebricks.common.exceptions.AlgebricksException;
 import org.apache.hyracks.algebricks.common.utils.Pair;
 import org.apache.hyracks.algebricks.common.utils.Triple;
@@ -44,12 +43,13 @@ import org.apache.hyracks.algebricks.core.algebra.operators.logical.DistributeRe
 import org.apache.hyracks.algebricks.core.algebra.operators.logical.EmptyTupleSourceOperator;
 import org.apache.hyracks.algebricks.core.algebra.operators.logical.ExchangeOperator;
 import org.apache.hyracks.algebricks.core.algebra.operators.logical.ExtensionOperator;
-import org.apache.hyracks.algebricks.core.algebra.operators.logical.ExternalDataLookupOperator;
 import org.apache.hyracks.algebricks.core.algebra.operators.logical.GroupByOperator;
-import org.apache.hyracks.algebricks.core.algebra.operators.logical.IndexInsertDeleteOperator;
+import org.apache.hyracks.algebricks.core.algebra.operators.logical.IndexInsertDeleteUpsertOperator;
 import org.apache.hyracks.algebricks.core.algebra.operators.logical.InnerJoinOperator;
-import org.apache.hyracks.algebricks.core.algebra.operators.logical.InsertDeleteOperator;
+import org.apache.hyracks.algebricks.core.algebra.operators.logical.InsertDeleteUpsertOperator;
+import org.apache.hyracks.algebricks.core.algebra.operators.logical.IntersectOperator;
 import org.apache.hyracks.algebricks.core.algebra.operators.logical.LeftOuterJoinOperator;
+import org.apache.hyracks.algebricks.core.algebra.operators.logical.LeftOuterUnnestMapOperator;
 import org.apache.hyracks.algebricks.core.algebra.operators.logical.LimitOperator;
 import org.apache.hyracks.algebricks.core.algebra.operators.logical.MaterializeOperator;
 import org.apache.hyracks.algebricks.core.algebra.operators.logical.NestedTupleSourceOperator;
@@ -202,6 +202,13 @@ public class IsomorphismVariableMappingVisitor implements ILogicalOperatorVisito
     }
 
     @Override
+    public Void visitIntersectOperator(IntersectOperator op, ILogicalOperator arg) throws AlgebricksException {
+        mapChildren(op, arg);
+        mapVariablesForIntersect(op, arg);
+        return null;
+    }
+
+    @Override
     public Void visitUnnestOperator(UnnestOperator op, ILogicalOperator arg) throws AlgebricksException {
         mapVariablesStandard(op, arg);
         return null;
@@ -209,6 +216,13 @@ public class IsomorphismVariableMappingVisitor implements ILogicalOperatorVisito
 
     @Override
     public Void visitUnnestMapOperator(UnnestMapOperator op, ILogicalOperator arg) throws AlgebricksException {
+        mapVariablesStandard(op, arg);
+        return null;
+    }
+
+    @Override
+    public Void visitLeftOuterUnnestMapOperator(LeftOuterUnnestMapOperator op, ILogicalOperator arg)
+            throws AlgebricksException {
         mapVariablesStandard(op, arg);
         return null;
     }
@@ -251,21 +265,21 @@ public class IsomorphismVariableMappingVisitor implements ILogicalOperatorVisito
     }
 
     @Override
-    public Void visitInsertDeleteOperator(InsertDeleteOperator op, ILogicalOperator arg) throws AlgebricksException {
-        mapVariablesStandard(op, arg);
-        return null;
-    }
-
-    @Override
-    public Void visitIndexInsertDeleteOperator(IndexInsertDeleteOperator op, ILogicalOperator arg)
+    public Void visitInsertDeleteUpsertOperator(InsertDeleteUpsertOperator op, ILogicalOperator arg)
             throws AlgebricksException {
         mapVariablesStandard(op, arg);
         return null;
     }
 
     @Override
-    public Void visitTokenizeOperator(TokenizeOperator op, ILogicalOperator arg)
+    public Void visitIndexInsertDeleteUpsertOperator(IndexInsertDeleteUpsertOperator op, ILogicalOperator arg)
             throws AlgebricksException {
+        mapVariablesStandard(op, arg);
+        return null;
+    }
+
+    @Override
+    public Void visitTokenizeOperator(TokenizeOperator op, ILogicalOperator arg) throws AlgebricksException {
         mapVariablesStandard(op, arg);
         return null;
     }
@@ -428,6 +442,22 @@ public class IsomorphismVariableMappingVisitor implements ILogicalOperatorVisito
         }
     }
 
+    private void mapVariablesForIntersect(IntersectOperator op, ILogicalOperator arg) {
+        IntersectOperator opArg = (IntersectOperator) arg;
+        if (op.getNumInput() != opArg.getNumInput()) {
+            return;
+        }
+        for (int i = 0; i < op.getNumInput(); i++) {
+            for (int j = 0; j < op.getInputVariables(i).size(); j++) {
+                if (!varEquivalent(op.getInputVariables(i).get(j), opArg.getInputVariables(i).get(j))) {
+                    return;
+                }
+            }
+
+        }
+        mapVariables(op.getOutputVars(), opArg.getOutputVars());
+    }
+
     private boolean varEquivalent(LogicalVariable left, LogicalVariable right) {
         if (variableMapping.get(right) == null)
             return false;
@@ -440,12 +470,6 @@ public class IsomorphismVariableMappingVisitor implements ILogicalOperatorVisito
     @Override
     public Void visitExtensionOperator(ExtensionOperator op, ILogicalOperator arg) throws AlgebricksException {
         mapVariablesStandard(op, arg);
-        return null;
-    }
-
-    @Override
-    public Void visitExternalDataLookupOperator(ExternalDataLookupOperator op, ILogicalOperator arg)
-            throws AlgebricksException {
         return null;
     }
 

@@ -150,7 +150,7 @@ public class BinaryTokenizerOperatorNodePushable extends AbstractUnaryInputUnary
     @Override
     public void close() throws HyracksDataException {
         try {
-            appender.flush(writer, true);
+            appender.write(writer, true);
         } finally {
             writer.close();
         }
@@ -159,5 +159,10 @@ public class BinaryTokenizerOperatorNodePushable extends AbstractUnaryInputUnary
     @Override
     public void fail() throws HyracksDataException {
         writer.fail();
+    }
+
+    @Override
+    public void flush() throws HyracksDataException {
+        appender.flush(writer);
     }
 }

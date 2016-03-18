@@ -69,7 +69,7 @@ import org.apache.hyracks.storage.common.file.IFileMapProvider;
  * This is an lsm b-tree that does not have memory component and is modified
  * only by bulk loading and addition of disk components as of this point, it is
  * intended for use with external dataset indexes only.
- * 
+ *
  * @author alamouda
  */
 public class ExternalBTree extends LSMBTree implements ITwoPCIndex {
@@ -198,8 +198,8 @@ public class ExternalBTree extends LSMBTree implements ITwoPCIndex {
         ITreeIndexCursor cursor = new LSMBTreeRangeSearchCursor(opCtx, returnDeletedTuples);
         BTree firstBTree = ((LSMBTreeDiskComponent) mergingComponents.get(0)).getBTree();
         BTree lastBTree = ((LSMBTreeDiskComponent) mergingComponents.get(mergingComponents.size() - 1)).getBTree();
-        FileReference firstFile = diskFileMapProvider.lookupFileName(firstBTree.getFileId());
-        FileReference lastFile = diskFileMapProvider.lookupFileName(lastBTree.getFileId());
+        FileReference firstFile = firstBTree.getFileReference();
+        FileReference lastFile = lastBTree.getFileReference();
         LSMComponentFileReferences relMergeFileRefs = fileManager
                 .getRelMergeFileReference(firstFile.getFile().getName(), lastFile.getFile().getName());
         ILSMIndexAccessorInternal accessor = new LSMBTreeAccessor(lsmHarness, opCtx);

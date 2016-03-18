@@ -85,7 +85,7 @@ public class BufferCacheTest {
                 page.getBuffer().putInt(i * 4, i);
             }
 
-            // try pin should succeed         
+            // try pin should succeed
             ICachedPage page2 = bufferCache.tryPin(BufferedFileHandle.getDiskPageId(fileId, testPageId));
             Assert.assertNotNull(page2);
             bufferCache.unpin(page2);
@@ -120,7 +120,7 @@ public class BufferCacheTest {
         // open file again
         bufferCache.openFile(fileId);
 
-        // tryPin should succeed because page should still be cached        
+        // tryPin should succeed because page should still be cached
         page = bufferCache.tryPin(BufferedFileHandle.getDiskPageId(fileId, testPageId));
         Assert.assertNotNull(page);
         page.acquireReadLatch();
@@ -279,7 +279,7 @@ public class BufferCacheTest {
         }
         Assert.assertTrue(exceptionThrown);
 
-        // close a few random files again        
+        // close a few random files again
         for (int i = 0; i < filesToClose; i++) {
             int ix = Math.abs(rnd.nextInt()) % fileIds.size();
             bufferCache.closeFile(fileIds.get(ix));

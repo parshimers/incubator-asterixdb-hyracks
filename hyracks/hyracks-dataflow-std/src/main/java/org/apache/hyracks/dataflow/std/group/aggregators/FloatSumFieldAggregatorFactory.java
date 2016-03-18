@@ -39,12 +39,12 @@ public class FloatSumFieldAggregatorFactory implements
     private final int aggField;
 
     private final boolean useObjectState;
-    
+
     public FloatSumFieldAggregatorFactory(int aggField, boolean useObjState){
         this.aggField = aggField;
         this.useObjectState = useObjState;
     }
-    
+
     /* (non-Javadoc)
      * @see org.apache.hyracks.dataflow.std.group.IFieldAggregateDescriptorFactory#createAggregator(edu.uci.ics.hyracks.api.context.IHyracksTaskContext, edu.uci.ics.hyracks.api.dataflow.value.RecordDescriptor, edu.uci.ics.hyracks.api.dataflow.value.RecordDescriptor)
      */
@@ -53,12 +53,12 @@ public class FloatSumFieldAggregatorFactory implements
             RecordDescriptor inRecordDescriptor,
             RecordDescriptor outRecordDescriptor) throws HyracksDataException {
         return new IFieldAggregateDescriptor() {
-            
+
             @Override
             public void reset() {
-                
+
             }
-            
+
             @Override
             public void outputPartialResult(DataOutput fieldOutput, byte[] data,
                     int offset, AggregateState state) throws HyracksDataException {
@@ -74,7 +74,7 @@ public class FloatSumFieldAggregatorFactory implements
                     throw new HyracksDataException("I/O exception when writing aggregation to the output buffer.");
                 }
             }
-            
+
             @Override
             public void outputFinalResult(DataOutput fieldOutput, byte[] data,
                     int offset, AggregateState state) throws HyracksDataException {
@@ -90,17 +90,17 @@ public class FloatSumFieldAggregatorFactory implements
                     throw new HyracksDataException("I/O exception when writing aggregation to the output buffer.");
                 }
             }
-            
+
             @Override
             public boolean needsObjectState() {
                 return useObjectState;
             }
-            
+
             @Override
             public boolean needsBinaryState() {
                 return !useObjectState;
             }
-            
+
             @Override
             public void init(IFrameTupleAccessor accessor, int tIndex,
                     DataOutput fieldOutput, AggregateState state)
@@ -121,18 +121,18 @@ public class FloatSumFieldAggregatorFactory implements
                     state.state = sum;
                 }
             }
-            
+
             @Override
             public AggregateState createState() {
                 return new AggregateState(new Float(0.0));
             }
-            
+
             @Override
             public void close() {
                 // TODO Auto-generated method stub
-                
+
             }
-            
+
             @Override
             public void aggregate(IFrameTupleAccessor accessor, int tIndex,
                     byte[] data, int offset, AggregateState state)

@@ -20,7 +20,7 @@ import org.apache.hyracks.api.job.JobId;
 public interface IHyracksDatasetDirectoryServiceInterface {
     /**
      * Gets the result status for the given result set.
-     * 
+     *
      * @param jobId
      *            ID of the job
      * @param rsId
@@ -32,7 +32,7 @@ public interface IHyracksDatasetDirectoryServiceInterface {
 
     /**
      * Gets the IP Addresses and ports for the partition generating the result for each location.
-     * 
+     *
      * @param jobId
      *            ID of the job
      * @param rsId

@@ -86,7 +86,7 @@ public abstract class AbstractHashJoinPOperator extends AbstractJoinPOperator {
 
     @Override
     public PhysicalRequirements getRequiredPropertiesForChildren(ILogicalOperator iop,
-            IPhysicalPropertiesVector reqdByParent) {
+            IPhysicalPropertiesVector reqdByParent, IOptimizationContext context) {
         StructuralPropertiesVector[] pv = new StructuralPropertiesVector[2];
         // In a cost-based optimizer, we would also try to propagate the
         // parent's partitioning requirements.
@@ -97,12 +97,14 @@ public abstract class AbstractHashJoinPOperator extends AbstractJoinPOperator {
         if (op.getExecutionMode() == AbstractLogicalOperator.ExecutionMode.PARTITIONED) {
             switch (partitioningType) {
                 case PAIRWISE: {
-                    pp1 = new UnorderedPartitionedProperty(new ListSet<LogicalVariable>(keysLeftBranch), null);
-                    pp2 = new UnorderedPartitionedProperty(new ListSet<LogicalVariable>(keysRightBranch), null);
+                    pp1 = new UnorderedPartitionedProperty(new ListSet<LogicalVariable>(keysLeftBranch),
+                            context.getComputationNodeDomain());
+                    pp2 = new UnorderedPartitionedProperty(new ListSet<LogicalVariable>(keysRightBranch),
+                            context.getComputationNodeDomain());
                     break;
                 }
                 case BROADCAST: {
-                    pp2 = new BroadcastPartitioningProperty(null);
+                    pp2 = new BroadcastPartitioningProperty(context.getComputationNodeDomain());
                     break;
                 }
                 default: {
@@ -127,9 +129,8 @@ public abstract class AbstractHashJoinPOperator extends AbstractJoinPOperator {
                     public Pair<Boolean, IPartitioningProperty> coordinateRequirements(
                             IPartitioningProperty requirements, IPartitioningProperty firstDeliveredPartitioning,
                             ILogicalOperator op, IOptimizationContext context) throws AlgebricksException {
-                        if (firstDeliveredPartitioning != null
-                                && firstDeliveredPartitioning.getPartitioningType() == requirements
-                                        .getPartitioningType()) {
+                        if (firstDeliveredPartitioning != null && firstDeliveredPartitioning
+                                .getPartitioningType() == requirements.getPartitioningType()) {
                             switch (requirements.getPartitioningType()) {
                                 case UNORDERED_PARTITIONED: {
                                     UnorderedPartitionedProperty upp1 = (UnorderedPartitionedProperty) firstDeliveredPartitioning;
@@ -139,8 +140,8 @@ public abstract class AbstractHashJoinPOperator extends AbstractJoinPOperator {
                                     Map<LogicalVariable, EquivalenceClass> eqmap = context.getEquivalenceClassMap(op);
                                     Set<LogicalVariable> covered = new ListSet<LogicalVariable>();
                                     Set<LogicalVariable> keysCurrent = uppreq.getColumnSet();
-                                    List<LogicalVariable> keysFirst = (keysRightBranch.containsAll(keysCurrent)) ? keysRightBranch
-                                            : keysLeftBranch;
+                                    List<LogicalVariable> keysFirst = (keysRightBranch.containsAll(keysCurrent))
+                                            ? keysRightBranch : keysLeftBranch;
                                     List<LogicalVariable> keysSecond = keysFirst == keysRightBranch ? keysLeftBranch
                                             : keysRightBranch;
                                     for (LogicalVariable r : uppreq.getColumnSet()) {
@@ -155,8 +156,8 @@ public abstract class AbstractHashJoinPOperator extends AbstractJoinPOperator {
                                             j++;
                                         }
                                         if (!found) {
-                                            throw new IllegalStateException("Did not find a variable equivalent to "
-                                                    + r + " among " + keysFirst);
+                                            throw new IllegalStateException("Did not find a variable equivalent to " + r
+                                                    + " among " + keysFirst);
                                         }
                                         LogicalVariable v2 = keysSecond.get(j);
                                         EquivalenceClass ecFst = eqmap.get(v2);
@@ -166,6 +167,9 @@ public abstract class AbstractHashJoinPOperator extends AbstractJoinPOperator {
                                                 modifuppreq.add(r);
                                                 break;
                                             }
+                                        }
+                                        if (covered.equals(set1)) {
+                                            break;
                                         }
                                     }
                                     if (!covered.equals(set1)) {

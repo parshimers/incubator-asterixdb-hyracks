@@ -100,7 +100,6 @@ public class RemoveRedundantVariablesRule implements IAlgebraicRewriteRule {
             equivalentVarsMap.put(rhs, equivalentVars);
         }
         equivalentVarsMap.put(lhs, equivalentVars);
-        equivalentVars.get(0);
     }
 
     private boolean removeRedundantVariables(Mutable<ILogicalOperator> opRef, IOptimizationContext context)
@@ -125,7 +124,7 @@ public class RemoveRedundantVariablesRule implements IAlgebraicRewriteRule {
             }
         }
 
-        // Replace variable references with their first representative. 
+        // Replace variable references with their first representative.
         if (op.getOperatorTag() == LogicalOperatorTag.PROJECT) {
             // The project operator does not use expressions, so we need to replace it's variables manually.
             if (replaceProjectVars((ProjectOperator) op)) {
@@ -142,7 +141,7 @@ public class RemoveRedundantVariablesRule implements IAlgebraicRewriteRule {
             }
         }
 
-        // Perform variable replacement in nested plans. 
+        // Perform variable replacement in nested plans.
         if (op.hasNestedPlans()) {
             AbstractOperatorWithNestedPlans opWithNestedPlan = (AbstractOperatorWithNestedPlans) op;
             for (ILogicalPlan nestedPlan : opWithNestedPlan.getNestedPlans()) {

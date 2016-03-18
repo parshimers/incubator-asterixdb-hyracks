@@ -26,28 +26,15 @@ import org.apache.hyracks.algebricks.core.algebra.base.ILogicalExpression;
 import org.apache.hyracks.algebricks.core.algebra.base.LogicalOperatorTag;
 import org.apache.hyracks.algebricks.core.algebra.base.LogicalVariable;
 import org.apache.hyracks.algebricks.core.algebra.expressions.IVariableTypeEnvironment;
-import org.apache.hyracks.algebricks.core.algebra.properties.VariablePropagationPolicy;
 import org.apache.hyracks.algebricks.core.algebra.typing.ITypingContext;
 import org.apache.hyracks.algebricks.core.algebra.typing.NonPropagatingTypeEnvironment;
 import org.apache.hyracks.algebricks.core.algebra.visitors.ILogicalOperatorVisitor;
 
-/**
- * This operator may go away after we add indexes to Algebricks.
- */
-public class UnnestMapOperator extends AbstractUnnestOperator {
-
-    private final List<Object> variableTypes; // TODO: get rid of this and  deprecate UnnestMap
-    private boolean propagateInput;
-
-    private List<Mutable<ILogicalExpression>> additionalFilteringExpressions;
-    private List<LogicalVariable> minFilterVars;
-    private List<LogicalVariable> maxFilterVars;
+public class UnnestMapOperator extends AbstractUnnestMapOperator {
 
     public UnnestMapOperator(List<LogicalVariable> variables, Mutable<ILogicalExpression> expression,
             List<Object> variableTypes, boolean propagateInput) {
-        super(variables, expression);
-        this.variableTypes = variableTypes;
-        this.propagateInput = propagateInput;
+        super(variables, expression, variableTypes, propagateInput);
     }
 
     @Override
@@ -60,31 +47,8 @@ public class UnnestMapOperator extends AbstractUnnestOperator {
         return visitor.visitUnnestMapOperator(this, arg);
     }
 
-    /**
-     * UnnestMap doesn't propagate input variables, because currently it is only
-     * used to search indexes. In the future, it would be nice to have the
-     * choice to propagate input variables or not.
-     */
-    @Override
-    public VariablePropagationPolicy getVariablePropagationPolicy() {
-        return new VariablePropagationPolicy() {
-            @Override
-            public void propagateVariables(IOperatorSchema target, IOperatorSchema... sources)
-                    throws AlgebricksException {
-                if (propagateInput) {
-                    target.addAllVariables(sources[0]);
-                }
-                for (LogicalVariable v : variables) {
-                    target.addVariable(v);
-                }
-            }
-        };
-    }
-
-    public List<Object> getVariableTypes() {
-        return variableTypes;
-    }
-
+    // When propagateInput is true,
+    // this operator propagates all input variables.
     @Override
     public IVariableTypeEnvironment computeOutputTypeEnvironment(ITypingContext ctx) throws AlgebricksException {
         IVariableTypeEnvironment env = null;
@@ -100,42 +64,4 @@ public class UnnestMapOperator extends AbstractUnnestOperator {
         return env;
     }
 
-    public boolean propagatesInput() {
-        return propagateInput;
-    }
-
-    public void setPropagatesInput(boolean propagateInput) {
-        this.propagateInput = propagateInput;
-    }
-
-    public List<LogicalVariable> getMinFilterVars() {
-        return minFilterVars;
-    }
-
-    public void setMinFilterVars(List<LogicalVariable> minFilterVars) {
-        this.minFilterVars = minFilterVars;
-    }
-
-    public List<LogicalVariable> getMaxFilterVars() {
-        return maxFilterVars;
-    }
-
-    public void setMaxFilterVars(List<LogicalVariable> maxFilterVars) {
-        this.maxFilterVars = maxFilterVars;
-    }
-
-    public void setAdditionalFilteringExpressions(List<Mutable<ILogicalExpression>> additionalFilteringExpressions) {
-        this.additionalFilteringExpressions = additionalFilteringExpressions;
-    }
-
-    public List<Mutable<ILogicalExpression>> getAdditionalFilteringExpressions() {
-        return additionalFilteringExpressions;
-    }
-
-    /*
-    @Override
-    public boolean isMap() {
-        return !propagateInput;
-    }
-    */
 }

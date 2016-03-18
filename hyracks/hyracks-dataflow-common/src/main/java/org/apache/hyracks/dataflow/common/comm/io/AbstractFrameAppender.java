@@ -25,6 +25,18 @@ import org.apache.hyracks.api.comm.IFrameWriter;
 import org.apache.hyracks.api.exceptions.HyracksDataException;
 import org.apache.hyracks.dataflow.common.util.IntSerDeUtils;
 
+/*
+ * Frame
+ *  _____________________________________________
+ * |[tuple1][tuple2][tuple3].........            |
+ * |                      .                      |
+ * |                      .                      |
+ * |                      .                      |
+ * |                      .                      |
+ * |                      .                      |
+ * |..[tupleN][tuplesOffsets(4*N)][tupleCount(4)]|
+ * |_____________________________________________|
+ */
 public class AbstractFrameAppender implements IFrameAppender {
     protected IFrame frame;
     protected byte[] array; // cached the getBuffer().array to speed up byte array access a little
@@ -42,12 +54,11 @@ public class AbstractFrameAppender implements IFrameAppender {
     }
 
     protected boolean hasEnoughSpace(int fieldCount, int tupleLength) {
-        return tupleDataEndOffset + FrameHelper.calcSpaceInFrame(fieldCount, tupleLength)
-                + tupleCount * FrameConstants.SIZE_LEN
-                <= FrameHelper.getTupleCountOffset(frame.getFrameSize());
+        return tupleDataEndOffset + FrameHelper.calcRequiredSpace(fieldCount, tupleLength)
+                + tupleCount * FrameConstants.SIZE_LEN <= FrameHelper.getTupleCountOffset(frame.getFrameSize());
     }
 
-    private void reset(ByteBuffer buffer, boolean clear) {
+    protected void reset(ByteBuffer buffer, boolean clear) {
         array = buffer.array();
         if (clear) {
             IntSerDeUtils.putInt(array, FrameHelper.getTupleCountOffset(frame.getFrameSize()), 0);
@@ -55,9 +66,8 @@ public class AbstractFrameAppender implements IFrameAppender {
             tupleDataEndOffset = FrameConstants.TUPLE_START_OFFSET;
         } else {
             tupleCount = IntSerDeUtils.getInt(array, FrameHelper.getTupleCountOffset(frame.getFrameSize()));
-            tupleDataEndOffset = tupleCount == 0 ?
-                    FrameConstants.TUPLE_START_OFFSET :
-                    IntSerDeUtils.getInt(array, FrameHelper.getTupleCountOffset(frame.getFrameSize())
+            tupleDataEndOffset = tupleCount == 0 ? FrameConstants.TUPLE_START_OFFSET
+                    : IntSerDeUtils.getInt(array, FrameHelper.getTupleCountOffset(frame.getFrameSize())
                             - tupleCount * FrameConstants.SIZE_LEN);
         }
     }
@@ -73,7 +83,7 @@ public class AbstractFrameAppender implements IFrameAppender {
     }
 
     @Override
-    public void flush(IFrameWriter outWriter, boolean clearFrame) throws HyracksDataException {
+    public void write(IFrameWriter outWriter, boolean clearFrame) throws HyracksDataException {
         getBuffer().clear();
         if (getTupleCount() > 0) {
             outWriter.nextFrame(getBuffer());

@@ -27,7 +27,7 @@ public interface ITupleWriter {
 
     /**
      * Initialize the the tuple writer.
-     * 
+     *
      * @param output
      *            The channel for output data.
      * @throws HyracksDataException
@@ -36,7 +36,7 @@ public interface ITupleWriter {
 
     /**
      * Write the tuple to the DataOutput.
-     * 
+     *
      * @param output
      *            the DataOutput channel
      * @param tuple
@@ -47,7 +47,7 @@ public interface ITupleWriter {
 
     /**
      * Close the writer.
-     * 
+     *
      * @param output
      *            The channel for output data.
      * @throws HyracksDataException

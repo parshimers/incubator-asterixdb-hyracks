@@ -42,7 +42,7 @@ import org.apache.hyracks.api.rewriter.runtime.SuperActivity;
  * DAGs into super activities.
  * </p>
  * Each super activity internally maintains a DAG and execute it at the runtime.
- * 
+ *
  * @author yingyib
  */
 public class ActivityClusterGraphRewriter {
@@ -52,7 +52,7 @@ public class ActivityClusterGraphRewriter {
      * rewrite an activity cluster graph to eliminate
      * all one-to-one connections and merge one-to-one connected
      * DAGs into super activities.
-     * 
+     *
      * @param acg
      *            the activity cluster graph
      */
@@ -71,7 +71,7 @@ public class ActivityClusterGraphRewriter {
 
     /**
      * rewrite the blocking relationship among activity cluster
-     * 
+     *
      * @param ac
      *            the activity cluster to be rewritten
      */
@@ -115,7 +115,7 @@ public class ActivityClusterGraphRewriter {
 
     /**
      * rewrite an activity cluster internally
-     * 
+     *
      * @param ac
      *            the activity cluster to be rewritten
      */
@@ -319,7 +319,7 @@ public class ActivityClusterGraphRewriter {
 
     /**
      * Create a new super activity
-     * 
+     *
      * @param acg
      *            the activity cluster
      * @param superActivities
@@ -347,7 +347,7 @@ public class ActivityClusterGraphRewriter {
 
     /**
      * One super activity swallows another existing super activity.
-     * 
+     *
      * @param superActivities
      *            the map from activity id to current super activities
      * @param toBeExpendedMap

@@ -16,7 +16,6 @@
 package org.apache.hyracks.control.common.deployment;
 
 import java.io.Serializable;
-import java.lang.reflect.Method;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.util.Collections;
@@ -29,12 +28,12 @@ import org.apache.hyracks.api.util.JavaSerializationUtils;
 
 /**
  * This is the IJobSerializerDeserializer implementation for jobs with dynamic deployed jars.
- * 
+ *
  * @author yingyib
  */
 public class ClassLoaderJobSerializerDeserializer implements IJobSerializerDeserializer {
 
-    private URLClassLoader classLoader;
+    private MutableURLClassLoader classLoader;
 
     @Override
     public Object deserialize(byte[] jsBytes) throws HyracksException {
@@ -72,13 +71,12 @@ public class ClassLoaderJobSerializerDeserializer implements IJobSerializerDeser
             if (classLoader == null) {
                 /** crate a new classloader */
                 URL[] urls = binaryURLs.toArray(new URL[binaryURLs.size()]);
-                classLoader = new URLClassLoader(urls, this.getClass().getClassLoader());
+                classLoader = new MutableURLClassLoader(urls, this.getClass().getClassLoader());
             } else {
                 /** add URLs to the existing classloader */
-                Object[] urls = binaryURLs.toArray(new URL[binaryURLs.size()]);
-                Method method = classLoader.getClass().getDeclaredMethod("addURL", new Class[] { URL.class });
-                method.setAccessible(true);
-                method.invoke(classLoader, urls);
+                for (URL url : binaryURLs) {
+                    classLoader.addURL(url);
+                }
             }
         } catch (Exception e) {
             throw new HyracksException(e);
@@ -102,5 +100,17 @@ public class ClassLoaderJobSerializerDeserializer implements IJobSerializerDeser
     @Override
     public String toString() {
         return classLoader.toString();
+    }
+
+    private static class MutableURLClassLoader extends URLClassLoader {
+
+        public MutableURLClassLoader(URL[] urls, ClassLoader classLoader) {
+            super(urls, classLoader);
+        }
+
+        @Override
+        protected void addURL(URL url) {
+            super.addURL(url);
+        }
     }
 }

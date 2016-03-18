@@ -100,7 +100,7 @@ public class RunningAggregateRuntimeFactory extends AbstractOneInputOneOutputRun
                     int n = runningAggregates.length;
                     for (int i = 0; i < n; i++) {
                         try {
-                            raggs[i] = runningAggregates[i].createRunningAggregateEvaluator();
+                            raggs[i] = runningAggregates[i].createRunningAggregateEvaluator(ctx);
                         } catch (AlgebricksException ae) {
                             throw new HyracksDataException(ae);
                         }
@@ -160,6 +160,10 @@ public class RunningAggregateRuntimeFactory extends AbstractOneInputOneOutputRun
                 }
             }
 
+            @Override
+            public void flush() throws HyracksDataException {
+                appender.flush(writer);
+            }
         };
     }
 }

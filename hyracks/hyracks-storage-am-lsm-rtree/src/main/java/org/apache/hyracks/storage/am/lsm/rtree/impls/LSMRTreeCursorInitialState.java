@@ -113,7 +113,7 @@ public class LSMRTreeCursorInitialState implements ICursorInitialState {
     @Override
     public void setOriginialKeyComparator(MultiComparator originalCmp) {
     }
-    
+
     public void setOperationalComponents(List<ILSMComponent> operationalComponents) {
         this.operationalComponents = operationalComponents;
     }

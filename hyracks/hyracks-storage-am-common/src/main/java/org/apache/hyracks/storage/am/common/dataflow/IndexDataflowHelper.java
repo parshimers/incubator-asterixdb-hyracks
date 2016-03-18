@@ -47,6 +47,7 @@ public abstract class IndexDataflowHelper implements IIndexDataflowHelper {
     private static final Logger LOGGER = Logger.getLogger(IndexDataflowHelper.class.getName());
     protected IIndex index;
     protected final String resourcePath;
+    protected final int resourcePartition;
 
     public IndexDataflowHelper(IIndexOperatorDescriptor opDesc, final IHyracksTaskContext ctx, int partition,
             boolean durable) {
@@ -59,6 +60,7 @@ public abstract class IndexDataflowHelper implements IIndexDataflowHelper {
         this.file = IndexFileNameUtil.getIndexAbsoluteFileRef(opDesc, partition, ctx.getIOManager());
         this.resourcePath = file.getPath();
         this.durable = durable;
+        this.resourcePartition = opDesc.getFileSplitProvider().getFileSplits()[partition].getPartition();
     }
 
     protected abstract IIndex createIndexInstance() throws HyracksDataException;
@@ -78,8 +80,8 @@ public abstract class IndexDataflowHelper implements IIndexDataflowHelper {
                 index = createIndexInstance();
             }
 
-            // The previous resource ID needs to be removed since calling IIndex.create() may possibly destroy 
-            // any physical artifact that the LocalResourceRepository is managing (e.g. a file containing the resource ID). 
+            // The previous resource ID needs to be removed since calling IIndex.create() may possibly destroy
+            // any physical artifact that the LocalResourceRepository is managing (e.g. a file containing the resource ID).
             // Once the index has been created, a new resource ID can be generated.
             long resourceID = getResourceID();
             if (resourceID != -1) {
@@ -161,5 +163,10 @@ public abstract class IndexDataflowHelper implements IIndexDataflowHelper {
     @Override
     public String getResourcePath() {
         return resourcePath;
+    }
+
+    @Override
+    public int getResourcePartition() {
+        return resourcePartition;
     }
 }

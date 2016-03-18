@@ -37,8 +37,6 @@ public class DatasetPartitionWriter implements IFrameWriter {
 
     private final ResultSetId resultSetId;
 
-    private final boolean asyncMode;
-
     private final boolean orderedResult;
 
     private final int partition;
@@ -59,7 +57,6 @@ public class DatasetPartitionWriter implements IFrameWriter {
         this.manager = manager;
         this.jobId = jobId;
         this.resultSetId = rsId;
-        this.asyncMode = asyncMode;
         this.orderedResult = orderedResult;
         this.partition = partition;
         this.nPartitions = nPartitions;
@@ -135,5 +132,4 @@ public class DatasetPartitionWriter implements IFrameWriter {
             }
         }
     }
-
 }

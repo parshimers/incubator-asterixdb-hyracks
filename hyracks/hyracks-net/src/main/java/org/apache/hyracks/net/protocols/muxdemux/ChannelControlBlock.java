@@ -30,7 +30,7 @@ import org.apache.hyracks.net.exceptions.NetException;
 
 /**
  * Handle to a channel that represents a logical full-duplex communication end-point.
- * 
+ *
  * @author vinayakb
  */
 public class ChannelControlBlock {
@@ -69,7 +69,7 @@ public class ChannelControlBlock {
 
     /**
      * Get the read inderface of this channel.
-     * 
+     *
      * @return the read interface.
      */
     public IChannelReadInterface getReadInterface() {
@@ -78,7 +78,7 @@ public class ChannelControlBlock {
 
     /**
      * Get the write interface of this channel.
-     * 
+     *
      * @return the write interface.
      */
     public IChannelWriteInterface getWriteInterface() {

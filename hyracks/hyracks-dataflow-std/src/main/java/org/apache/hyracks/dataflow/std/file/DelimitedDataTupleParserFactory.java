@@ -22,7 +22,7 @@ import java.io.InputStreamReader;
 import org.apache.hyracks.api.comm.IFrame;
 import org.apache.hyracks.api.comm.IFrameWriter;
 import org.apache.hyracks.api.comm.VSizeFrame;
-import org.apache.hyracks.api.context.IHyracksCommonContext;
+import org.apache.hyracks.api.context.IHyracksTaskContext;
 import org.apache.hyracks.api.exceptions.HyracksDataException;
 import org.apache.hyracks.dataflow.common.comm.io.ArrayTupleBuilder;
 import org.apache.hyracks.dataflow.common.comm.io.FrameTupleAppender;
@@ -48,7 +48,7 @@ public class DelimitedDataTupleParserFactory implements ITupleParserFactory {
     }
 
     @Override
-    public ITupleParser createTupleParser(final IHyracksCommonContext ctx) {
+    public ITupleParser createTupleParser(final IHyracksTaskContext ctx) {
         return new ITupleParser() {
             @Override
             public void parse(InputStream in, IFrameWriter writer) throws HyracksDataException {
@@ -83,7 +83,7 @@ public class DelimitedDataTupleParserFactory implements ITupleParserFactory {
                         FrameUtils.appendToWriter(writer, appender, tb.getFieldEndOffsets(), tb.getByteArray(), 0,
                                 tb.getSize());
                     }
-                    appender.flush(writer, true);
+                    appender.write(writer, true);
                 } catch (IOException e) {
                     throw new HyracksDataException(e);
                 }

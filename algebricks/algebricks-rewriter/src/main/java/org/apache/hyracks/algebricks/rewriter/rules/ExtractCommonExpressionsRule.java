@@ -28,7 +28,6 @@ import java.util.Set;
 
 import org.apache.commons.lang3.mutable.Mutable;
 import org.apache.commons.lang3.mutable.MutableObject;
-
 import org.apache.hyracks.algebricks.common.exceptions.AlgebricksException;
 import org.apache.hyracks.algebricks.core.algebra.base.ILogicalExpression;
 import org.apache.hyracks.algebricks.core.algebra.base.ILogicalOperator;
@@ -93,7 +92,8 @@ public class ExtractCommonExpressionsRule implements IAlgebraicRewriteRule {
     private final Map<ILogicalExpression, ExprEquivalenceClass> exprEqClassMap = new HashMap<ILogicalExpression, ExprEquivalenceClass>();
 
     // Set of operators for which common subexpression elimination should not be performed.
-    private static final Set<LogicalOperatorTag> ignoreOps = new HashSet<LogicalOperatorTag>();
+    private static final Set<LogicalOperatorTag> ignoreOps = new HashSet<LogicalOperatorTag>(6);
+
     static {
         ignoreOps.add(LogicalOperatorTag.UNNEST);
         ignoreOps.add(LogicalOperatorTag.UNNEST_MAP);
@@ -110,7 +110,8 @@ public class ExtractCommonExpressionsRule implements IAlgebraicRewriteRule {
     }
 
     @Override
-    public boolean rewritePre(Mutable<ILogicalOperator> opRef, IOptimizationContext context) throws AlgebricksException {
+    public boolean rewritePre(Mutable<ILogicalOperator> opRef, IOptimizationContext context)
+            throws AlgebricksException {
         exprEqClassMap.clear();
         substVisitor.setContext(context);
         boolean modified = removeCommonExpressions(opRef, context);
@@ -196,7 +197,7 @@ public class ExtractCommonExpressionsRule implements IAlgebraicRewriteRule {
         }
 
         // TODO: For now do not perform replacement in nested plans
-        // due to the complication of figuring out whether the firstOp in an equivalence class is within a subplan, 
+        // due to the complication of figuring out whether the firstOp in an equivalence class is within a subplan,
         // and the resulting variable will not be visible to the outside.
         // Since subplans should be eliminated in most cases, this behavior is acceptable for now.
         /*
@@ -238,7 +239,7 @@ public class ExtractCommonExpressionsRule implements IAlgebraicRewriteRule {
             boolean modified = false;
             ExprEquivalenceClass exprEqClass = exprEqClassMap.get(expr);
             if (exprEqClass != null) {
-                // Replace common subexpression with existing variable. 
+                // Replace common subexpression with existing variable.
                 if (exprEqClass.variableIsSet()) {
                     Set<LogicalVariable> liveVars = new HashSet<LogicalVariable>();
                     List<LogicalVariable> usedVars = new ArrayList<LogicalVariable>();
@@ -310,14 +311,14 @@ public class ExtractCommonExpressionsRule implements IAlgebraicRewriteRule {
                 selectOp.getInputs().add(new MutableObject<ILogicalOperator>(op.getInputs().get(0).getValue()));
                 op.getInputs().get(0).setValue(selectOp);
                 // Set firstOp to be the select below op, since we want to assign the common subexpr there.
-                firstOp = (AbstractLogicalOperator) selectOp;
+                firstOp = selectOp;
             } else if (firstOp.getInputs().size() > 1) {
                 // Bail for any non-join operator with multiple inputs.
                 return false;
             }
             LogicalVariable newVar = context.newVar();
-            AssignOperator newAssign = new AssignOperator(newVar, new MutableObject<ILogicalExpression>(firstExprRef
-                    .getValue().cloneExpression()));
+            AssignOperator newAssign = new AssignOperator(newVar,
+                    new MutableObject<ILogicalExpression>(firstExprRef.getValue().cloneExpression()));
             // Place assign below firstOp.
             newAssign.getInputs().add(new MutableObject<ILogicalOperator>(firstOp.getInputs().get(0).getValue()));
             newAssign.setExecutionMode(firstOp.getExecutionMode());
