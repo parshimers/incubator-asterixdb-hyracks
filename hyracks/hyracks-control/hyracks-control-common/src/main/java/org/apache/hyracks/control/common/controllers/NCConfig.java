@@ -73,6 +73,9 @@ public class NCConfig implements Serializable {
     @Option(name = "-iodevices", usage = "Comma separated list of IO Device mount points (default: One device in default temp folder)", required = false)
     public String ioDevices = System.getProperty("java.io.tmpdir");
 
+    @Option(name = "-hdp-conf-path", usage = "Hadoop Config location for native HDFS I/O support", required = false)
+    public String hadoopConfPath = "";
+
     @Option(name = "-net-thread-count", usage = "Number of threads to use for Network I/O (default: 1)")
     public int nNetThreads = 1;
 
@@ -131,6 +134,8 @@ public class NCConfig implements Serializable {
         cList.add(String.valueOf(resultPublicPort));
         cList.add("-iodevices");
         cList.add(ioDevices);
+        cList.add("-hdp-conf-path");
+        cList.add(hadoopConfPath);
         cList.add("-net-thread-count");
         cList.add(String.valueOf(nNetThreads));
         cList.add("-net-buffer-count");
@@ -173,6 +178,7 @@ public class NCConfig implements Serializable {
         configuration.put("result-public-ip-address", resultPublicIPAddress);
         configuration.put("result-public-port", String.valueOf(resultPublicPort));
         configuration.put("iodevices", ioDevices);
+        configuration.put("-hdp-conf-path", hadoopConfPath);
         configuration.put("net-thread-count", String.valueOf(nNetThreads));
         configuration.put("net-buffer-count", String.valueOf(nNetBuffers));
         configuration.put("max-memory", String.valueOf(maxMemory));

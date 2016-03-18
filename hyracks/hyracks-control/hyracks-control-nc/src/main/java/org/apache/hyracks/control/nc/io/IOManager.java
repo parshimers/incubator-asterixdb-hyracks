@@ -45,6 +45,7 @@ public class IOManager implements IIOManager {
     private Executor executor;
     private final List<IODeviceHandle> workAreaIODevices;
     private int workAreaDeviceIndex;
+    private String hdpConfPath;
     
     private IIOSubSystem[] ioSubSystems = new IIOSubSystem[FileReferenceType.values().length];
 
@@ -66,6 +67,11 @@ public class IOManager implements IIOManager {
             throw new HyracksException("No devices with work areas found");
         }
         workAreaDeviceIndex = 0;
+    }
+
+    public IOManager(List<IODeviceHandle> devices, String hdpConfPath) throws HyracksException {
+        this(devices);
+        this.hdpConfPath = hdpConfPath;
     }
 
     public void setExecutor(Executor executor) {
@@ -122,7 +128,6 @@ public class IOManager implements IIOManager {
      * Please do check the return value of this read!
      *
      * @param fHandle
-     * @param offset
      * @param data
      * @return The number of bytes read, possibly zero, or -1 if the given offset is greater than or equal to the file's current size
      * @throws HyracksDataException
@@ -364,12 +369,12 @@ public class IOManager implements IIOManager {
     }
 
     
-    private IIOSubSystem getIOSubSystem(FileReference fileReference) {
+    IIOSubSystem getIOSubSystem(FileReference fileReference) {
         IIOSubSystem ioSubSystem = ioSubSystems[fileReference.getType().ordinal()];
         if(ioSubSystem == null) {
             switch(fileReference.getType()) {
                 case DISTRIBUTED_IF_AVAIL:
-                    ioSubSystem = new IOHDFSSubSystem();
+                    ioSubSystem = new IOHDFSSubSystem(hdpConfPath);
                     break;
                 case LOCAL:
                     ioSubSystem = new IOLocalSubSystem();

@@ -165,8 +165,11 @@ public class NodeControllerService implements IControllerService {
         NodeControllerIPCI ipci = new NodeControllerIPCI();
         ipc = new IPCSystem(new InetSocketAddress(ncConfig.clusterNetIPAddress, ncConfig.clusterNetPort), ipci,
                 new CCNCFunctions.SerializerDeserializer());
-
-        this.ctx = new RootHyracksContext(this, new IOManager(getDevices(ncConfig.ioDevices)));
+        if(ncConfig.hadoopConfPath.equals("")) {
+            this.ctx = new RootHyracksContext(this, new IOManager(getDevices(ncConfig.ioDevices)));
+        }else{
+            this.ctx = new RootHyracksContext(this, new IOManager(getDevices(ncConfig.ioDevices), ncConfig.hadoopConfPath));
+        }
         if (id == null) {
             throw new Exception("id not set");
         }

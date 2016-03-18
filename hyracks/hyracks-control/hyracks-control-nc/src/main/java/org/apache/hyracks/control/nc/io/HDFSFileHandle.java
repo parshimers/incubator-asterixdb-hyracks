@@ -37,37 +37,24 @@ import org.apache.hyracks.api.io.IFileHandle;
 
 public class HDFSFileHandle implements IFileHandle, IFileHandleInternal {
     private URI uri;
-    static {
-        Configuration conf = new Configuration();
-        conf.set("dfs.datanode.socket.write.timeout","0");
-        conf.set("dfs.client.read.shortcircuit","true");
-        conf.set("dfs.domain.socket.path","file:///mnt/heap/hdfs-data/dn_socket");
-        conf.set("dfs.namenode.replication.considerLoad","false");
-        conf.addResource(new Path("config/core-site.xml"));
-        conf.addResource(new Path("config/hdfs-site.xml"));
-        conf.addResource(new Path("config/mapred-site.xml"));
-        try {
-            fs = FileSystem.get(new URI("hdfs://localhost:9000"), conf);
-        } catch (IOException | URISyntaxException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-        }
-    }
-    private static FileSystem fs;
+    private static String fsName;
+    private static FileSystem fs = null;
     private FSDataOutputStream out = null;
     private FSDataInputStream in = null;
     private Path path;
     private FileReference fileRef;
     private FileReadWriteMode rwMode;
-    private static long len;
 
     public HDFSFileHandle(FileReference fileRef) {
         try {
-            this.uri = new URI("hdfs://127.0.1.1:9000/" + fileRef.getPath());
+            if(fs == null) {
+                fs = IOHDFSSubSystem.getFileSystem();
+            }
+            fsName = fs.getConf().get("fs.default.name");
+            this.uri = new URI(fsName + fileRef.getPath());
             this.fileRef = fileRef;
             path = new Path(uri.getPath());
-        } catch (URISyntaxException e) {
-            // can't happen. -.-
+        } catch ( URISyntaxException e) {
         }
     }
     
@@ -77,14 +64,11 @@ public class HDFSFileHandle implements IFileHandle, IFileHandleInternal {
            if (rwMode == FileReadWriteMode.READ_WRITE) {
                if (fs.exists(path)) {
                    out = fs.append(path);
-                   len = getSize();
                } else {
                    out = fs.create(path, false);
-                   len = 0l;
                }
            }
         else if(rwMode == FileReadWriteMode.READ_ONLY){
-               len = getSize();
                in = fs.open(path);
            }
         this.rwMode = rwMode;

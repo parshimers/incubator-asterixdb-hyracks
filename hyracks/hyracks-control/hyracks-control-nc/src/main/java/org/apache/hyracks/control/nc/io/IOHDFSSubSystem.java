@@ -33,23 +33,33 @@ import org.apache.hadoop.fs.*;
 import org.apache.hyracks.api.io.FileReference;
 
 public class IOHDFSSubSystem implements IIOSubSystem {
-    private static URI uri = null;
-    static {
-        System.setProperty("HADOOP_USER_NAME", "root");
-        Configuration conf = new Configuration();
-        conf.set("dfs.namenode.replication.considerLoad","false");
-        conf.addResource(new Path("config/core-site.xml"));
-        conf.addResource(new Path("config/hdfs-site.xml"));
-        conf.addResource(new Path("config/mapred-site.xml"));
+    private URI uri = null;
+    private String fsName;
+    private static FileSystem fs;
+    Configuration conf;
+
+    public IOHDFSSubSystem(String confPath){
+        conf = new Configuration();
+        //    conf.set("dfs.namenode.replication.considerLoad","false");
+        //    conf.set("dfs.datanode.socket.write.timeout","0");
+        //    conf.set("dfs.client.read.shortcircuit","true");
+        //    conf.set("dfs.domain.socket.path","file:///mnt/heap/hdfs-data/dn_socket");
+        //    conf.set("dfs.namenode.replication.considerLoad","false");
+        conf.addResource(new Path(confPath + "core-site.xml"));
+        conf.addResource(new Path(confPath + "mapred-site.xml"));
+        fsName = conf.get("fs.default.name");
         try {
-            uri = new URI("hdfs://localhost:9000/");
+            uri = new URI(fsName);
             fs = FileSystem.get(uri, conf);
         } catch (IOException | URISyntaxException e) {
             // TODO Auto-generated catch block
             e.printStackTrace();
         }
     }
-    private static FileSystem fs;
+
+    public static FileSystem getFileSystem(){
+        return fs;
+    }
 
     @Override
     public boolean exists(FileReference fileRef) throws IllegalArgumentException, IOException {
